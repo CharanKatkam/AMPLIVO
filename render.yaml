@@ -32,7 +32,7 @@ services:
       - key: BCRYPT_ROUNDS
         value: 12
       - key: CORS_ORIGINS
-        value: https://amplivo-front-and-backend.vercel.app,https://amplivo-2.vercel.app,http://localhost:3000,http://127.0.0.1:3000
+        value: https://amplivo.onrender.com
       - key: MAX_FAILED_LOGIN_ATTEMPTS
         value: 5
       - key: ACCOUNT_LOCK_MINUTES
