@@ -72,7 +72,7 @@ export default function RegisterPage() {
         router.push('/portal');
       }
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { detail?: string; message?: string } }; message?: string };
+      const axiosError = error as { response?: { status?: number; data?: { detail?: string; message?: string } }; message?: string };
       const apiMessage = axiosError?.response?.data?.message || axiosError?.response?.data?.detail;
       if (apiMessage) {
         setRegisterError(apiMessage);
