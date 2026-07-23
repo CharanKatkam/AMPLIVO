@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { Star, Quote } from 'lucide-react';
 import { testimonials } from '@/data/testimonials';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -6,8 +7,8 @@ import { AnimateOnScroll } from '@/components/AnimateOnScroll';
 
 export function TestimonialsSection() {
   return (
-    <section className="bg-white py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section className="bg-white py-14">
+      <div className="max-w-7xl mx-auto px-6">
         <AnimateOnScroll animation="fade-up">
           <SectionHeader
             eyebrow="Client Testimonials"
@@ -30,12 +31,12 @@ export function TestimonialsSection() {
                 {/* Quote */}
                 <div className="relative mb-6">
                   <Quote size={20} className="text-[#4C1D95]/20 absolute -top-1 -left-1" />
-                  <p className="text-slate-600 text-sm leading-relaxed pl-5">{t.content}</p>
+                  <p className="text-slate-600 text-sm leading-relaxed pl-5 line-clamp-3">{t.content}</p>
                 </div>
 
                 {/* Author */}
                 <div className="flex items-center gap-3">
-                  <img src={t.image} alt={t.name} className="w-10 h-10 rounded-full object-cover" />
+                  <Image src={t.image} alt={t.name} width={40} height={40} className="rounded-full object-cover" />
                   <div>
                     <div className="text-slate-900 font-semibold text-sm">{t.name}</div>
                     <div className="text-slate-400 text-xs">{t.role}, {t.company}</div>

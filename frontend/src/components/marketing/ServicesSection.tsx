@@ -23,8 +23,8 @@ const services = [
 
 export function ServicesSection() {
   return (
-    <section className="bg-[#F9FAFB] py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section className="bg-[#F9FAFB] py-14">
+      <div className="max-w-7xl mx-auto px-6">
         <AnimateOnScroll animation="fade-up">
           <SectionHeader
             eyebrow="Our Services"

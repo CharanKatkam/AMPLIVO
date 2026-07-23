@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { FaLinkedin } from 'react-icons/fa';
 import { teamMembers } from '@/data/team';
@@ -9,8 +10,8 @@ export function TeamSection() {
   const featured = teamMembers.slice(0, 8);
 
   return (
-    <section className="bg-[#F9FAFB] py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section className="bg-[#F9FAFB] py-14">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <AnimateOnScroll animation="fade-up">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -38,10 +39,12 @@ export function TeamSection() {
             <AnimateOnScroll key={member.id} animation="fade-up" delay={i * 70}>
               <div className="group text-center">
                 <div className="relative mb-4 overflow-hidden rounded-2xl aspect-square">
-                  <img
+                  <Image
                     src={member.image}
                     alt={member.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#4C1D95]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   {member.linkedin && (

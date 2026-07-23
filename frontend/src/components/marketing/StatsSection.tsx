@@ -36,7 +36,7 @@ export function StatsSection() {
   return (
     <>
       {/* Client Logo Slider */}
-      <div className="bg-white border-y border-slate-100 py-10 overflow-hidden">
+      <div className="bg-white border-y border-slate-100 py-14 overflow-hidden">
         <AnimateOnScroll animation="fade-up" className="max-w-7xl mx-auto px-6 mb-6 text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
             Trusted by leading brands across India
@@ -61,8 +61,13 @@ export function StatsSection() {
       </div>
 
       {/* Stats Grid */}
-      <div className="bg-[#0F0B2E] py-16">
-        <div className="max-w-7xl mx-auto px-6">
+      <div className="bg-[#0F0B2E] py-16 relative overflow-hidden">
+        {/* Brand texture overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.04] mix-blend-overlay pointer-events-none"
+          style={{ backgroundImage: 'url(/images/textures/texture-1.jpeg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+        />
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-8 text-center">
             {stats.map((stat, i) => (
               <AnimateOnScroll key={i} animation="scale-in" delay={i * 70}>

@@ -8,7 +8,7 @@ export const testimonials: Testimonial[] = [
     role: 'Head of Sales',
     content: 'Amplivo transformed our digital lead pipeline. The quality of leads improved dramatically and our sales team is closing more deals. The transparency in reporting is commendable.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop',
+    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop',
   },
   {
     id: '2',
@@ -17,7 +17,7 @@ export const testimonials: Testimonial[] = [
     role: 'Founder & CEO',
     content: 'Our online revenue tripled in two months. The creative team produces outstanding quality content, and the performance marketing ROI has been exceptional. Amplivo is the best decision we made.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop',
+    image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=80&h=80&fit=crop',
   },
   {
     id: '3',
@@ -26,7 +26,7 @@ export const testimonials: Testimonial[] = [
     role: 'Medical Director',
     content: 'All our clinics now appear at the top of local searches. Patient footfall has increased significantly. The dedicated account manager ensures smooth communication and timely delivery.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=80&h=80&fit=crop',
+    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=80&h=80&fit=crop',
   },
   {
     id: '4',
@@ -44,7 +44,7 @@ export const testimonials: Testimonial[] = [
     role: 'Chief Revenue Officer',
     content: 'Our B2B pipeline has never been stronger. The LinkedIn strategy directly contributed to closing enterprise deals. The team understands both marketing and technology deeply.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop',
+    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop',
   },
   {
     id: '6',
@@ -53,6 +53,6 @@ export const testimonials: Testimonial[] = [
     role: 'Co-Founder',
     content: 'Amplivo built our brand from scratch. The community of 100K followers they created in 6 months is actively driving our D2C sales. Outstanding creative and strategic work.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=80&h=80&fit=crop',
+    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=80&h=80&fit=crop',
   },
 ];

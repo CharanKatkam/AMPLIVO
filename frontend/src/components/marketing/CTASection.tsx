@@ -14,7 +14,7 @@ export function CTASection() {
         style={{ backgroundImage: 'radial-gradient(ellipse at 30% 50%, #fff 0%, transparent 60%)' }}
       />
 
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
+      <div className="relative max-w-4xl mx-auto px-6 text-center">
         <AnimateOnScroll animation="fade-in">
           <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-full mb-6">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

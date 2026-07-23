@@ -44,7 +44,7 @@ export const blogPosts: BlogPost[] = [
     author: 'Divya Krishnamurti',
     date: 'June 10, 2024',
     readTime: '6 min read',
-    image: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop',
     tags: ['Local SEO', 'Google My Business', 'Maps'],
     content: [
       'Local search has become highly competitive, especially in emerging Tier-2 Indian cities where digital adoption is growing rapidly.',
@@ -78,7 +78,7 @@ export const blogPosts: BlogPost[] = [
     author: 'Riya Anand',
     date: 'June 5, 2024',
     readTime: '7 min read',
-    image: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1557838923-2985c318be48?w=600&h=400&fit=crop',
     tags: ['Influencer', 'ROI', 'Analytics', 'Instagram'],
     content: [
       'While influencer marketing excels at brand awareness, tracking actual revenue attribution is a major hurdle for CMOs.',
@@ -112,7 +112,7 @@ export const blogPosts: BlogPost[] = [
     author: 'Arjun Menon',
     date: 'May 28, 2024',
     readTime: '9 min read',
-    image: 'https://images.unsplash.com/photo-1542435503-ec7b0aa60d72?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&h=400&fit=crop',
     tags: ['B2B', 'LinkedIn', 'Content Strategy', 'Thought Leadership'],
     content: [
       'B2B purchase decisions are complex and involve multiple stakeholders. Building authority through educational content is the key to winning enterprise deals.',
@@ -146,7 +146,7 @@ export const blogPosts: BlogPost[] = [
     author: 'Sneha Patel',
     date: 'May 20, 2024',
     readTime: '5 min read',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=600&h=400&fit=crop',
     tags: ['Automation', 'Lead Nurturing', 'Email Marketing', 'CRM'],
     content: [
       'Many small and medium enterprises assume marketing automation is only for large enterprises. However, simple automation workflows yield substantial ROI.',

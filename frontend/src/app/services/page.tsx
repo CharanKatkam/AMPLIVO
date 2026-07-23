@@ -52,7 +52,7 @@ export default function ServicesPage() {
               return (
                 <AnimateOnScroll key={service.id} animation="fade-up" delay={i * 80}>
                 <div
-                  className="bg-white rounded-2xl p-8 border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group card-hover"
+                  className="bg-white rounded-2xl p-8 border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group card-hover h-full flex flex-col"
                 >
                   <div className="flex items-start gap-5 mb-6">
                     <div
@@ -86,12 +86,14 @@ export default function ServicesPage() {
                     </div>
                   )}
 
-                  <Link
-                    href={`/services/${service.slug}`}
-                    className="inline-flex items-center gap-2 text-[#4C1D95] text-sm font-semibold group-hover:gap-3 transition-all"
-                  >
-                    View service details <ArrowRight size={14} />
-                  </Link>
+                  <div className="mt-auto">
+                    <Link
+                      href={`/services/${service.slug}`}
+                      className="inline-flex items-center gap-2 text-[#4C1D95] text-sm font-semibold group-hover:gap-3 transition-all"
+                    >
+                      View service details <ArrowRight size={14} />
+                    </Link>
+                  </div>
                 </div>
                 </AnimateOnScroll>
               );

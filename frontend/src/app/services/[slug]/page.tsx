@@ -6,7 +6,7 @@ import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
 import { BackButton } from '@/components/ui/BackButton';
 import { services } from '@/data/services';
-import { ArrowRight, CheckCircle2, Zap, Share2, Target, Search, Palette, FileText, Users, Globe, Star, Video } from 'lucide-react';
+import { ArrowRight, ChevronRight, CheckCircle2, Zap, Share2, Target, Search, Palette, FileText, Users, Globe, Star, Video } from 'lucide-react';
 
 const iconMap: Record<string, React.ElementType> = {
   Share2, Target, Search, Palette, FileText, Users, Globe, Zap, Star, Video,
@@ -171,8 +171,18 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           }}
         />
 
+        <div className="relative max-w-7xl mx-auto px-6 z-20 mb-2 opacity-0 animate-fade-in-up">
+          <BackButton href="/services" label="Back to Services" className="text-white/80 hover:text-white border border-white/20 bg-white/5 rounded-full px-4 py-2" />
+        </div>
+
         <div className="relative max-w-7xl mx-auto px-6 z-20 mb-8 opacity-0 animate-fade-in-up">
-          <BackButton label="Back to Services" className="text-white/80 hover:text-white border border-white/20 bg-white/5 rounded-full px-4 py-2" />
+          <nav className="flex items-center gap-2 text-sm text-white/60">
+            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+            <ChevronRight size={14} />
+            <Link href="/services" className="hover:text-white transition-colors">Services</Link>
+            <ChevronRight size={14} />
+            <span className="text-white/90">{service.title}</span>
+          </nav>
         </div>
 
         <div className="relative max-w-4xl mx-auto px-6 text-center z-10">
@@ -203,7 +213,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       </section>
 
       {/* Features */}
-      <section className="pt-16 pb-6 bg-white">
+      <section className="py-24 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 items-start">
             <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
@@ -250,7 +260,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       </section>
 
       {/* Related Services */}
-      <section className="pt-8 pb-16 bg-[#F9FAFB]">
+      <section className="py-24 bg-[#F9FAFB]">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-2xl font-bold text-slate-900 mb-8 opacity-0 animate-fade-in-up" style={{ fontFamily: "'Sora', sans-serif" }}>Related Services</h2>
           <div className="grid md:grid-cols-3 gap-6">
@@ -260,14 +270,14 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                 <Link 
                   key={rs.id} 
                   href={`/services/${rs.slug}`} 
-                  className="bg-white rounded-2xl p-6 border border-slate-200 hover:shadow-md hover:-translate-y-0.5 transition-all group opacity-0 animate-fade-in-up"
+                  className="bg-white rounded-2xl p-6 border border-slate-200 hover:shadow-md hover:-translate-y-0.5 transition-all group opacity-0 animate-fade-in-up flex flex-col"
                   style={{ animationDelay: `${(idx + 1) * 100}ms` }}
                 >
                   <div className="w-11 h-11 rounded-[14px] flex items-center justify-center mb-4" style={{ backgroundColor: `${rs.color}12` }}>
                     <RIcon size={20} style={{ color: rs.color }} />
                   </div>
                   <h3 className="font-semibold text-slate-900 mb-1.5">{rs.title}</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed mb-4 line-clamp-2">{rs.shortDesc}</p>
+                  <p className="text-slate-500 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">{rs.shortDesc}</p>
                   <span className="text-[#4C1D95] text-sm font-semibold group-hover:gap-2 flex items-center gap-1">Learn more <ArrowRight size={12} /></span>
                 </Link>
               );

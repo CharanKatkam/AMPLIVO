@@ -27,7 +27,7 @@ export default function PortalCreatives() {
   const [assets, setAssets] = useState<AssetWithProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [search, setSearch] = useState('');
   const [previewAsset, setPreviewAsset] = useState<AssetWithProject | null>(null);
   const [commentAsset, setCommentAsset] = useState<AssetWithProject | null>(null);
@@ -66,6 +66,8 @@ export default function PortalCreatives() {
     return matchesFilter && matchesSearch;
   });
 
+  const [showRejectModal, setShowRejectModal] = useState<AssetWithProject | null>(null);
+
   const handleApprove = async (asset: AssetWithProject) => {
     setUpdatingId(asset.id);
     try {
@@ -76,6 +78,23 @@ export default function PortalCreatives() {
       showToast('Failed to approve creative.', 'error');
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleReject = async (asset: AssetWithProject, reason?: string) => {
+    setUpdatingId(asset.id);
+    try {
+      await creativeService.updateAsset(asset.id, { status: 'rejected' });
+      setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, status: 'rejected' } : a)));
+      if (reason) {
+        await creativeService.createFeedback(asset.id, { content: `Rejection reason: ${reason}` });
+      }
+      showToast(`"${asset.name}" rejected.`, 'info');
+    } catch {
+      showToast('Failed to reject creative.', 'error');
+    } finally {
+      setUpdatingId(null);
+      setShowRejectModal(null);
     }
   };
 
@@ -122,6 +141,9 @@ export default function PortalCreatives() {
             <button onClick={() => setFilter('approved')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${filter === 'approved' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
               Approved ({assets.filter((a) => normalizedStatus(a.status) === 'approved').length})
             </button>
+            <button onClick={() => setFilter('rejected')} className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${filter === 'rejected' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
+              Rejected ({assets.filter((a) => normalizedStatus(a.status) === 'rejected').length})
+            </button>
           </div>
         </div>
 
@@ -164,30 +186,50 @@ export default function PortalCreatives() {
                   </div>
 
                   {normalizedStatus(asset.status) === 'pending' ? (
-                    <div className="grid grid-cols-2 gap-2 mt-auto">
+                    <div className="grid grid-cols-3 gap-2 mt-auto">
                       <button
                         onClick={() => handleApprove(asset)}
                         disabled={updatingId === asset.id}
-                        className="flex items-center justify-center gap-1.5 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center gap-1 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors disabled:opacity-50"
                       >
-                        {updatingId === asset.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} Approve
+                        {updatingId === asset.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Approve
                       </button>
-                      <button onClick={() => setCommentAsset(asset)} className="flex items-center justify-center gap-1.5 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors">
-                        <MessageSquare size={16} /> Comment
+                      <button onClick={() => setCommentAsset(asset)} className="flex items-center justify-center gap-1 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors">
+                        <MessageSquare size={14} /> Changes
+                      </button>
+                      <button
+                        onClick={() => setShowRejectModal(asset)}
+                        disabled={updatingId === asset.id}
+                        className="flex items-center justify-center gap-1 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
+                      >
+                        <X size={14} /> Reject
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 mt-auto">
-                      <button onClick={() => setCommentAsset(asset)} className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                        <MessageSquare size={16} /> Thread
+                    <div className="grid grid-cols-3 gap-2 mt-auto">
+                      {normalizedStatus(asset.status) === 'rejected' ? (
+                        <button
+                          onClick={() => handleApprove(asset)}
+                          disabled={updatingId === asset.id}
+                          className="col-span-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                        >
+                          {updatingId === asset.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Re-approve
+                        </button>
+                      ) : (
+                        <button onClick={() => setCommentAsset(asset)} className="flex items-center justify-center gap-1 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors">
+                          <MessageSquare size={14} /> Request Changes
+                        </button>
+                      )}
+                      <button onClick={() => setCommentAsset(asset)} className="flex items-center justify-center gap-1 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">
+                        <MessageSquare size={14} /> Thread
                       </button>
                       {asset.file_url ? (
-                        <a href={asset.file_url} target="_blank" rel="noopener noreferrer" download className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                          <Download size={16} /> Asset
+                        <a href={asset.file_url} target="_blank" rel="noopener noreferrer" download className="flex items-center justify-center gap-1 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">
+                          <Download size={14} /> Asset
                         </a>
                       ) : (
-                        <button disabled className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-slate-100 text-slate-300 text-sm font-semibold cursor-not-allowed">
-                          <Download size={16} /> Asset
+                        <button disabled className="flex items-center justify-center gap-1 py-2 rounded-xl border border-slate-100 text-slate-300 text-sm font-semibold cursor-not-allowed">
+                          <Download size={14} /> Asset
                         </button>
                       )}
                     </div>
@@ -220,9 +262,50 @@ export default function PortalCreatives() {
         </div>
       )}
 
+      {showRejectModal && (
+        <RejectModal
+          asset={showRejectModal}
+          onConfirm={(reason) => handleReject(showRejectModal, reason)}
+          onCancel={() => setShowRejectModal(null)}
+          loading={updatingId === showRejectModal.id}
+        />
+      )}
+
       {commentAsset && (
         <CommentThreadModal asset={commentAsset} onClose={() => setCommentAsset(null)} />
       )}
+    </div>
+  );
+}
+
+function RejectModal({ asset, onConfirm, onCancel, loading }: { asset: AssetWithProject; onConfirm: (reason: string) => void; onCancel: () => void; loading: boolean }) {
+  const [reason, setReason] = useState('');
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onCancel}>
+      <div className="bg-white rounded-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-slate-900">Reject Creative</h3>
+          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+        </div>
+        <p className="text-sm text-slate-600 mb-4">Provide a reason for rejecting <strong>{asset.name}</strong>:</p>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Describe what needs to be changed..."
+          rows={4}
+          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 resize-none"
+        />
+        <div className="flex gap-3 pt-3">
+          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">Cancel</button>
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={loading}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />} Reject
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

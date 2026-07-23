@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, Cell } from 'recharts';
 
 const trafficData = [
   { month: 'Jan', organic: 18000, paid: 9000 },
@@ -43,6 +43,8 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   return null;
 };
 
+const barColors = ['#7C3AED', '#06B6D4', '#EC4899', '#10B981', '#F59E0B'];
+
 export function ChartsSection() {
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -59,8 +61,13 @@ export function ChartsSection() {
   }, []);
 
   return (
-    <section ref={ref} className="bg-[#0f0528] py-10 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section ref={ref} className="bg-[#0f0528] py-14 overflow-hidden relative">
+      {/* Brand texture overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none"
+        style={{ backgroundImage: 'url(/images/textures/texture-2.jpeg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      />
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         {/* Header */}
         <div className="text-center mb-12">
           <span className="inline-flex items-center gap-2 bg-white/10 border border-white/15 text-white/80 text-xs font-bold px-4 py-2 rounded-full mb-4 uppercase tracking-widest">
@@ -70,7 +77,7 @@ export function ChartsSection() {
             className="text-3xl lg:text-4xl font-bold text-white"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
-            Results That Speak for Themselves
+            Campaign Performance Benchmarks
           </h2>
           <p className="text-white/60 mt-3 max-w-lg mx-auto">
             Average client performance benchmarks across 250+ active campaigns.
@@ -139,10 +146,7 @@ export function ChartsSection() {
                     <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="roi" name="ROI" radius={[6, 6, 0, 0]} isAnimationActive={true} animationDuration={1200}>
                       {roiData.map((_, i) => (
-                        <rect
-                          key={i}
-                          fill={`hsl(${260 + i * 20}, 75%, ${55 + i * 3}%)`}
-                        />
+                        <Cell key={`cell-${i}`} fill={barColors[i]} />
                       ))}
                     </Bar>
                   </BarChart>

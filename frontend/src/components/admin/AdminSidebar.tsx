@@ -26,6 +26,7 @@ const navItems = [
   { icon: Users, label: 'Team', href: '/admin/team' },
   { icon: DollarSign, label: 'Finance', href: '/admin/finance' },
   { icon: BarChart2, label: 'Reports', href: '/admin/reports' },
+  { icon: TrendingUp, label: 'Analytics', href: '/admin/analytics' },
   { icon: Shield, label: 'Roles & Perms', href: '/admin/roles' },
 ];
 

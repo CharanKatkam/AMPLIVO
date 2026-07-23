@@ -69,7 +69,7 @@ export default function PortfolioPage() {
                 className={`relative group overflow-hidden rounded-2xl cursor-pointer card-hover ${i === 0 ? 'col-span-2 row-span-1' : ''}`}
                 onClick={() => setSelectedItem(item)}
               >
-                <div className={`w-full overflow-hidden ${i === 0 ? 'h-72' : 'h-56'}`}>
+                <div className="w-full overflow-hidden h-56">
                   <img
                     src={item.image}
                     alt={item.title}
@@ -136,7 +136,9 @@ export default function PortfolioPage() {
               </div>
 
               <p className="text-slate-600 text-sm mb-8 leading-relaxed">
-                This is a showcase of our work for {selectedItem.client}. Through strategic {selectedItem.category.toLowerCase()} and tailored campaigns, we were able to significantly boost their digital presence and drive measurable results. 
+                We partnered with <strong>{selectedItem.client}</strong> to design and execute a{' '}
+                {selectedItem.category.toLowerCase()} strategy that delivered measurable growth —
+                from increased brand visibility to real conversion improvements across channels.
               </p>
 
               <Link href="/contact" className="inline-flex w-fit items-center justify-center gap-2 bg-[#4C1D95] text-white font-semibold py-3 px-6 rounded-xl hover:bg-[#3b1574] transition-colors self-start">

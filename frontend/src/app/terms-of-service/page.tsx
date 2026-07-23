@@ -9,7 +9,7 @@ export default function TermsOfServicePage() {
       <div className="pt-32 pb-24 bg-white">
         <div className="max-w-3xl mx-auto px-6 prose prose-slate">
           <div className="not-prose mb-8">
-            <BackButton label="Back to Home" />
+            <BackButton href="/" label="Back to Home" />
           </div>
           <h1 style={{ fontFamily: "'Sora', sans-serif" }}>Terms of Service</h1>
           <p className="text-sm text-slate-500">Last updated: July 2024</p>
