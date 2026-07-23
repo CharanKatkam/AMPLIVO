@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Navbar } from '@/components/marketing/Navbar';
 import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
@@ -69,7 +70,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="max-w-3xl">
               <div className="flex items-center gap-3 mb-8 text-sm font-medium text-white/70">
-                <BackButton label="Back to Industries" className="text-white/80 hover:text-white border border-white/20 bg-white/5 rounded-full px-4 py-2 mr-4" />
+                <BackButton href="/industries" label="Back to Industries" className="text-white/80 hover:text-white border border-white/20 bg-white/5 rounded-full px-4 py-2 mr-4" />
                 <Link href="/industries" className="hover:text-white transition-colors">Industries</Link>
                 <ChevronRight size={14} />
                 <span className="text-white">{industry.name}</span>
@@ -97,10 +98,12 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
             
             <div className="hidden lg:block relative">
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-slate-900/40 to-transparent z-10 pointer-events-none" />
-              <img 
-                src={industryImages[industry.slug] || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=600&fit=crop'} 
+              <Image 
+                src={industryImages[industry.slug] || '/images/industries/industry_it_1784618560373.png'} 
                 alt={`${industry.name} Digital Marketing`}
-                className="w-full h-[460px] object-cover rounded-2xl shadow-2xl border border-white/10"
+                width={800}
+                height={460}
+                className="h-[460px] object-cover rounded-2xl shadow-2xl border border-white/10"
               />
               <div 
                 className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full blur-3xl opacity-30 pointer-events-none z-0" 
@@ -144,7 +147,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
 
               <div className="grid md:grid-cols-2 gap-6">
                 {industry.solutions?.map((solution, index) => (
-                  <div key={index} className="bg-white p-8 rounded-3xl border border-slate-200 hover:border-[#4C1D95]/30 hover:shadow-lg transition-all group">
+                  <div key={index} className="bg-white p-8 rounded-3xl border border-slate-200 hover:border-[#4C1D95]/30 hover:shadow-lg transition-all group h-full">
                     <CheckCircle2 size={24} className="mb-5" style={{ color: industry.color }} />
                     <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-[#4C1D95] transition-colors">{solution.title}</h3>
                     <p className="text-slate-600 leading-relaxed">{solution.desc}</p>

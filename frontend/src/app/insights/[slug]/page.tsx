@@ -5,7 +5,7 @@ import { Navbar } from '@/components/marketing/Navbar';
 import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
 import { blogPosts } from '@/data/blogPosts';
-import { Clock, ArrowLeft, ArrowRight, Share2 } from 'lucide-react';
+import { Clock, ArrowLeft, ArrowRight, ChevronRight, Share2 } from 'lucide-react';
 import { FaInstagram, FaLinkedin, FaFacebook, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { BlogInsightCard } from '@/components/marketing/BlogInsightCard';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
@@ -49,8 +49,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <article className="pt-32 pb-12">
         <div className="max-w-3xl mx-auto px-6">
           <AnimateOnScroll animation="fade-in">
-          <div className="mb-8">
-            <BackButton label="Back to Blog" className="text-slate-500 hover:text-[#4C1D95]" />
+          <div className="mb-8 space-y-3">
+            <BackButton href="/insights" label="Back to Blog" className="text-slate-500 hover:text-[#4C1D95]" />
+            <nav className="flex items-center gap-2 text-sm text-slate-400">
+              <Link href="/" className="hover:text-[#4C1D95] transition-colors">Home</Link>
+              <ChevronRight size={14} />
+              <Link href="/insights" className="hover:text-[#4C1D95] transition-colors">Insights</Link>
+              <ChevronRight size={14} />
+              <span className="text-slate-700">{post.title}</span>
+            </nav>
           </div>
           </AnimateOnScroll>
 
@@ -155,7 +162,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       </article>
 
       {/* Related Posts */}
-      <section className="py-20 bg-[#F9FAFB]">
+      <section className="py-24 bg-[#F9FAFB]">
         <div className="max-w-7xl mx-auto px-6">
           <AnimateOnScroll animation="fade-up">
           <div className="flex items-center justify-between mb-10">

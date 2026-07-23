@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, X } from 'lucide-react';
 import { portfolioItems } from '@/data/portfolio';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
@@ -12,8 +13,8 @@ export function PortfolioSection() {
   const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
 
   return (
-    <section className="bg-white py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section className="bg-white py-14">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <AnimateOnScroll animation="fade-up">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -44,10 +45,12 @@ export function PortfolioSection() {
                 className="relative group overflow-hidden rounded-2xl cursor-pointer h-52 md:h-60"
               >
                 {/* Image */}
-                <img
+                <Image
                   src={item.image}
                   alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform duration-700"
+                  sizes="(max-width: 768px) 50vw, 33vw"
                 />
 
                 {/* Always-visible bottom strip */}
@@ -111,10 +114,12 @@ export function PortfolioSection() {
 
             {/* Image */}
             <div className="w-full md:w-1/2 h-56 md:h-auto relative flex-shrink-0">
-              <img
+              <Image
                 src={selectedItem.image}
                 alt={selectedItem.title}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="50vw"
               />
             </div>
 
@@ -139,9 +144,9 @@ export function PortfolioSection() {
               </div>
 
               <p className="text-slate-600 text-sm leading-relaxed mb-8">
-                This is a showcase of our work for <strong>{selectedItem.client}</strong>. Through strategic{' '}
-                {selectedItem.category.toLowerCase()} and tailored campaigns, we were able to significantly boost
-                their digital presence and drive measurable results.
+                We partnered with <strong>{selectedItem.client}</strong> to design and execute a{' '}
+                {selectedItem.category.toLowerCase()} strategy that delivered measurable growth —
+                from increased brand visibility to real conversion improvements across channels.
               </p>
 
               <Link

@@ -65,7 +65,7 @@ export default function AboutPage() {
       </section>
 
       {/* Mission & Vision */}
-      <section className="py-20 bg-white">
+      <section className="py-24 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12">
             <AnimateOnScroll animation="fade-right">
@@ -95,7 +95,7 @@ export default function AboutPage() {
       </section>
 
       {/* Core Values */}
-      <section className="py-20 bg-[#F9FAFB]">
+      <section className="py-24 bg-[#F9FAFB]">
         <div className="max-w-7xl mx-auto px-6">
           <AnimateOnScroll animation="fade-up">
             <div className="text-center mb-14">
@@ -115,7 +115,7 @@ export default function AboutPage() {
                     <span className="text-white font-bold text-xs">{String(i + 1).padStart(2, '0')}</span>
                   </div>
                   <h3 className="font-semibold text-slate-900 mb-1.5 text-sm">{v.title}</h3>
-                  <p className="text-slate-500 text-xs leading-relaxed">{v.desc}</p>
+                  <p className="text-slate-500 text-xs leading-relaxed line-clamp-3">{v.desc}</p>
                 </div>
               </AnimateOnScroll>
             ))}
@@ -124,7 +124,7 @@ export default function AboutPage() {
       </section>
 
       {/* Team */}
-      <section id="team" className="py-20 bg-white">
+      <section id="team" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <AnimateOnScroll animation="fade-up">
             <div className="text-center mb-14">
@@ -140,7 +140,7 @@ export default function AboutPage() {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {teamMembers.map((member, i) => (
               <AnimateOnScroll key={member.id} animation="fade-up" delay={i * 60}>
-                <div className="group text-center">
+                <div className="group text-center h-full">
                   <div className="relative mb-4 overflow-hidden rounded-2xl aspect-square">
                     <img src={member.image} alt={member.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#4C1D95]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -163,7 +163,7 @@ export default function AboutPage() {
       </section>
 
       {/* Milestones */}
-      <section className="py-20 bg-[#F9FAFB]">
+      <section className="py-24 bg-[#F9FAFB]">
         <div className="max-w-4xl mx-auto px-6">
           <AnimateOnScroll animation="fade-up">
             <div className="text-center mb-14">
@@ -198,7 +198,7 @@ export default function AboutPage() {
       </section>
 
       {/* Offices */}
-      <section className="py-20 bg-white">
+      <section className="py-24 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <AnimateOnScroll animation="fade-up">
             <div className="text-center mb-14">

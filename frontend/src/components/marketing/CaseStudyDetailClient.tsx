@@ -58,8 +58,15 @@ export function CaseStudyDetailClient({ caseStudy: cs }: CaseStudyDetailClientPr
         
         <div className="max-w-5xl mx-auto px-6 relative z-10">
           <AnimateOnScroll animation="fade-in">
-          <div className="mb-6">
-            <BackButton label="Back to Case Studies" className="text-white/80 hover:text-white border border-white/20 bg-white/5 rounded-full px-4 py-2" />
+          <div className="mb-6 space-y-3">
+            <BackButton href="/case-studies" label="Back to Case Studies" className="text-white/80 hover:text-white border border-white/20 bg-white/5 rounded-full px-4 py-2" />
+            <nav className="flex items-center gap-2 text-sm text-white/60">
+              <Link href="/" className="hover:text-white transition-colors">Home</Link>
+              <ChevronRight size={14} />
+              <Link href="/case-studies" className="hover:text-white transition-colors">Case Studies</Link>
+              <ChevronRight size={14} />
+              <span className="text-white/90">{cs.title}</span>
+            </nav>
           </div>
           <div className="flex flex-wrap gap-2 mb-6">
             <span className="bg-[#4C1D95] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
@@ -116,7 +123,7 @@ export function CaseStudyDetailClient({ caseStudy: cs }: CaseStudyDetailClientPr
       </section>
 
       {/* Main Content */}
-      <section className="py-16 bg-white">
+      <section className="py-24 bg-white">
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid lg:grid-cols-3 gap-10">
             {/* Left/Middle Columns: Case Details */}
@@ -315,7 +322,7 @@ export function CaseStudyDetailClient({ caseStudy: cs }: CaseStudyDetailClientPr
 
       {/* Related Services */}
       {cs.relatedServices && cs.relatedServices.length > 0 && (
-        <section className="py-16 bg-[#F9FAFB] border-t border-slate-200">
+        <section className="py-24 bg-[#F9FAFB] border-t border-slate-200">
           <div className="max-w-5xl mx-auto px-6">
             <h3 className="text-2xl font-bold text-slate-900 mb-8" style={{ fontFamily: "'Sora', sans-serif" }}>
               Related Marketing Services

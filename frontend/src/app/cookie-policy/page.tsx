@@ -14,7 +14,7 @@ export default function CookiePolicyPage() {
       <Navbar />
       <div className="pt-32 pb-20 max-w-4xl mx-auto px-6">
         <div className="mb-8">
-          <BackButton label="Back to Home" className="text-slate-500 hover:text-[#4C1D95]" />
+          <BackButton href="/" label="Back to Home" className="text-slate-500 hover:text-[#4C1D95]" />
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-8" style={{ fontFamily: "'Sora', sans-serif" }}>
           Cookie Policy

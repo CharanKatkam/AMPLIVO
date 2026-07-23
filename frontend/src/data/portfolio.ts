@@ -4,7 +4,7 @@ export const portfolioItems = [
     title: 'Prestige Heights – Real Estate Brand Campaign',
     client: 'Prestige Estates',
     category: 'Paid Ads',
-    image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
     tags: ['Google Ads', 'Meta Ads', 'Lead Gen'],
   },
   {
@@ -12,7 +12,7 @@ export const portfolioItems = [
     title: 'FashionFirst – Summer Collection Campaign',
     client: 'FashionFirst Retail',
     category: 'Social Media',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80',
     tags: ['Instagram', 'Reels', 'E-Commerce'],
   },
   {
@@ -20,7 +20,7 @@ export const portfolioItems = [
     title: 'EduPath Academy – SEO Growth',
     client: 'EduPath Academy',
     category: 'SEO',
-    image: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80',
     tags: ['Technical SEO', 'Content', 'Backlinks'],
   },
   {
@@ -28,7 +28,7 @@ export const portfolioItems = [
     title: 'NutriBlend – Brand Identity & Launch',
     client: 'NutriBlend D2C',
     category: 'Branding',
-    image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=800&q=80',
     tags: ['Brand Identity', 'Packaging', 'Social Design'],
   },
   {
@@ -36,7 +36,7 @@ export const portfolioItems = [
     title: 'TechNova – Corporate Website Development',
     client: 'TechNova Solutions',
     category: 'Websites',
-    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80',
     tags: ['Next.js', 'UI/UX', 'SEO'],
   },
   {
@@ -44,7 +44,7 @@ export const portfolioItems = [
     title: 'AutoDrive – YouTube Video Campaign',
     client: 'AutoDrive Motors',
     category: 'Video Marketing',
-    image: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80',
     tags: ['YouTube Ads', 'Video Production', 'Automotive'],
   },
   {
@@ -52,7 +52,7 @@ export const portfolioItems = [
     title: 'HealthPlus – Influencer Health Campaign',
     client: 'HealthPlus Clinics',
     category: 'Influencer Campaigns',
-    image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80',
     tags: ['Health Influencers', 'Instagram', 'Micro-Creator'],
   },
   {
@@ -60,7 +60,7 @@ export const portfolioItems = [
     title: 'StyleCo – E-Commerce Lead Funnel',
     client: 'StyleCo Fashion',
     category: 'Lead Generation',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
     tags: ['Landing Pages', 'Meta Ads', 'CRM'],
   },
   {
@@ -68,7 +68,7 @@ export const portfolioItems = [
     title: 'GreenBuild – B2B LinkedIn Authority',
     client: 'GreenBuild Infra',
     category: 'Social Media',
-    image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80',
     tags: ['LinkedIn', 'Content Marketing', 'B2B'],
   },
 ];

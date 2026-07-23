@@ -15,8 +15,8 @@ const steps = [
 
 export function ProcessSection() {
   return (
-    <section className="bg-white py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section className="bg-white py-14">
+      <div className="max-w-7xl mx-auto px-6">
         <AnimateOnScroll animation="fade-up">
           <SectionHeader
             eyebrow="Our Process"
@@ -38,7 +38,7 @@ export function ProcessSection() {
                     {step.num}
                   </div>
                   <h3 className="font-semibold text-slate-900 mb-2">{step.title}</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">{step.desc}</p>
+                  <p className="text-slate-500 text-sm leading-relaxed line-clamp-3">{step.desc}</p>
                 </div>
               </div>
             </AnimateOnScroll>

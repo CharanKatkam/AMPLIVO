@@ -5,9 +5,10 @@ import { StatCard } from '@/components/ui/StatCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { campaignService, CampaignRead } from '@/services/campaignService';
 import { leadService, LeadRead } from '@/services/leadService';
-import { notificationService, userManagementService } from '@/services/crmService';
+import { notificationService, taskService, financeService, userManagementService } from '@/services/crmService';
 import { companyService } from '@/services/portalServices';
-import { Megaphone, DollarSign, CheckCircle, Users, Bell, Loader2 } from 'lucide-react';
+import { contentCalendarService, creativeService, seoService } from '@/services/moduleServices';
+import { Megaphone, DollarSign, CheckCircle, Users, Bell, CalendarDays, FileText, Image, Search, ClipboardList, Receipt, Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface NotificationItem {
@@ -23,20 +24,43 @@ export default function PortalDashboard() {
   const [leads, setLeads] = useState<LeadRead[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [accountManager, setAccountManager] = useState<{ name: string; title: string } | null>(null);
+
+  const [calendarPosts, setCalendarPosts] = useState<any[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  const [approvedCreatives, setApprovedCreatives] = useState<any[]>([]);
+  const [seoProjects, setSeoProjects] = useState<any[]>([]);
+  const [websiteTasks, setWebsiteTasks] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [campaignRes, leadRes, notifRes] = await Promise.all([
+        const [campaignRes, leadRes, notifRes, calendarRes, creativeRes, seoRes, taskRes, invoiceRes] = await Promise.allSettled([
           campaignService.getAll({ page_size: 100 }),
           leadService.getAll({ page_size: 100 }),
           notificationService.getAll({ page_size: 10 }),
+          contentCalendarService.getAll({ page_size: 10 }),
+          creativeService.getProjects({ page_size: 20 }),
+          seoService.getProjects({ page_size: 10 }),
+          taskService.getAll({ page_size: 20 }),
+          financeService.getInvoices({ page_size: 20 }),
         ]);
-        setCampaigns(campaignRes?.items ?? []);
-        setLeads(leadRes?.items ?? []);
-        setNotifications(notifRes?.items ?? []);
+
+        if (campaignRes.status === 'fulfilled') setCampaigns(campaignRes.value?.items ?? []);
+        if (leadRes.status === 'fulfilled') setLeads(leadRes.value?.items ?? []);
+        if (notifRes.status === 'fulfilled') setNotifications(notifRes.value?.items ?? []);
+        if (calendarRes.status === 'fulfilled') setCalendarPosts(calendarRes.value?.items ?? []);
+        if (creativeRes.status === 'fulfilled') {
+          const all = creativeRes.value?.items ?? creativeRes.value ?? [];
+          setPendingApprovals(all.filter((p: any) => p.status === 'pending_review' || p.status === 'Pending Review'));
+          setApprovedCreatives(all.filter((p: any) => p.status === 'approved' || p.status === 'Approved'));
+        }
+        if (seoRes.status === 'fulfilled') setSeoProjects(seoRes.value?.items ?? seoRes.value ?? []);
+        if (taskRes.status === 'fulfilled') setWebsiteTasks(taskRes.value?.items ?? []);
+        if (invoiceRes.status === 'fulfilled') setInvoices(invoiceRes.value?.items ?? []);
       } catch (err) {
         console.error('Dashboard fetch error:', err);
         setError(true);
@@ -59,8 +83,11 @@ export default function PortalDashboard() {
 
   const activeCampaigns = campaigns.filter((c) => c.status === 'Active');
   const hotLeads = leads.filter((l) => l.status === 'Hot' || l.priority === 'High');
-
   const totalSpend = campaigns.reduce((sum, c) => sum + (c.spent_amount || 0), 0);
+
+  const totalOutstanding = invoices
+    .filter((inv) => inv.status === 'sent' || inv.status === 'overdue' || inv.status === 'pending')
+    .reduce((sum, inv) => sum + (inv.total_amount || inv.amount || 0), 0);
 
   if (loading) {
     return (
@@ -83,6 +110,8 @@ export default function PortalDashboard() {
             Some dashboard data couldn&apos;t be loaded. <button onClick={() => window.location.reload()} className="underline font-medium">Retry</button>
           </div>
         )}
+
+        {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Active Campaigns" value={String(activeCampaigns.length)} icon={<Megaphone size={20} />} iconColor="#4C1D95" trend={activeCampaigns.length > 0} trendValue={`+${activeCampaigns.length}`} />
           <StatCard label="Total Leads" value={String(leads.length)} icon={<Users size={20} />} iconColor="#06B6D4" trend={leads.length > 0} trendValue={`+${leads.length}`} />
@@ -90,6 +119,7 @@ export default function PortalDashboard() {
           <StatCard label="Hot Leads" value={String(hotLeads.length)} icon={<CheckCircle size={20} />} iconColor="#F59E0B" trend={hotLeads.length > 0} trendValue={`${hotLeads.length}`} />
         </div>
 
+        {/* Campaigns + Account Manager Row */}
         <div className="grid lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-4">
@@ -163,6 +193,214 @@ export default function PortalDashboard() {
           </div>
         </div>
 
+        {/* 6 New Widgets — Row 1 */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+          {/* Widget 1 — Content Calendar */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <CalendarDays size={16} className="text-[#4C1D95]" />
+                <span className="font-semibold text-slate-900 text-sm">Content Calendar</span>
+              </div>
+              <Link href="/portal/calendar" className="text-xs text-[#4C1D95] hover:underline">View all</Link>
+            </div>
+            <div className="space-y-2">
+              {calendarPosts.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">No upcoming posts</p>
+              ) : (
+                calendarPosts.slice(0, 4).map((post: any, i: number) => (
+                  <div key={post.id || i} className="flex items-center gap-3 p-2.5 rounded-xl bg-[#F9FAFB]">
+                    <div className="w-8 h-8 rounded-lg bg-[#4C1D95]/10 flex items-center justify-center flex-shrink-0">
+                      <CalendarDays size={14} className="text-[#4C1D95]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate">{post.title || post.caption || 'Untitled'}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString() : ''}
+                        {post.platform ? ` · ${post.platform}` : ''}
+                      </p>
+                    </div>
+                    <StatusBadge status={post.status || 'Draft'} />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Widget 2 — Pending Approvals */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-[#EC4899]" />
+                <span className="font-semibold text-slate-900 text-sm">Pending Approvals</span>
+                {pendingApprovals.length > 0 && (
+                  <span className="text-[10px] bg-[#EC4899] text-white px-1.5 py-0.5 rounded-full font-medium">{pendingApprovals.length}</span>
+                )}
+              </div>
+              <Link href="/portal/creatives" className="text-xs text-[#4C1D95] hover:underline">Review</Link>
+            </div>
+            <div className="space-y-2">
+              {pendingApprovals.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">No pending approvals</p>
+              ) : (
+                pendingApprovals.slice(0, 4).map((project: any, i: number) => (
+                  <div key={project.id || i} className="flex items-center gap-3 p-2.5 rounded-xl bg-[#F9FAFB]">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <FileText size={14} className="text-amber-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate">{project.name || 'Untitled'}</p>
+                      <p className="text-[10px] text-slate-400">{project.campaign_name || project.description?.slice(0, 40) || ''}</p>
+                    </div>
+                    <span className="text-[10px] bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">Pending</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Widget 3 — Creative Files */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Image size={16} className="text-[#06B6D4]" />
+                <span className="font-semibold text-slate-900 text-sm">Creative Files</span>
+              </div>
+              <Link href="/portal/creatives" className="text-xs text-[#4C1D95] hover:underline">View all</Link>
+            </div>
+            <div className="space-y-2">
+              {approvedCreatives.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">No approved creatives</p>
+              ) : (
+                approvedCreatives.slice(0, 4).map((project: any, i: number) => (
+                  <div key={project.id || i} className="flex items-center gap-3 p-2.5 rounded-xl bg-[#F9FAFB]">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Image size={14} className="text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate">{project.name || 'Untitled'}</p>
+                      <p className="text-[10px] text-slate-400">{project.campaign_name || project.description?.slice(0, 40) || ''}</p>
+                    </div>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-700 font-medium px-2 py-0.5 rounded-full">Approved</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 6 New Widgets — Row 2 */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+          {/* Widget 4 — SEO Reports */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Search size={16} className="text-[#10B981]" />
+                <span className="font-semibold text-slate-900 text-sm">SEO Reports</span>
+              </div>
+              <Link href="/portal/seo" className="text-xs text-[#4C1D95] hover:underline">View all</Link>
+            </div>
+            <div className="space-y-2">
+              {seoProjects.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">No SEO projects</p>
+              ) : (
+                seoProjects.slice(0, 4).map((project: any, i: number) => (
+                  <div key={project.id || i} className="flex items-center gap-3 p-2.5 rounded-xl bg-[#F9FAFB]">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Search size={14} className="text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate">{project.name || project.title || 'SEO Project'}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {project.health_score != null ? `Health: ${project.health_score}%` : project.status || ''}
+                      </p>
+                    </div>
+                    <StatusBadge status={project.status || 'Active'} />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Widget 5 — Website Tasks */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <ClipboardList size={16} className="text-[#F59E0B]" />
+                <span className="font-semibold text-slate-900 text-sm">Website Tasks</span>
+                {websiteTasks.length > 0 && (
+                  <span className="text-[10px] bg-[#F59E0B] text-white px-1.5 py-0.5 rounded-full font-medium">{websiteTasks.length}</span>
+                )}
+              </div>
+              <Link href="/portal/projects" className="text-xs text-[#4C1D95] hover:underline">View all</Link>
+            </div>
+            <div className="space-y-2">
+              {websiteTasks.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">No tasks assigned</p>
+              ) : (
+                websiteTasks.slice(0, 4).map((task: any, i: number) => (
+                  <div key={task.id || i} className="flex items-center gap-3 p-2.5 rounded-xl bg-[#F9FAFB]">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <ClipboardList size={14} className="text-amber-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate">{task.title || task.name || 'Task'}</p>
+                      <p className="text-[10px] text-slate-400">
+                        {task.due_date ? `Due: ${new Date(task.due_date).toLocaleDateString()}` : ''}
+                        {task.project_name ? ` · ${task.project_name}` : ''}
+                      </p>
+                    </div>
+                    <StatusBadge status={task.status || 'Todo'} />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Widget 6 — Invoice Summary */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Receipt size={16} className="text-[#4C1D95]" />
+                <span className="font-semibold text-slate-900 text-sm">Invoices</span>
+              </div>
+              <Link href="/portal/invoices" className="text-xs text-[#4C1D95] hover:underline">View all</Link>
+            </div>
+            {invoices.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4">No invoices</p>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-[#F9FAFB] rounded-xl p-3 text-center">
+                    <p className="text-lg font-bold text-slate-900" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{(totalOutstanding / 1000).toFixed(1)}K</p>
+                    <p className="text-[10px] text-slate-400">Outstanding</p>
+                  </div>
+                  <div className="bg-[#F9FAFB] rounded-xl p-3 text-center">
+                    <p className="text-lg font-bold text-slate-900" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{invoices.filter((inv: any) => inv.status === 'paid').length}</p>
+                    <p className="text-[10px] text-slate-400">Paid</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {invoices.slice(0, 3).map((inv: any, i: number) => (
+                    <div key={inv.id || i} className="flex items-center justify-between text-xs">
+                      <span className="text-slate-600 truncate">{inv.invoice_number || `INV-${String(i + 1).padStart(3, '0')}`}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-slate-900" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                          ₹{(inv.total_amount || inv.amount || 0).toLocaleString()}
+                        </span>
+                        <StatusBadge status={inv.status || 'pending'} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Hot Leads Table */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200">
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-semibold text-slate-900">Hot Leads</h3>

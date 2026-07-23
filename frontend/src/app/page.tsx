@@ -5,6 +5,7 @@ import { HeroSection } from '@/components/marketing/HeroSection';
 import { StatsSection } from '@/components/marketing/StatsSection';
 import { ServicesSection } from '@/components/marketing/ServicesSection';
 import { ProcessSection } from '@/components/marketing/ProcessSection';
+import { ChartsSection } from '@/components/marketing/ChartsSection';
 import { CaseStudiesSection } from '@/components/marketing/CaseStudiesSection';
 import { PortfolioSection } from '@/components/marketing/PortfolioSection';
 import { TeamSection } from '@/components/marketing/TeamSection';
@@ -27,6 +28,7 @@ export default function HomePage() {
       <ServicesSection />
       <IndustriesSection />
       <ProcessSection />
+      <ChartsSection />
       <CaseStudiesSection />
       <PortfolioSection />
       <TeamSection />

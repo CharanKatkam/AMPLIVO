@@ -6,7 +6,7 @@ export const teamMembers: TeamMember[] = [
     name: 'Shreya Agarwal',
     role: 'Founder & CEO',
     department: 'Leadership',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
     linkedin: '#',
   },
   {
@@ -22,7 +22,7 @@ export const teamMembers: TeamMember[] = [
     name: 'Vikram Malhotra',
     role: 'Head of Performance Marketing',
     department: 'Performance',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop',
     linkedin: '#',
   },
   {
@@ -30,7 +30,7 @@ export const teamMembers: TeamMember[] = [
     name: 'Priya Subramaniam',
     role: 'Head of Client Success',
     department: 'Client Success',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=400&h=400&fit=crop',
     linkedin: '#',
   },
   {
@@ -38,7 +38,7 @@ export const teamMembers: TeamMember[] = [
     name: 'Aditya Kumar',
     role: 'Creative Director',
     department: 'Creative',
-    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
     linkedin: '#',
   },
   {
@@ -46,7 +46,7 @@ export const teamMembers: TeamMember[] = [
     name: 'Divya Krishnamurti',
     role: 'SEO & Content Lead',
     department: 'SEO',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop',
     linkedin: '#',
   },
   {
@@ -54,7 +54,7 @@ export const teamMembers: TeamMember[] = [
     name: 'Arjun Rathore',
     role: 'Social Media Lead',
     department: 'Social Media',
-    image: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
     linkedin: '#',
   },
   {
@@ -62,7 +62,7 @@ export const teamMembers: TeamMember[] = [
     name: 'Riya Anand',
     role: 'Influencer Marketing Manager',
     department: 'Influencer',
-    image: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=400&h=400&fit=crop',
+    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop',
     linkedin: '#',
   },
 ];

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { ArrowRight, Star, TrendingUp, Target, BarChart2, Zap } from 'lucide-react';
 import { useCountUp } from '@/hooks/useCountUp';
+import { VideoBackground } from '@/components/ui/VideoBackground';
 
 const stats = [
   { label: 'Organic Traffic Growth', prefix: '+', value: 284, suffix: '%', icon: TrendingUp, color: '#10B981' },
@@ -40,8 +41,14 @@ function AnimatedStat({ stat }: { stat: typeof stats[0] }) {
 export function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden pt-20">
-      {/* Gradient Background */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#1a0540] via-[#4C1D95] to-[#06B6D4]">
+      <VideoBackground
+        src="/videos/hero-bg.mp4"
+        poster="/images/hero/hero-poster.jpeg"
+        className="z-0"
+      />
+
+      {/* Gradient Overlay — semi-transparent so video shows through */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#1a0540]/80 via-[#4C1D95]/60 to-[#06B6D4]/40">
         <div className="absolute inset-0 opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       </div>
 
@@ -54,25 +61,25 @@ export function HeroSection() {
         }}
       />
 
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 py-24 lg:py-32 w-full">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+      <div className="relative z-20 max-w-7xl mx-auto px-6 py-12 lg:py-16 w-full">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left — Copy */}
           <div>
             {/* Trust badge */}
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-full mb-8">
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-full mb-5">
               <Star size={11} className="text-amber-400 fill-amber-400" />
               Trusted by 250+ brands across 12 countries
             </div>
 
             <h1
-              className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white leading-[1.12] mb-6 drop-shadow-lg"
+              className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white leading-[1.12] mb-4 drop-shadow-lg"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
               We Build Digital Campaigns That{' '}
               <span className="text-[#06B6D4] drop-shadow-md">Convert Attention</span> into Growth
             </h1>
 
-            <p className="text-lg text-white/90 leading-relaxed mb-10 max-w-lg drop-shadow">
+            <p className="text-lg text-white/90 leading-relaxed mb-6 max-w-lg drop-shadow">
               Strategy, performance marketing, content, technology, and analytics combined into measurable customer-acquisition systems for ambitious brands.
             </p>
 
@@ -93,7 +100,7 @@ export function HeroSection() {
             </div>
 
             {/* Tagline badges */}
-            <div className="flex flex-wrap gap-2 mt-8">
+            <div className="flex flex-wrap gap-2 mt-5">
               {['500+ Campaigns', '₹50Cr+ Ad Spend', '94% Retention', '85+ Experts'].map((tag) => (
                 <span
                   key={tag}
@@ -106,7 +113,7 @@ export function HeroSection() {
           </div>
 
           {/* Right — Animated Stats Grid */}
-          <div className="hidden lg:grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {stats.map((stat, i) => (
               <AnimatedStat key={i} stat={stat} />
             ))}

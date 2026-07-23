@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown, ArrowRight } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 
@@ -39,6 +40,7 @@ export function Navbar({ alwaysSolid = false }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -47,6 +49,11 @@ export function Navbar({ alwaysSolid = false }: NavbarProps) {
   }, []);
 
   const isSolid = alwaysSolid || scrolled;
+
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname.startsWith(href + '/');
+  };
 
   return (
     <header
@@ -62,38 +69,57 @@ export function Navbar({ alwaysSolid = false }: NavbarProps) {
 
         {/* Desktop Nav */}
         <nav className="hidden xl:flex items-center gap-2">
-          {navLinks.map((link) => (
-            <div
-              key={link.label}
-              className="relative"
-              onMouseEnter={() => link.children && setActiveDropdown(link.label)}
-              onMouseLeave={() => setActiveDropdown(null)}
-            >
-              <Link
-                href={link.href}
-                className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isSolid ? 'text-slate-600 hover:text-[#4C1D95] hover:bg-[#4C1D95]/5' : 'text-white/85 hover:text-white hover:bg-white/10'
-                  }`}
+          {navLinks.map((link) => {
+            const linkActive = isActive(link.href);
+            const hasActiveChild = link.children?.some((c) => isActive(c.href));
+            return (
+              <div
+                key={link.label}
+                className="relative"
+                onMouseEnter={() => link.children && setActiveDropdown(link.label)}
+                onMouseLeave={() => setActiveDropdown(null)}
               >
-                {link.label}
-                {link.children && <ChevronDown size={14} className={`transition-transform ${activeDropdown === link.label ? 'rotate-180' : ''}`} />}
-              </Link>
+                <Link
+                  href={link.href}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isSolid
+                      ? linkActive || hasActiveChild
+                        ? 'text-[#4C1D95] font-bold bg-[#4C1D95]/5'
+                        : 'text-slate-600 hover:text-[#4C1D95] hover:bg-[#4C1D95]/5'
+                      : linkActive || hasActiveChild
+                        ? 'text-white font-bold bg-white/10'
+                        : 'text-white/85 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {link.label}
+                  {link.children && <ChevronDown size={14} className={`transition-transform ${activeDropdown === link.label ? 'rotate-180' : ''}`} />}
+                </Link>
 
-              {/* Dropdown */}
-              {link.children && activeDropdown === link.label && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-2xl border border-slate-100 shadow-xl shadow-black/10 p-2 z-50">
-                  {link.children.map((child) => (
-                    <Link
-                      key={child.label}
-                      href={child.href}
-                      className="flex items-center px-4 py-2.5 rounded-xl text-sm text-slate-600 hover:text-[#4C1D95] hover:bg-[#4C1D95]/5 transition-colors"
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                {(linkActive || hasActiveChild) && (
+                  <span className={`absolute bottom-0 left-3 right-3 h-0.5 rounded-full ${isSolid ? 'bg-[#4C1D95]' : 'bg-white'}`} />
+                )}
+
+                {/* Dropdown */}
+                {link.children && activeDropdown === link.label && (
+                  <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-2xl border border-slate-100 shadow-xl shadow-black/10 p-2 z-50">
+                    {link.children.map((child) => (
+                      <Link
+                        key={child.label}
+                        href={child.href}
+                        className={`flex items-center px-4 py-2.5 rounded-xl text-sm transition-colors ${
+                          isActive(child.href)
+                            ? 'text-[#4C1D95] font-bold bg-[#4C1D95]/5'
+                            : 'text-slate-600 hover:text-[#4C1D95] hover:bg-[#4C1D95]/5'
+                        }`}
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         {/* Right CTAs */}
@@ -122,31 +148,43 @@ export function Navbar({ alwaysSolid = false }: NavbarProps) {
       {mobileOpen && (
         <div className="xl:hidden bg-white border-t border-slate-100 shadow-lg max-h-[80vh] overflow-y-auto">
           <div className="px-4 py-4 space-y-1">
-            {navLinks.map((link) => (
-              <div key={link.label}>
-                <Link
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-medium text-slate-700 hover:text-[#4C1D95] hover:bg-[#4C1D95]/5 rounded-xl transition-colors"
-                >
-                  {link.label}
-                </Link>
-                {link.children && (
-                  <div className="ml-4 space-y-0.5">
-                    {link.children.map((child) => (
-                      <Link
-                        key={child.label}
-                        href={child.href}
-                        onClick={() => setMobileOpen(false)}
-                        className="block px-4 py-2 text-xs text-slate-500 hover:text-[#4C1D95] rounded-lg transition-colors"
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+            {navLinks.map((link) => {
+              const linkActive = isActive(link.href);
+              const hasActiveChild = link.children?.some((c) => isActive(c.href));
+              return (
+                <div key={link.label}>
+                  <Link
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`block px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                      linkActive || hasActiveChild
+                        ? 'text-[#4C1D95] font-bold bg-[#4C1D95]/5'
+                        : 'text-slate-700 hover:text-[#4C1D95] hover:bg-[#4C1D95]/5'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                  {link.children && (
+                    <div className="ml-4 space-y-0.5">
+                      {link.children.map((child) => (
+                        <Link
+                          key={child.label}
+                          href={child.href}
+                          onClick={() => setMobileOpen(false)}
+                          className={`block px-4 py-2 text-xs rounded-lg transition-colors ${
+                            isActive(child.href)
+                              ? 'text-[#4C1D95] font-bold bg-[#4C1D95]/5'
+                              : 'text-slate-500 hover:text-[#4C1D95]'
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <div className="pt-3 border-t border-slate-100 mt-2">
               <Link href="/login" onClick={() => setMobileOpen(false)} className="block w-full text-center px-4 py-3 text-sm font-medium border border-slate-200 text-slate-700 rounded-xl hover:border-[#4C1D95] hover:text-[#4C1D95]">
                 Client Login
