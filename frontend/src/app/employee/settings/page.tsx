@@ -1,13 +1,46 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useCrmStore } from '@/store/crmStore';
 import { EmployeeHeader } from '@/components/employee/EmployeeHeader';
-import { Settings, User, Bell, Mail, Monitor, Trash2, ShieldAlert } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Settings, User, Bell, Mail, Monitor, Trash2, ShieldAlert, Save } from 'lucide-react';
 
 export default function EmployeeSettings() {
-  const router = useRouter();
-  const { activeEmployeeId, setActiveEmployee, employees } = useCrmStore();
+  const { activeEmployeeId, employees, updateEmployee, theme, setTheme } = useCrmStore();
+  const activeEmployee = employees.find(e => e.id === activeEmployeeId);
+
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    skills: '',
+  });
+  
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (activeEmployee) {
+      setFormData({
+        firstName: activeEmployee.firstName,
+        lastName: activeEmployee.lastName,
+        email: activeEmployee.email,
+        skills: activeEmployee.skills.join(', '),
+      });
+    }
+  }, [activeEmployee]);
+
+  const handleSaveProfile = () => {
+    if (activeEmployeeId) {
+      updateEmployee(activeEmployeeId, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
+      });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+    }
+  };
 
   const handleReset = () => {
     // Just a UI demo for resetting store/persisted data
@@ -21,29 +54,62 @@ export default function EmployeeSettings() {
       
       <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
         
-        {/* Demo Switcher */}
+        {/* Edit Profile Form */}
         <div className="bg-white rounded-xl border border-indigo-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-indigo-100 bg-indigo-50/50 flex items-center gap-3">
             <User className="text-indigo-600" size={20} />
-            <h3 className="font-bold text-indigo-900">Demo Employee Switcher</h3>
+            <h3 className="font-bold text-indigo-900">Edit Profile</h3>
           </div>
           <div className="p-6">
-            <p className="text-sm text-slate-500 mb-4">
-              Select which employee to simulate. This updates the active user across the Employee Portal.
-            </p>
-            <select
-              value={activeEmployeeId || ''}
-              onChange={(e) => {
-                setActiveEmployee(e.target.value);
-                router.refresh();
-              }}
-              className="w-full md:w-1/2 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-            >
-              <option value="">-- Select Employee --</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
-              ))}
-            </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
+                <input 
+                  type="text" 
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
+                <input 
+                  type="text" 
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" 
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" 
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Skills (comma separated)</label>
+                <input 
+                  type="text" 
+                  value={formData.skills}
+                  onChange={(e) => setFormData({...formData, skills: e.target.value})}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" 
+                  placeholder="React, Node.js, Design"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button 
+                onClick={handleSaveProfile}
+                className={`px-4 py-2 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors ${
+                  isSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
+              >
+                <Save size={16} /> {isSaved ? 'Saved!' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -81,20 +147,7 @@ export default function EmployeeSettings() {
               </label>
             </div>
 
-            <div className="p-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Monitor className="text-slate-400" size={20} />
-                <div>
-                  <div className="font-medium text-slate-900 text-sm">Theme Preference</div>
-                  <div className="text-xs text-slate-500">System, Light, or Dark mode.</div>
-                </div>
-              </div>
-              <select className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-slate-50 text-slate-700 outline-none">
-                <option>System Default</option>
-                <option>Light Mode</option>
-                <option>Dark Mode</option>
-              </select>
-            </div>
+
           </div>
         </div>
 

@@ -9,6 +9,7 @@ import { leadService } from '@/services/leadService';
 import { clientService, projectService, taskService, notificationService, financeService } from '@/services/crmService';
 import { userManagementService } from '@/services/crmService';
 import { SalesLeadStatus } from '@/types';
+import { MOCK_LEADS, MOCK_CLIENTS, MOCK_PROJECTS, MOCK_TASKS, MOCK_EMPLOYEES } from './mockCrmData';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AMPLIVO CRM Store
@@ -38,6 +39,7 @@ interface CrmState {
   selectedClientId: string | null;
   selectedProjectId: string | null;
   activeEmployeeId: string | null;
+  theme: 'light' | 'dark' | 'system';
 
   // ─── API Actions ─────────────────────────────────────────────────────────
   fetchAllData: () => Promise<void>;
@@ -81,6 +83,7 @@ interface CrmState {
 
   // ─── EMPLOYEE ACTIONS ──────────────────────────────────────────────────────
   setActiveEmployee: (id: string | null) => void;
+  updateEmployee: (id: string, updates: Partial<CrmEmployee>) => void;
   // BACKEND: PATCH /api/crm/employees/:id (workload + projects)
   updateEmployeeWorkload: (employeeId: string, projectId: string, add: boolean) => void;
 
@@ -130,6 +133,9 @@ interface CrmState {
   reviewSubmission: (submissionId: string) => void;
   requestSubmissionChanges: (submissionId: string, feedback: string) => void;
   approveSubmission: (submissionId: string) => void;
+
+  // ─── THEME ACTIONS ────────────────────────────────────────────────────────
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
 }
 
 // ─── CREDENTIAL GENERATOR ────────────────────────────────────────────────────
@@ -165,14 +171,14 @@ export const useCrmStore = create<CrmState>()(
   persist(
     (set, get) => ({
       // ─── Initial Data (empty — populated from API) ────────────────────────
-      leads: [],
-      clients: [],
-      projects: [],
-      employees: [],
+      leads: MOCK_LEADS,
+      clients: MOCK_CLIENTS,
+      projects: MOCK_PROJECTS,
+      employees: MOCK_EMPLOYEES,
       invoices: [],
       payments: [],
       notifications: [],
-      tasks: [],
+      tasks: MOCK_TASKS,
       submissions: [],
       activityLogs: [],
       isLoading: false,
@@ -181,6 +187,7 @@ export const useCrmStore = create<CrmState>()(
       selectedClientId: null,
       selectedProjectId: null,
       activeEmployeeId: null,
+      theme: 'system',
 
       // ─── API FETCH ACTIONS ────────────────────────────────────────────────
       fetchAllData: async () => {
@@ -266,7 +273,7 @@ export const useCrmStore = create<CrmState>()(
         try {
           const res = await userManagementService.getUsers({ page_size: 100 });
           const users = res.items || res || [];
-          const crmEmployees: CrmEmployee[] = users.map((u: any) => ({
+          const crmEmployees: CrmEmployee[] = users.map((u: Record<string, any>) => ({
             id: u.id || '',
             firstName: u.first_name || u.firstName || '',
             lastName: u.last_name || u.lastName || '',
@@ -571,6 +578,9 @@ export const useCrmStore = create<CrmState>()(
 
       // ─── EMPLOYEE ACTIONS ─────────────────────────────────────────────────
       setActiveEmployee: (id) => set({ activeEmployeeId: id }),
+      updateEmployee: (id, updates) => set(s => ({
+        employees: s.employees.map(emp => emp.id === id ? { ...emp, ...updates } : emp),
+      })),
       updateEmployeeWorkload: (employeeId, projectId, add) => {
         // Optimistic local update
         set(s => ({
@@ -677,6 +687,9 @@ export const useCrmStore = create<CrmState>()(
       addNotification: (n) => set(s => ({
         notifications: [{ ...n, id: `NOTIF-${++notifCounter}` }, ...s.notifications],
       })),
+
+      // ─── THEME ACTIONS ────────────────────────────────────────────────────
+      setTheme: (theme) => set({ theme }),
 
       // ─── SELECTORS ────────────────────────────────────────────────────────
       getLeadById: (id) => get().leads.find(l => l.id === id),

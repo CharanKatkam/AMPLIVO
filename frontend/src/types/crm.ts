@@ -143,19 +143,23 @@ export type EmployeeStatus = 'Available' | 'Busy' | 'On Leave' | 'Remote';
 
 export interface CrmEmployee {
   id: string;
-  name: string;
-  role: string;
-  department: EmployeeDepartment;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  designation?: string;
+  department: EmployeeDepartment | string;
   email: string;
-  phone: string;
+  phone?: string;
   skills: string[];
   currentProjectIds: string[];
-  availability: EmployeeStatus;
+  availability: EmployeeStatus | string;
   workloadPercent: number;
   joinDate: string;
-  photoInitials: string;
-  avatarColor: string;
-  serviceCategories: string[];
+  photoInitials?: string;
+  avatarColor?: string;
+  serviceCategories?: string[];
+  avatar?: string;
 }
 
 // ─── CRM INVOICE ──────────────────────────────────────────────────────────────

@@ -25,7 +25,7 @@ export interface TokenResponse {
   token_type: string;
 }
 
-const VALID_ROLES = ['admin', 'client', 'sales', 'hr', 'employee'] as const;
+const VALID_ROLES = ['admin', 'client', 'sales', 'hr', 'employee', 'crm'] as const;
 type ValidRole = (typeof VALID_ROLES)[number];
 
 // Map backend role_name (may be capitalized) to frontend lowercase role
@@ -56,6 +56,37 @@ const mapUser = (backendUser: {
 
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+    // --- Local login bypass for Employee/CRM demo ---
+    if (credentials.identifier.includes('@amplivo.employee') || credentials.identifier === 'crm@amplivo.in') {
+      const isCrm = credentials.identifier === 'crm@amplivo.in';
+      const role = isCrm ? 'crm' : 'employee';
+      
+      let name = isCrm ? 'CRM Executive' : 'Demo Employee';
+      if (!isCrm && credentials.identifier.includes('@amplivo.employee')) {
+        const prefix = credentials.identifier.split('@')[0];
+        name = prefix
+          .split('.')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+          
+        if (name === 'Ui Ux Designer') name = 'UI/UX Designer';
+      }
+      return {
+        user: {
+          id: 'demo-user-id',
+          email: credentials.identifier,
+          username: credentials.identifier.split('@')[0],
+          name: name,
+          role: role,
+          is_active: true,
+          is_verified: true,
+        },
+        access_token: 'mock-access-token',
+        refresh_token: 'mock-refresh-token',
+      };
+    }
+    // ------------------------------------------------
+
     const { data: tokens } = await api.post<TokenResponse>('/auth/login', {
       identifier: credentials.identifier,
       password: credentials.password,

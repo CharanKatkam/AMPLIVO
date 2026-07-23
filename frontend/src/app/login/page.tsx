@@ -53,6 +53,8 @@ export default function LoginPage() {
         router.push('/hr');
       } else if (response.user.role === 'employee') {
         router.push('/employee');
+      } else if (response.user.role === 'crm') {
+        router.push('/crm');
       } else {
         router.push('/portal');
       }
@@ -74,14 +76,15 @@ export default function LoginPage() {
     }
   };
 
-  const setDemoCredentials = (role: 'client' | 'admin' | 'sales' | 'hr' | 'employee') => {
-    setValue('email', `${role}@amplivo.in`);
+  const setDemoCredentials = (role: 'client' | 'admin' | 'sales' | 'hr' | 'employee' | 'crm') => {
+    setValue('email', role === 'crm' ? 'crm@amplivo.in' : `${role}@amplivo.in`);
     const passwords: Record<string, string> = {
       admin: 'Admin@123',
       client: 'Client@123',
       sales: 'Sales@123',
       hr: 'Hr@12345',
       employee: 'Employee@123',
+      crm: 'Crm@123',
     };
     setValue('password', passwords[role]);
   };
@@ -105,8 +108,8 @@ export default function LoginPage() {
           <p className="text-slate-500 mb-8">Sign in to your client portal account</p>
 
           {/* Demo credentials banner */}
-          <div className="bg-[#4C1D95]/5 border border-[#4C1D95]/15 rounded-xl p-4 mb-6">
-            <p className="text-xs text-[#4C1D95] font-semibold mb-2">Demo Credentials (Click to fill)</p>
+          <div className="bg-[#4C1D95]/5 border border-[#4C1D95]/15 rounded-xl p-4 mb-6 space-y-3">
+            <p className="text-xs text-[#4C1D95] font-semibold">Demo Credentials (Click to fill)</p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <button 
                 type="button" 
@@ -138,11 +141,39 @@ export default function LoginPage() {
               </button>
               <button 
                 type="button" 
-                onClick={() => setDemoCredentials('employee')}
+                onClick={() => setDemoCredentials('crm')}
                 className="py-2 px-3 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors"
               >
-                Employee Demo
+                CRM Demo
               </button>
+            </div>
+            <div className="pt-2 border-t border-[#4C1D95]/10">
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setValue('email', `${e.target.value}@amplivo.employee`);
+                    setValue('password', 'Employee@123');
+                  }
+                }}
+                className="w-full py-2 px-3 text-xs font-medium border border-slate-200 rounded-lg bg-white hover:border-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+              >
+                <option value="">Select an Employee Role Demo...</option>
+                <option value="digital.marketing.strategist">Digital Marketing Strategist</option>
+                <option value="seo.specialist">SEO Specialist</option>
+                <option value="performance.marketer">Performance Marketer</option>
+                <option value="social.media.manager">Social Media Manager</option>
+                <option value="content.writer">Content Writer</option>
+                <option value="graphic.designer">Graphic Designer</option>
+                <option value="video.editor">Video Editor</option>
+                <option value="ui.ux.designer">UI/UX Designer</option>
+                <option value="web.developer">Web Developer</option>
+                <option value="data.analyst">Data Analyst</option>
+                <option value="campaign.manager">Campaign Manager</option>
+                <option value="account.manager">Account Manager</option>
+                <option value="influencer.manager">Influencer Manager</option>
+                <option value="sales.executive">Sales Executive</option>
+                <option value="client.success.manager">Client Success Manager</option>
+              </select>
             </div>
           </div>
 

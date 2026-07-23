@@ -38,10 +38,10 @@ export function EmployeeSidebar() {
       {/* User Info */}
       <div className="px-5 py-4 border-b border-[#1F2937]">
         <div className="flex items-center gap-3">
-          <Avatar name={employee?.name || 'Employee'} size="sm" />
+          <Avatar name={employee ? `${employee.firstName} ${employee.lastName}` : 'Employee'} size="sm" />
           <div className="min-w-0">
-            <div className="text-white text-sm font-semibold truncate">{employee?.name || 'Employee'}</div>
-            <div className="text-[#4B5563] text-xs truncate">{employee?.role || 'Staff'}</div>
+            <div className="text-white text-sm font-semibold truncate">{employee ? `${employee.firstName} ${employee.lastName}` : 'Employee'}</div>
+            <div className="text-[#4B5563] text-xs truncate">{employee?.designation || 'Staff'}</div>
           </div>
         </div>
       </div>

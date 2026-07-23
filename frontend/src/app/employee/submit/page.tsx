@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useRef } from 'react';
 import { useCrmStore } from '@/store/crmStore';
 import { EmployeeHeader } from '@/components/employee/EmployeeHeader';
 import { UploadCloud, FileText, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
@@ -29,7 +29,16 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
   const [url, setUrl] = useState('');
   const [employeeComment, setEmployeeComment] = useState('');
   
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
   const [submitted, setSubmitted] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -176,10 +185,28 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">File Upload</label>
-            <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-slate-500 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors">
-              <UploadCloud size={24} className="mb-2" />
-              <div className="text-sm">Click to upload or drag and drop</div>
-              <div className="text-xs mt-1">PDF, DOCX, ZIP up to 50MB (Mock UI)</div>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-slate-500 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors"
+            >
+              <UploadCloud size={24} className="mb-2 text-indigo-500" />
+              {selectedFile ? (
+                <>
+                  <div className="text-sm font-medium text-slate-700">{selectedFile.name}</div>
+                  <div className="text-xs mt-1">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-sm">Click to upload or drag and drop</div>
+                  <div className="text-xs mt-1">PDF, DOCX, ZIP up to 50MB</div>
+                </>
+              )}
             </div>
           </div>
 

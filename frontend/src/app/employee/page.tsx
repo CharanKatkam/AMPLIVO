@@ -29,7 +29,7 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <EmployeeHeader title="Dashboard" subtitle={`Welcome back, ${employee.name}`} />
+      <EmployeeHeader title="Dashboard" subtitle={`Welcome back, ${employee.firstName}`} />
       
       <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
         

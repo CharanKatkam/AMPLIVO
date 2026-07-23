@@ -28,13 +28,14 @@ export function truncate(text: string, maxLength: number): string {
 /**
  * Get initials from a name (e.g. "Rajesh Kumar" → "RK")
  */
-export function getInitials(name: string): string {
+export function getInitials(name: string | undefined | null): string {
+  if (!name) return '';
   return name
     .split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
-    .slice(0, 2);
+    .substring(0, 2);
 }
 
 /**
