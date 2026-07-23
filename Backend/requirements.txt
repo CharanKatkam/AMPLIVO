@@ -1,0 +1,18 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+sqlalchemy==2.0.35
+greenlet==3.1.1
+asyncpg==0.30.0
+alembic==1.13.3
+pydantic==2.9.2
+pydantic-settings==2.5.2
+email-validator==2.2.0
+pyjwt==2.9.0
+python-multipart==0.0.20
+
+# Pinned together: bcrypt>=4.1 removed the `__about__` attribute passlib<=1.7.4
+# probes for, which raises at import/hash time. This pair is the known-good combo.
+passlib==1.7.4
+bcrypt==4.0.1
+
+python-dotenv==1.0.1

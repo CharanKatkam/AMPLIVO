@@ -1,0 +1,68 @@
+import { TeamMember } from '@/types';
+
+export const teamMembers: TeamMember[] = [
+  {
+    id: '1',
+    name: 'Shreya Agarwal',
+    role: 'Founder & CEO',
+    department: 'Leadership',
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop',
+    linkedin: '#',
+  },
+  {
+    id: '2',
+    name: 'Rahul Verma',
+    role: 'Co-Founder & CTO',
+    department: 'Technology',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+    linkedin: '#',
+  },
+  {
+    id: '3',
+    name: 'Vikram Malhotra',
+    role: 'Head of Performance Marketing',
+    department: 'Performance',
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
+    linkedin: '#',
+  },
+  {
+    id: '4',
+    name: 'Priya Subramaniam',
+    role: 'Head of Client Success',
+    department: 'Client Success',
+    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
+    linkedin: '#',
+  },
+  {
+    id: '5',
+    name: 'Aditya Kumar',
+    role: 'Creative Director',
+    department: 'Creative',
+    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop',
+    linkedin: '#',
+  },
+  {
+    id: '6',
+    name: 'Divya Krishnamurti',
+    role: 'SEO & Content Lead',
+    department: 'SEO',
+    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop',
+    linkedin: '#',
+  },
+  {
+    id: '7',
+    name: 'Arjun Rathore',
+    role: 'Social Media Lead',
+    department: 'Social Media',
+    image: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&h=400&fit=crop',
+    linkedin: '#',
+  },
+  {
+    id: '8',
+    name: 'Riya Anand',
+    role: 'Influencer Marketing Manager',
+    department: 'Influencer',
+    image: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=400&h=400&fit=crop',
+    linkedin: '#',
+  },
+];

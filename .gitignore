@@ -1,0 +1,39 @@
+# ── Frontend (Next.js) ──────────────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.vercel/
+frontend/coverage/
+frontend/*.tsbuildinfo
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+frontend/.env.local
+frontend/.env*.local
+
+# ── Backend (Python / FastAPI) ───────────────────────────────────
+Backend/__pycache__/
+Backend/**/__pycache__/
+Backend/**/*.pyc
+Backend/.venv/
+Backend/venv/
+Backend/env/
+Backend/*.log
+Backend/logs/
+Backend/*.db
+Backend/*.sqlite3
+Backend/tmp_token.txt
+Backend/test_results.txt
+Backend/.pytest_cache/
+Backend/.coverage
+Backend/htmlcov/
+Backend/.env
+# keep the example so others can bootstrap
+!Backend/.env.example
+
+# ── OS ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
