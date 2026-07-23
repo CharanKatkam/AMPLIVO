@@ -8,11 +8,7 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-<<<<<<< HEAD
-        value: postgresql+asyncpg://postgres.fhxkiprlcdwbgtaxlffk:Shivanivpd123@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
-=======
-        value: postgresql+asyncpg://postgres:Shivanivpd123@db.fhxkiprlcdwbgtaxlffk.supabase.co:5432/postgres
->>>>>>> 3e0c76e44f0933aa7a43392fb34b9e32247f9906
+        value: postgresql+asyncpg://postgres.fhxkiprlcdwbgtaxlffk:Shivanivpd123@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?prepared_statement_cache_size=0
       - key: DB_SSL_MODE
         value: require
       - key: DB_POOL_SIZE
