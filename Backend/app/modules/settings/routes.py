@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
+from app.dependencies.rbac import require_roles
 from app.models.user import User
 from app.modules.settings.dependencies import *
 from app.modules.settings.schemas import *
@@ -28,7 +29,7 @@ async def list_system_settings(
     return PaginatedResponse[SystemSettingRead].create(items=[SystemSettingRead.model_validate(x) for x in items], total=total, page=params.page, page_size=params.page_size)
 
 @router.post("/system", response_model=SystemSettingRead, status_code=status.HTTP_201_CREATED, summary="Create system setting")
-async def create_system_setting(payload: SystemSettingCreate, db: AsyncSession = Depends(get_db), svc: SystemSettingService = Depends(get_system_setting_service), current_user: User = Depends(get_current_user)):
+async def create_system_setting(payload: SystemSettingCreate, db: AsyncSession = Depends(get_db), svc: SystemSettingService = Depends(get_system_setting_service), current_user: User = Depends(get_current_user), _admin: str = Depends(require_roles("admin"))):
     s = await svc.create_setting(payload.model_dump(), updated_by=current_user.id); await db.commit()
     return SystemSettingRead.model_validate(s)
 
@@ -41,12 +42,12 @@ async def get_system_setting_by_key(key: str, svc: SystemSettingService = Depend
     return SystemSettingRead.model_validate(await svc.get_by_key(key))
 
 @router.put("/system/{setting_id}", response_model=SystemSettingRead, summary="Update system setting")
-async def update_system_setting(setting_id: uuid.UUID, payload: SystemSettingUpdate, db: AsyncSession = Depends(get_db), svc: SystemSettingService = Depends(get_system_setting_service), current_user: User = Depends(get_current_user)):
+async def update_system_setting(setting_id: uuid.UUID, payload: SystemSettingUpdate, db: AsyncSession = Depends(get_db), svc: SystemSettingService = Depends(get_system_setting_service), current_user: User = Depends(get_current_user), _admin: str = Depends(require_roles("admin"))):
     s = await svc.update_setting(setting_id, payload.model_dump(exclude_unset=True), updated_by=current_user.id); await db.commit()
     return SystemSettingRead.model_validate(s)
 
 @router.delete("/system/{setting_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete system setting")
-async def delete_system_setting(setting_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: SystemSettingService = Depends(get_system_setting_service), _: User = Depends(get_current_user)):
+async def delete_system_setting(setting_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: SystemSettingService = Depends(get_system_setting_service), _: User = Depends(get_current_user), _admin: str = Depends(require_roles("admin"))):
     await svc.delete_setting(setting_id); await db.commit()
 
 # ── User Preferences ──

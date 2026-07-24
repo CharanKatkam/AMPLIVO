@@ -373,7 +373,14 @@ class UserProfileService:
     async def get_profile(self, user_id: uuid.UUID) -> UserProfile:
         profile = await self._repo.get_by_user_id(user_id)
         if profile is None:
-            raise NotFoundException("UserProfile")
+            # No profile row exists yet (e.g. a freshly-hired employee, or any
+            # account created before this endpoint was ever called) — bootstrap
+            # a blank one instead of 404ing, so "My Profile" always loads.
+            user = await self._db.get(User, user_id)
+            if user is None:
+                raise NotFoundException("UserProfile")
+            profile = UserProfile(user_id=user_id, full_name=user.full_name)
+            profile = await self._repo.create(profile)
         return profile
 
     async def create_or_update_profile(self, user_id: uuid.UUID, data: dict[str, Any]) -> UserProfile:
@@ -431,8 +438,11 @@ class UserManagementService:
             if hasattr(user, key):
                 setattr(user, key, value)
         await self._db.flush()
-        await self._db.refresh(user)
-        return user
+        # db.refresh() only reloads columns, not the eagerly-loaded `profile`
+        # relationship that get_detail() attaches via selectinload — re-fetch
+        # through the same path so UserDetail.model_validate can read it
+        # without triggering an implicit (and here, forbidden) lazy load.
+        return await self.get_user(user_id)
 
     async def deactivate_user(self, user_id: uuid.UUID) -> User:
         return await self.update_user(user_id, {"is_active": False, "status": "inactive"})

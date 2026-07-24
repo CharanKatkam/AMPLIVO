@@ -7,16 +7,18 @@ from app.core.exceptions import BadRequestException
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
+from app.dependencies.rbac import require_roles
 from app.dependencies.tenant import get_current_client_id
 from app.models.user import User
 from app.modules.crm.dependencies import (
     get_client_address_service, get_client_contact_service,
     get_client_document_service, get_client_note_service, get_client_service,
+    get_proposal_service,
 )
 from app.modules.crm.schemas import *
 from app.modules.crm.service import (
     ClientAddressService, ClientContactService, ClientDocumentService,
-    ClientNoteService, ClientService,
+    ClientNoteService, ClientService, ProposalService,
 )
 
 router = APIRouter(prefix="/clients", tags=["CRM — Clients"])
@@ -50,6 +52,7 @@ async def create_client(
     payload: ClientCreate, db: AsyncSession = Depends(get_db),
     svc: ClientService = Depends(get_client_service),
     current_user: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("sales")),
 ):
     client = await svc.create_client(payload.model_dump(), created_by=current_user.id)
     await db.commit()
@@ -67,15 +70,19 @@ async def get_client(client_id: uuid.UUID, svc: ClientService = Depends(get_clie
 
 @router.put("/{client_id}", response_model=ClientRead, summary="Update client")
 async def update_client(client_id: uuid.UUID, payload: ClientUpdate, db: AsyncSession = Depends(get_db),
-                        svc: ClientService = Depends(get_client_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
-    client = await svc.update_client(client_id, payload.model_dump(exclude_unset=True), scoped_client_id=scoped_client_id)
+                        svc: ClientService = Depends(get_client_service), current_user: User = Depends(get_current_user),
+                        scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                        _admin: str = Depends(require_roles("sales"))):
+    client = await svc.update_client(client_id, payload.model_dump(exclude_unset=True), scoped_client_id=scoped_client_id, actor_id=current_user.id)
     await db.commit()
     return ClientRead.model_validate(client)
 
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete client")
 async def delete_client(client_id: uuid.UUID, db: AsyncSession = Depends(get_db),
-                        svc: ClientService = Depends(get_client_service), _: User = Depends(get_current_user)):
-    await svc.delete_client(client_id); await db.commit()
+                        svc: ClientService = Depends(get_client_service), _: User = Depends(get_current_user),
+                        scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                        _admin: str = Depends(require_roles("sales"))):
+    await svc.delete_client(client_id, scoped_client_id=scoped_client_id); await db.commit()
 
 # ── Client Contacts ────────────────────────────────────────────────────
 
@@ -85,20 +92,28 @@ async def list_contacts(client_id: uuid.UUID, svc: ClientContactService = Depend
 
 @router.post("/{client_id}/contacts", response_model=ClientContactRead, status_code=status.HTTP_201_CREATED, summary="Add contact")
 async def create_contact(client_id: uuid.UUID, payload: ClientContactCreate, db: AsyncSession = Depends(get_db),
-                         svc: ClientContactService = Depends(get_client_contact_service), _: User = Depends(get_current_user)):
+                         client_svc: ClientService = Depends(get_client_service),
+                         svc: ClientContactService = Depends(get_client_contact_service), _: User = Depends(get_current_user),
+                         scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                         _admin: str = Depends(require_roles("sales"))):
+    await client_svc.get_client(client_id, scoped_client_id=scoped_client_id)
     c = await svc.create_contact(client_id, payload.model_dump()); await db.commit()
     return ClientContactRead.model_validate(c)
 
 @router.put("/contacts/{contact_id}", response_model=ClientContactRead, summary="Update contact")
 async def update_contact(contact_id: uuid.UUID, payload: ClientContactUpdate, db: AsyncSession = Depends(get_db),
-                         svc: ClientContactService = Depends(get_client_contact_service), _: User = Depends(get_current_user)):
-    c = await svc.update_contact(contact_id, payload.model_dump(exclude_unset=True)); await db.commit()
+                         svc: ClientContactService = Depends(get_client_contact_service), _: User = Depends(get_current_user),
+                         scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                         _admin: str = Depends(require_roles("sales"))):
+    c = await svc.update_contact(contact_id, payload.model_dump(exclude_unset=True), scoped_client_id=scoped_client_id); await db.commit()
     return ClientContactRead.model_validate(c)
 
 @router.delete("/contacts/{contact_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete contact")
 async def delete_contact(contact_id: uuid.UUID, db: AsyncSession = Depends(get_db),
-                         svc: ClientContactService = Depends(get_client_contact_service), _: User = Depends(get_current_user)):
-    await svc.delete_contact(contact_id); await db.commit()
+                         svc: ClientContactService = Depends(get_client_contact_service), _: User = Depends(get_current_user),
+                         scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                         _admin: str = Depends(require_roles("sales"))):
+    await svc.delete_contact(contact_id, scoped_client_id=scoped_client_id); await db.commit()
 
 # ── Client Addresses ───────────────────────────────────────────────────
 
@@ -108,20 +123,28 @@ async def list_addresses(client_id: uuid.UUID, svc: ClientAddressService = Depen
 
 @router.post("/{client_id}/addresses", response_model=ClientAddressRead, status_code=status.HTTP_201_CREATED, summary="Add address")
 async def create_address(client_id: uuid.UUID, payload: ClientAddressCreate, db: AsyncSession = Depends(get_db),
-                         svc: ClientAddressService = Depends(get_client_address_service), _: User = Depends(get_current_user)):
+                         client_svc: ClientService = Depends(get_client_service),
+                         svc: ClientAddressService = Depends(get_client_address_service), _: User = Depends(get_current_user),
+                         scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                         _admin: str = Depends(require_roles("sales"))):
+    await client_svc.get_client(client_id, scoped_client_id=scoped_client_id)
     a = await svc.create_address(client_id, payload.model_dump()); await db.commit()
     return ClientAddressRead.model_validate(a)
 
 @router.put("/addresses/{address_id}", response_model=ClientAddressRead, summary="Update address")
 async def update_address(address_id: uuid.UUID, payload: ClientAddressUpdate, db: AsyncSession = Depends(get_db),
-                         svc: ClientAddressService = Depends(get_client_address_service), _: User = Depends(get_current_user)):
-    a = await svc.update_address(address_id, payload.model_dump(exclude_unset=True)); await db.commit()
+                         svc: ClientAddressService = Depends(get_client_address_service), _: User = Depends(get_current_user),
+                         scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                         _admin: str = Depends(require_roles("sales"))):
+    a = await svc.update_address(address_id, payload.model_dump(exclude_unset=True), scoped_client_id=scoped_client_id); await db.commit()
     return ClientAddressRead.model_validate(a)
 
 @router.delete("/addresses/{address_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete address")
 async def delete_address(address_id: uuid.UUID, db: AsyncSession = Depends(get_db),
-                         svc: ClientAddressService = Depends(get_client_address_service), _: User = Depends(get_current_user)):
-    await svc.delete_address(address_id); await db.commit()
+                         svc: ClientAddressService = Depends(get_client_address_service), _: User = Depends(get_current_user),
+                         scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                         _admin: str = Depends(require_roles("sales"))):
+    await svc.delete_address(address_id, scoped_client_id=scoped_client_id); await db.commit()
 
 # ── Client Documents ───────────────────────────────────────────────────
 
@@ -131,14 +154,20 @@ async def list_documents(client_id: uuid.UUID, svc: ClientDocumentService = Depe
 
 @router.post("/{client_id}/documents", response_model=ClientDocumentRead, status_code=status.HTTP_201_CREATED, summary="Upload document")
 async def create_document(client_id: uuid.UUID, payload: ClientDocumentCreate, db: AsyncSession = Depends(get_db),
-                          svc: ClientDocumentService = Depends(get_client_document_service), current_user: User = Depends(get_current_user)):
+                          client_svc: ClientService = Depends(get_client_service),
+                          svc: ClientDocumentService = Depends(get_client_document_service), current_user: User = Depends(get_current_user),
+                          scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                          _admin: str = Depends(require_roles("sales"))):
+    await client_svc.get_client(client_id, scoped_client_id=scoped_client_id)
     d = await svc.create_document(client_id, payload.model_dump(), uploaded_by=current_user.id); await db.commit()
     return ClientDocumentRead.model_validate(d)
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete document")
 async def delete_document(document_id: uuid.UUID, db: AsyncSession = Depends(get_db),
-                          svc: ClientDocumentService = Depends(get_client_document_service), _: User = Depends(get_current_user)):
-    await svc.delete_document(document_id); await db.commit()
+                          svc: ClientDocumentService = Depends(get_client_document_service), _: User = Depends(get_current_user),
+                          scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                          _admin: str = Depends(require_roles("sales"))):
+    await svc.delete_document(document_id, scoped_client_id=scoped_client_id); await db.commit()
 
 # ── Client Notes ───────────────────────────────────────────────────────
 
@@ -148,11 +177,55 @@ async def list_notes(client_id: uuid.UUID, svc: ClientNoteService = Depends(get_
 
 @router.post("/{client_id}/notes", response_model=ClientNoteRead, status_code=status.HTTP_201_CREATED, summary="Add note")
 async def create_note(client_id: uuid.UUID, payload: ClientNoteCreate, db: AsyncSession = Depends(get_db),
-                      svc: ClientNoteService = Depends(get_client_note_service), current_user: User = Depends(get_current_user)):
+                      client_svc: ClientService = Depends(get_client_service),
+                      svc: ClientNoteService = Depends(get_client_note_service), current_user: User = Depends(get_current_user),
+                      scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                      _admin: str = Depends(require_roles("sales"))):
+    await client_svc.get_client(client_id, scoped_client_id=scoped_client_id)
     n = await svc.create_note(client_id, payload.model_dump(), created_by=current_user.id); await db.commit()
     return ClientNoteRead.model_validate(n)
 
 @router.delete("/notes/{note_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete note")
 async def delete_note(note_id: uuid.UUID, db: AsyncSession = Depends(get_db),
-                      svc: ClientNoteService = Depends(get_client_note_service), _: User = Depends(get_current_user)):
-    await svc.delete_note(note_id); await db.commit()
+                      svc: ClientNoteService = Depends(get_client_note_service), _: User = Depends(get_current_user),
+                      scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                      _admin: str = Depends(require_roles("sales"))):
+    await svc.delete_note(note_id, scoped_client_id=scoped_client_id); await db.commit()
+
+# ── Proposals ───────────────────────────────────────────────────────────
+
+@router.get("/{client_id}/proposals", response_model=list[ProposalRead], summary="List client proposals")
+async def list_client_proposals(client_id: uuid.UUID, svc: ProposalService = Depends(get_proposal_service), _: User = Depends(get_current_user)):
+    items, _total = await svc.list_proposals(client_id=client_id, limit=200)
+    return [ProposalRead.model_validate(p) for p in items]
+
+@router.post("/{client_id}/proposals", response_model=ProposalRead, status_code=status.HTTP_201_CREATED, summary="Create proposal")
+async def create_proposal(client_id: uuid.UUID, payload: ProposalCreate, db: AsyncSession = Depends(get_db),
+                          client_svc: ClientService = Depends(get_client_service),
+                          svc: ProposalService = Depends(get_proposal_service), current_user: User = Depends(get_current_user),
+                          scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                          _admin: str = Depends(require_roles("sales"))):
+    await client_svc.get_client(client_id, scoped_client_id=scoped_client_id)
+    p = await svc.create_proposal(client_id, payload.model_dump(), created_by=current_user.id); await db.commit()
+    return ProposalRead.model_validate(p)
+
+@router.get("/proposals/{proposal_id}", response_model=ProposalRead, summary="Get proposal")
+async def get_proposal(proposal_id: uuid.UUID, svc: ProposalService = Depends(get_proposal_service), _: User = Depends(get_current_user),
+                       scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
+    return ProposalRead.model_validate(await svc.get_proposal(proposal_id, scoped_client_id=scoped_client_id))
+
+@router.put("/proposals/{proposal_id}", response_model=ProposalRead, summary="Update proposal")
+async def update_proposal(proposal_id: uuid.UUID, payload: ProposalUpdate, db: AsyncSession = Depends(get_db),
+                          svc: ProposalService = Depends(get_proposal_service), current_user: User = Depends(get_current_user),
+                          scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                          _admin: str = Depends(require_roles("sales"))):
+    p = await svc.update_proposal(proposal_id, payload.model_dump(exclude_unset=True), scoped_client_id=scoped_client_id, actor_id=current_user.id)
+    await db.commit()
+    return ProposalRead.model_validate(p)
+
+@router.delete("/proposals/{proposal_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete proposal")
+async def delete_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                          svc: ProposalService = Depends(get_proposal_service), _: User = Depends(get_current_user),
+                          scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+                          _admin: str = Depends(require_roles("sales"))):
+    await svc.delete_proposal(proposal_id, scoped_client_id=scoped_client_id); await db.commit()

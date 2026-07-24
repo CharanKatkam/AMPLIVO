@@ -164,3 +164,29 @@ class ClientNoteRead(BaseModel):
     created_by: uuid.UUID | None
     created_at: datetime
     updated_at: datetime
+
+# ── Proposal ─────────────────────────────────────────────────────────────
+class ProposalCreate(BaseModel):
+    title: str = Field(min_length=2, max_length=300)
+    description: str | None = None
+    amount: float | None = None
+
+class ProposalUpdate(BaseModel):
+    title: str | None = Field(None, min_length=2, max_length=300)
+    description: str | None = None
+    amount: float | None = None
+    status: str | None = None
+
+class ProposalRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    client_id: uuid.UUID
+    title: str
+    description: str | None
+    amount: float | None
+    status: str
+    sent_at: datetime | None
+    decided_at: datetime | None
+    created_by: uuid.UUID | None
+    created_at: datetime
+    updated_at: datetime

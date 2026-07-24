@@ -5,7 +5,7 @@ from typing import Sequence
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from app.core.filters import apply_search, apply_sorting
-from app.modules.tasks.models import Project, Task, TaskAttachment, TaskComment
+from app.modules.tasks.models import Project, ProjectMember, Task, TaskAttachment, TaskComment, TaskSubmission
 from app.repositories.base import BaseRepository
 
 class ProjectRepository(BaseRepository[Project]):
@@ -60,6 +60,24 @@ class TaskRepository(BaseRepository[Task]):
         stmt = apply_search(stmt, search=search, columns=self.searchable_columns)
         return (await self._db.execute(stmt)).scalar_one()
 
+class ProjectMemberRepository(BaseRepository[ProjectMember]):
+    model = ProjectMember
+    async def list_by_project(self, project_id: uuid.UUID) -> Sequence[ProjectMember]:
+        r = await self._db.execute(select(ProjectMember).where(ProjectMember.project_id == project_id).order_by(ProjectMember.assigned_at))
+        return r.scalars().all()
+    async def get_by_project_and_user(self, project_id: uuid.UUID, user_id: uuid.UUID) -> ProjectMember | None:
+        r = await self._db.execute(
+            select(ProjectMember).where(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id)
+        )
+        return r.scalar_one_or_none()
+    async def delete_by_project_and_user(self, project_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+        member = await self.get_by_project_and_user(project_id, user_id)
+        if member is None:
+            return False
+        await self._db.delete(member)
+        await self._db.flush()
+        return True
+
 class TaskCommentRepository(BaseRepository[TaskComment]):
     model = TaskComment
     async def list_by_task(self, task_id: uuid.UUID) -> Sequence[TaskComment]:
@@ -70,4 +88,13 @@ class TaskAttachmentRepository(BaseRepository[TaskAttachment]):
     model = TaskAttachment
     async def list_by_task(self, task_id: uuid.UUID) -> Sequence[TaskAttachment]:
         r = await self._db.execute(select(TaskAttachment).where(TaskAttachment.task_id == task_id).order_by(TaskAttachment.created_at.desc()))
+        return r.scalars().all()
+
+class TaskSubmissionRepository(BaseRepository[TaskSubmission]):
+    model = TaskSubmission
+    async def list_by_task(self, task_id: uuid.UUID) -> Sequence[TaskSubmission]:
+        r = await self._db.execute(select(TaskSubmission).where(TaskSubmission.task_id == task_id).order_by(TaskSubmission.created_at.desc()))
+        return r.scalars().all()
+    async def list_by_submitter(self, submitted_by: uuid.UUID) -> Sequence[TaskSubmission]:
+        r = await self._db.execute(select(TaskSubmission).where(TaskSubmission.submitted_by == submitted_by).order_by(TaskSubmission.created_at.desc()))
         return r.scalars().all()

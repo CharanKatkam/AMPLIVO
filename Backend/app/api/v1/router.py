@@ -26,6 +26,7 @@ from app.modules.file_manager.routes import router as file_manager_router
 from app.modules.influencers.routes import router as influencers_router
 from app.modules.leads.routes import router as leads_router
 from app.modules.marketing_automation.routes import router as marketing_automation_router
+from app.modules.meetings.routes import router as meetings_router
 from app.modules.messaging.routes import router as messaging_router
 from app.modules.notifications.routes import router as notifications_router
 from app.modules.paidads.routes import router as paidads_router
@@ -67,6 +68,7 @@ api_router.include_router(file_manager_router)
 api_router.include_router(influencers_router)
 api_router.include_router(leads_router)
 api_router.include_router(marketing_automation_router)
+api_router.include_router(meetings_router)
 api_router.include_router(messaging_router)
 api_router.include_router(notifications_router)
 api_router.include_router(paidads_router)

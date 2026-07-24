@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.core.filters import apply_search, apply_sorting
-from app.modules.crm.models import Client, ClientAddress, ClientContact, ClientDocument, ClientNote
+from app.modules.crm.models import Client, ClientAddress, ClientContact, ClientDocument, ClientNote, Proposal
 from app.repositories.base import BaseRepository
 
 
@@ -100,3 +100,30 @@ class ClientNoteRepository(BaseRepository[ClientNote]):
             select(ClientNote).where(ClientNote.client_id == client_id).order_by(ClientNote.created_at.desc())
         )
         return result.scalars().all()
+
+
+class ProposalRepository(BaseRepository[Proposal]):
+    model = Proposal
+    searchable_columns = [Proposal.title]
+
+    async def list_by_client(self, client_id: uuid.UUID) -> Sequence[Proposal]:
+        result = await self._db.execute(
+            select(Proposal).where(Proposal.client_id == client_id).order_by(Proposal.created_at.desc())
+        )
+        return result.scalars().all()
+
+    async def get_all_filtered(self, *, search=None, status=None, client_id=None, sort_by=None, sort_order="desc", offset=0, limit=20) -> Sequence[Proposal]:
+        stmt = select(Proposal)
+        if status: stmt = stmt.where(Proposal.status == status)
+        if client_id: stmt = stmt.where(Proposal.client_id == client_id)
+        stmt = apply_search(stmt, search=search, columns=self.searchable_columns)
+        stmt = apply_sorting(stmt, model=Proposal, sort_by=sort_by, sort_order=sort_order)
+        stmt = stmt.offset(offset).limit(limit)
+        return (await self._db.execute(stmt)).scalars().all()
+
+    async def count_filtered(self, *, search=None, status=None, client_id=None) -> int:
+        stmt = select(func.count()).select_from(Proposal)
+        if status: stmt = stmt.where(Proposal.status == status)
+        if client_id: stmt = stmt.where(Proposal.client_id == client_id)
+        stmt = apply_search(stmt, search=search, columns=self.searchable_columns)
+        return (await self._db.execute(stmt)).scalar_one()

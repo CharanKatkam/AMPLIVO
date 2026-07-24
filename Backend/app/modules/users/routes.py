@@ -15,6 +15,7 @@ from app.core.exceptions import ForbiddenException
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
+from app.dependencies.rbac import require_roles
 from app.dependencies.tenant import get_current_user_role_slug
 from app.models.user import User
 from app.modules.users.dependencies import (
@@ -114,6 +115,9 @@ async def get_user(
     return UserDetail.model_validate(user)
 
 
+_PRIVILEGED_USER_FIELDS = ("role_id", "is_active", "status", "department_id", "branch_id", "reporting_manager_id", "user_type")
+
+
 @router.put(
     "/users/{user_id}",
     response_model=UserDetail,
@@ -130,6 +134,16 @@ async def update_user(
     if role_slug == "client" and user_id != current_user.id:
         raise ForbiddenException("You can only update your own profile.")
     data = payload.model_dump(exclude_unset=True)
+    # Only admins may update another account, or touch privileged fields
+    # (role_id/is_active/status/department_id/branch_id/reporting_manager_id/
+    # user_type) even on their own — previously the only guard here was the
+    # "client" check above, so any authenticated employee/sales/hr user could
+    # PUT an arbitrary user_id and grant themselves the admin role.
+    if role_slug != "admin":
+        if user_id != current_user.id:
+            raise ForbiddenException("You can only update your own profile.")
+        for field in _PRIVILEGED_USER_FIELDS:
+            data.pop(field, None)
     user = await svc.update_user(user_id, data)
     await db.commit()
     return UserDetail.model_validate(user)
@@ -197,7 +211,7 @@ async def upsert_user_profile(
     current_user: User = Depends(get_current_user),
     role_slug: str | None = Depends(get_current_user_role_slug),
 ) -> UserProfileRead:
-    if role_slug == "client" and user_id != current_user.id:
+    if role_slug != "admin" and user_id != current_user.id:
         raise ForbiddenException("You can only update your own profile.")
     data = payload.model_dump(exclude_unset=True)
     profile = await svc.create_or_update_profile(user_id, data)
@@ -232,6 +246,7 @@ async def create_role(
     db: AsyncSession = Depends(get_db),
     svc: RoleService = Depends(get_role_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> RoleRead:
     role = await svc.create_role(payload.model_dump())
     await db.commit()
@@ -255,6 +270,7 @@ async def update_role(
     db: AsyncSession = Depends(get_db),
     svc: RoleService = Depends(get_role_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> RoleRead:
     data = payload.model_dump(exclude_unset=True)
     role = await svc.update_role(role_id, data)
@@ -268,6 +284,7 @@ async def delete_role(
     db: AsyncSession = Depends(get_db),
     svc: RoleService = Depends(get_role_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> None:
     await svc.delete_role(role_id)
     await db.commit()
@@ -298,6 +315,7 @@ async def assign_permission_to_role(
     db: AsyncSession = Depends(get_db),
     svc: RoleService = Depends(get_role_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> dict:
     await svc.assign_permission(role_id, permission_id)
     await db.commit()
@@ -315,6 +333,7 @@ async def revoke_permission_from_role(
     db: AsyncSession = Depends(get_db),
     svc: RoleService = Depends(get_role_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> None:
     await svc.revoke_permission(role_id, permission_id)
     await db.commit()
@@ -353,6 +372,7 @@ async def create_permission(
     db: AsyncSession = Depends(get_db),
     svc: PermissionService = Depends(get_permission_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> PermissionRead:
     perm = await svc.create_permission(payload.model_dump())
     await db.commit()
@@ -387,6 +407,7 @@ async def create_branch(
     db: AsyncSession = Depends(get_db),
     svc: BranchService = Depends(get_branch_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> BranchRead:
     branch = await svc.create_branch(payload.model_dump())
     await db.commit()
@@ -410,6 +431,7 @@ async def update_branch(
     db: AsyncSession = Depends(get_db),
     svc: BranchService = Depends(get_branch_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> BranchRead:
     data = payload.model_dump(exclude_unset=True)
     branch = await svc.update_branch(branch_id, data)
@@ -423,6 +445,7 @@ async def delete_branch(
     db: AsyncSession = Depends(get_db),
     svc: BranchService = Depends(get_branch_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> None:
     await svc.delete_branch(branch_id)
     await db.commit()
@@ -460,6 +483,7 @@ async def create_department(
     db: AsyncSession = Depends(get_db),
     svc: DepartmentService = Depends(get_department_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> DepartmentRead:
     dept = await svc.create_department(payload.model_dump())
     await db.commit()
@@ -483,6 +507,7 @@ async def update_department(
     db: AsyncSession = Depends(get_db),
     svc: DepartmentService = Depends(get_department_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> DepartmentRead:
     data = payload.model_dump(exclude_unset=True)
     dept = await svc.update_department(department_id, data)
@@ -500,6 +525,7 @@ async def delete_department(
     db: AsyncSession = Depends(get_db),
     svc: DepartmentService = Depends(get_department_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> None:
     await svc.delete_department(department_id)
     await db.commit()
@@ -535,6 +561,7 @@ async def create_team(
     db: AsyncSession = Depends(get_db),
     svc: TeamService = Depends(get_team_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> TeamRead:
     team = await svc.create_team(payload.model_dump())
     await db.commit()
@@ -558,6 +585,7 @@ async def update_team(
     db: AsyncSession = Depends(get_db),
     svc: TeamService = Depends(get_team_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> TeamRead:
     data = payload.model_dump(exclude_unset=True)
     team = await svc.update_team(team_id, data)
@@ -571,6 +599,7 @@ async def delete_team(
     db: AsyncSession = Depends(get_db),
     svc: TeamService = Depends(get_team_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> None:
     await svc.delete_team(team_id)
     await db.commit()
@@ -609,6 +638,7 @@ async def create_designation(
     db: AsyncSession = Depends(get_db),
     svc: DesignationService = Depends(get_designation_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> DesignationRead:
     d = await svc.create_designation(payload.model_dump())
     await db.commit()
@@ -632,6 +662,7 @@ async def update_designation(
     db: AsyncSession = Depends(get_db),
     svc: DesignationService = Depends(get_designation_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> DesignationRead:
     data = payload.model_dump(exclude_unset=True)
     d = await svc.update_designation(designation_id, data)
@@ -649,6 +680,7 @@ async def delete_designation(
     db: AsyncSession = Depends(get_db),
     svc: DesignationService = Depends(get_designation_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ) -> None:
     await svc.delete_designation(designation_id)
     await db.commit()

@@ -3,10 +3,12 @@ from __future__ import annotations
 import uuid
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.exceptions import ForbiddenException
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
-from app.dependencies.tenant import get_current_client_id
+from app.dependencies.rbac import require_roles
+from app.dependencies.tenant import get_current_client_id, get_current_user_role_slug
 from app.models.user import User
 from app.modules.tasks.dependencies import *
 from app.modules.tasks.schemas import *
@@ -51,6 +53,35 @@ async def update_project(project_id: uuid.UUID, payload: ProjectUpdate, db: Asyn
 async def delete_project(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: ProjectService = Depends(get_project_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
     await svc.delete_project(project_id, scoped_client_id=scoped_client_id); await db.commit()
 
+# ── Project Members ──
+@router.get("/projects/{project_id}/members", response_model=list[ProjectMemberRead], summary="List project team members")
+async def list_project_members(
+    project_id: uuid.UUID, project_svc: ProjectService = Depends(get_project_service),
+    svc: ProjectMemberService = Depends(get_project_member_service),
+    _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+):
+    await project_svc.get_project(project_id, scoped_client_id=scoped_client_id)
+    return [ProjectMemberRead.model_validate(m) for m in await svc.list_members(project_id)]
+
+@router.post("/projects/{project_id}/members", response_model=ProjectMemberRead, status_code=status.HTTP_201_CREATED, summary="Assign an employee to a project")
+async def add_project_member(
+    project_id: uuid.UUID, payload: ProjectMemberCreate, db: AsyncSession = Depends(get_db),
+    project_svc: ProjectService = Depends(get_project_service), svc: ProjectMemberService = Depends(get_project_member_service),
+    current_user: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+):
+    await project_svc.get_project(project_id, scoped_client_id=scoped_client_id)
+    m = await svc.add_member(project_id, payload.user_id, actor_id=current_user.id); await db.commit()
+    return ProjectMemberRead.model_validate(m)
+
+@router.delete("/projects/{project_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove an employee from a project")
+async def remove_project_member(
+    project_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+    project_svc: ProjectService = Depends(get_project_service), svc: ProjectMemberService = Depends(get_project_member_service),
+    current_user: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+):
+    await project_svc.get_project(project_id, scoped_client_id=scoped_client_id)
+    await svc.remove_member(project_id, user_id, actor_id=current_user.id); await db.commit()
+
 # ── Tasks ──
 @router.get("/tasks", response_model=PaginatedResponse[TaskRead], summary="List tasks")
 async def list_tasks(
@@ -61,9 +92,13 @@ async def list_tasks(
     assigned_to: uuid.UUID | None = Query(None),
     svc: TaskService = Depends(get_task_service),
     project_svc: ProjectService = Depends(get_project_service),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+    role_slug: str | None = Depends(get_current_user_role_slug),
 ):
+    if role_slug == "employee":
+        # Employees may only ever list their own tasks, regardless of query params.
+        assigned_to = current_user.id
     if project_id is not None:
         await project_svc.get_project(project_id, scoped_client_id=scoped_client_id)
     elif scoped_client_id is not None:
@@ -98,11 +133,18 @@ async def get_task(task_id: uuid.UUID, svc: TaskService = Depends(get_task_servi
     return TaskRead.model_validate(task)
 
 @router.put("/tasks/{task_id}", response_model=TaskRead, summary="Update task")
-async def update_task(task_id: uuid.UUID, payload: TaskUpdate, db: AsyncSession = Depends(get_db), svc: TaskService = Depends(get_task_service), project_svc: ProjectService = Depends(get_project_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
+async def update_task(
+    task_id: uuid.UUID, payload: TaskUpdate, db: AsyncSession = Depends(get_db),
+    svc: TaskService = Depends(get_task_service), project_svc: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+    role_slug: str | None = Depends(get_current_user_role_slug),
+):
     existing = await svc.get_task(task_id)
     if existing.project_id:
         await project_svc.get_project(existing.project_id, scoped_client_id=scoped_client_id)
-    t = await svc.update_task(task_id, payload.model_dump(exclude_unset=True)); await db.commit()
+    if role_slug == "employee" and existing.assigned_to != current_user.id:
+        raise ForbiddenException("You can only update tasks assigned to you.")
+    t = await svc.update_task(task_id, payload.model_dump(exclude_unset=True), actor_id=current_user.id); await db.commit()
     return TaskRead.model_validate(t)
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete task")
@@ -144,3 +186,50 @@ async def create_task_attachment(task_id: uuid.UUID, payload: TaskAttachmentCrea
 @router.delete("/attachments/{attachment_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete task attachment")
 async def delete_task_attachment(attachment_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: TaskAttachmentService = Depends(get_task_attachment_service), _: User = Depends(get_current_user)):
     await svc.delete_attachment(attachment_id); await db.commit()
+
+# ── Task Submissions ──
+@router.get("/tasks/{task_id}/submissions", response_model=list[TaskSubmissionRead], summary="List task submissions")
+async def list_task_submissions(
+    task_id: uuid.UUID, task_svc: TaskService = Depends(get_task_service),
+    svc: TaskSubmissionService = Depends(get_task_submission_service),
+    current_user: User = Depends(get_current_user), role_slug: str | None = Depends(get_current_user_role_slug),
+):
+    task = await task_svc.get_task(task_id)
+    if role_slug == "employee" and task.assigned_to != current_user.id:
+        raise ForbiddenException("You can only view submissions for tasks assigned to you.")
+    return [TaskSubmissionRead.model_validate(x) for x in await svc.list_by_task(task_id)]
+
+@router.post("/tasks/{task_id}/submissions", response_model=TaskSubmissionRead, status_code=status.HTTP_201_CREATED, summary="Submit work for a task")
+async def create_task_submission(
+    task_id: uuid.UUID, payload: TaskSubmissionCreate, db: AsyncSession = Depends(get_db),
+    task_svc: TaskService = Depends(get_task_service), svc: TaskSubmissionService = Depends(get_task_submission_service),
+    current_user: User = Depends(get_current_user), role_slug: str | None = Depends(get_current_user_role_slug),
+):
+    task = await task_svc.get_task(task_id)
+    if role_slug == "employee" and task.assigned_to != current_user.id:
+        raise ForbiddenException("You can only submit work for tasks assigned to you.")
+    s = await svc.create(task_id, payload.model_dump(), submitted_by=current_user.id); await db.commit()
+    return TaskSubmissionRead.model_validate(s)
+
+@router.put("/submissions/{submission_id}", response_model=TaskSubmissionRead, summary="Resubmit work")
+async def resubmit_task_submission(
+    submission_id: uuid.UUID, payload: TaskSubmissionUpdate, db: AsyncSession = Depends(get_db),
+    svc: TaskSubmissionService = Depends(get_task_submission_service),
+    current_user: User = Depends(get_current_user), role_slug: str | None = Depends(get_current_user_role_slug),
+):
+    existing = await svc.get(submission_id)
+    if role_slug == "employee" and existing.submitted_by != current_user.id:
+        raise ForbiddenException("You can only resubmit your own work.")
+    s = await svc.resubmit(submission_id, payload.model_dump(exclude_unset=True), submitted_by=current_user.id); await db.commit()
+    return TaskSubmissionRead.model_validate(s)
+
+@router.post("/submissions/{submission_id}/review", response_model=TaskSubmissionRead, summary="Review a task submission")
+async def review_task_submission(
+    submission_id: uuid.UUID, payload: TaskSubmissionReview, db: AsyncSession = Depends(get_db),
+    svc: TaskSubmissionService = Depends(get_task_submission_service),
+    current_user: User = Depends(get_current_user),
+    _: str = Depends(require_roles("admin")),
+):
+    s = await svc.review(submission_id, approve=payload.approve, reviewer_feedback=payload.reviewer_feedback, reviewer_id=current_user.id)
+    await db.commit()
+    return TaskSubmissionRead.model_validate(s)
