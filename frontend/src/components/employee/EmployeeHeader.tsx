@@ -30,7 +30,7 @@ export function EmployeeHeader({ title, subtitle }: EmployeeHeaderProps) {
           )}
         </Link>
         <Link href="/employee/profile">
-          <Avatar name={employee?.name || 'Employee'} size="sm" />
+          <Avatar name={employee ? `${employee.firstName} ${employee.lastName}` : 'Employee'} size="sm" />
         </Link>
       </div>
     </header>

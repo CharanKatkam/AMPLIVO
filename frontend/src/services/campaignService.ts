@@ -14,7 +14,7 @@ export interface CampaignCreatePayload {
   manager_id?: string;
 }
 
-export interface CampaignUpdatePayload extends Partial<CampaignCreatePayload> {}
+export type CampaignUpdatePayload = Partial<CampaignCreatePayload>;
 
 export interface CampaignRead {
   id: string;

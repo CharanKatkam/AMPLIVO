@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+
 import { ArrowRight, X } from 'lucide-react';
 import { portfolioItems } from '@/data/portfolio';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
@@ -45,12 +45,10 @@ export function PortfolioSection() {
                 className="relative group overflow-hidden rounded-2xl cursor-pointer h-52 md:h-60"
               >
                 {/* Image */}
-                <Image
+                <img
                   src={item.image}
                   alt={item.title}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700"
-                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
 
                 {/* Always-visible bottom strip */}
@@ -114,12 +112,10 @@ export function PortfolioSection() {
 
             {/* Image */}
             <div className="w-full md:w-1/2 h-56 md:h-auto relative flex-shrink-0">
-              <Image
+              <img
                 src={selectedItem.image}
                 alt={selectedItem.title}
-                fill
-                className="object-cover"
-                sizes="50vw"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
 

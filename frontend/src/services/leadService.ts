@@ -14,7 +14,7 @@ export interface LeadCreatePayload {
   notes?: string;
 }
 
-export interface LeadUpdatePayload extends Partial<LeadCreatePayload> {}
+export type LeadUpdatePayload = Partial<LeadCreatePayload>;
 
 export interface PaginatedLeads {
   items: LeadRead[];
