@@ -37,8 +37,8 @@ export function TeamSection() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
           {featured.map((member, i) => (
             <AnimateOnScroll key={member.id} animation="fade-up" delay={i * 70}>
-              <div className="group text-center">
-                <div className="relative mb-4 overflow-hidden rounded-2xl aspect-square">
+              <div className="group text-center h-full flex flex-col items-center">
+                <div className="relative mb-4 overflow-hidden rounded-2xl aspect-square w-full">
                   <Image
                     src={member.image}
                     alt={member.name}
@@ -46,23 +46,21 @@ export function TeamSection() {
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                     sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#4C1D95]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  {member.linkedin && (
-                    <a
-                      href={member.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <div className="flex items-center gap-1.5 bg-white text-[#4C1D95] text-xs font-semibold px-3 py-1.5 rounded-full">
-                        <FaLinkedin size={12} /> LinkedIn
-                      </div>
-                    </a>
-                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#4C1D95]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <h3 className="font-semibold text-slate-900 text-sm">{member.name}</h3>
-                <p className="text-[#7C3AED] text-xs font-medium">{member.role}</p>
+                <p className="text-[#7C3AED] text-xs font-medium mb-1">{member.role}</p>
                 <p className="text-slate-400 text-xs">{member.department}</p>
+                {member.linkedin && (
+                  <a
+                    href={member.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 flex items-center justify-center gap-1.5 text-slate-400 hover:text-[#0A66C2] transition-colors text-[13px] font-medium w-full py-2 rounded-lg border border-slate-100 hover:border-[#0A66C2]/30 hover:bg-blue-50/50"
+                  >
+                    <FaLinkedin size={15} /> LinkedIn
+                  </a>
+                )}
               </div>
             </AnimateOnScroll>
           ))}

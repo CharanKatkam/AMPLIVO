@@ -38,7 +38,7 @@ export function ServicesSection() {
             const Icon = iconMap[s.icon] || Zap;
             return (
               <AnimateOnScroll key={s.slug} animation="fade-up" delay={i * 60}>
-                <div className="bg-white rounded-2xl p-6 border border-slate-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-pointer card-hover h-full">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group cursor-pointer card-hover h-full flex flex-col">
                   <div
                     className="w-12 h-12 rounded-[14px] flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300"
                     style={{ backgroundColor: `${s.color}12` }}
@@ -49,7 +49,7 @@ export function ServicesSection() {
                   <p className="text-slate-500 text-xs leading-relaxed mb-4">{s.desc}</p>
                   <Link
                     href={`/services/${s.slug}`}
-                    className="flex items-center gap-1 text-[#4C1D95] text-xs font-semibold group-hover:gap-2 transition-all"
+                    className="flex items-center gap-1 text-[#4C1D95] text-xs font-semibold group-hover:gap-2 transition-all mt-auto w-fit"
                   >
                     Learn more <ArrowRight size={12} />
                   </Link>

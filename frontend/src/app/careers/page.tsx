@@ -28,7 +28,7 @@ export default function CareersPage() {
 
       {/* Hero */}
       <section
-        className="pt-32 pb-20 relative overflow-hidden"
+        className="pt-32 pb-10 relative overflow-hidden"
         style={{ background: 'linear-gradient(140deg, #1a0540 0%, #4C1D95 40%, #EC4899 100%)' }}
       >
         <div className="max-w-4xl mx-auto px-6 text-center">
@@ -57,7 +57,7 @@ export default function CareersPage() {
       </section>
 
       {/* Why Join Us */}
-      <section className="py-24 bg-white">
+      <section className="py-10 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <SectionHeader
             eyebrow="Culture & Benefits"
@@ -82,7 +82,7 @@ export default function CareersPage() {
       </section>
 
       {/* Open Roles */}
-      <section id="open-roles" className="py-24 bg-[#F9FAFB]">
+      <section id="open-roles" className="py-10 bg-[#F9FAFB]">
         <div className="max-w-4xl mx-auto px-6">
           <SectionHeader
             eyebrow="Join The Team"

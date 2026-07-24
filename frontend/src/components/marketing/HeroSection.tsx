@@ -99,17 +99,7 @@ export function HeroSection() {
               </Link>
             </div>
 
-            {/* Tagline badges */}
-            <div className="flex flex-wrap gap-2 mt-5">
-              {['500+ Campaigns', '₹50Cr+ Ad Spend', '94% Retention', '85+ Experts'].map((tag) => (
-                <span
-                  key={tag}
-                  className="backdrop-blur-md text-xs bg-white/10 border border-white/15 text-white/90 px-3 py-1.5 rounded-full drop-shadow"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
+
           </div>
 
           {/* Right — Animated Stats Grid */}

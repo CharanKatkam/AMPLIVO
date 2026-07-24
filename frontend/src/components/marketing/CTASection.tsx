@@ -1,9 +1,12 @@
 'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
 
 export function CTASection() {
+  const pathname = usePathname();
+
   return (
     <section
       className="py-12 relative overflow-hidden"
@@ -42,12 +45,14 @@ export function CTASection() {
             >
               Book Free Growth Audit <ArrowRight size={18} />
             </Link>
-            <Link
-              href="/case-studies"
-              className="border border-white/30 text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition-all text-base hover:-translate-y-1"
-            >
-              View Case Studies
-            </Link>
+            {pathname !== '/case-studies' && (
+              <Link
+                href="/case-studies"
+                className="border border-white/30 text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition-all text-base hover:-translate-y-1"
+              >
+                View Case Studies
+              </Link>
+            )}
           </div>
         </AnimateOnScroll>
       </div>

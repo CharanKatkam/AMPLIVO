@@ -31,10 +31,10 @@ export default function EmployeeDashboard() {
     <div className="flex flex-col min-h-full">
       <EmployeeHeader title="Dashboard" subtitle={`Welcome back, ${employee.firstName}`} />
       
-      <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
+      <div className="p-4 md:p-6 max-w-7xl mx-auto w-full space-y-4 md:space-y-6">
         
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="text-slate-500 text-xs font-medium">Assigned Projects</div>
@@ -74,7 +74,7 @@ export default function EmployeeDashboard() {
         </div>
 
         {/* Quick Actions & Revisions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           <div className="col-span-2 space-y-6">
             
             {revisionRequests.length > 0 && (

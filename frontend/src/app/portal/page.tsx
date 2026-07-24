@@ -104,7 +104,7 @@ export default function PortalDashboard() {
     <div>
       <PortalHeader title="Dashboard" subtitle="Welcome back" />
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-4">
             Some dashboard data couldn&apos;t be loaded. <button onClick={() => window.location.reload()} className="underline font-medium">Retry</button>
@@ -112,7 +112,7 @@ export default function PortalDashboard() {
         )}
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Active Campaigns" value={String(activeCampaigns.length)} icon={<Megaphone size={20} />} iconColor="#4C1D95" trend={activeCampaigns.length > 0} trendValue={`+${activeCampaigns.length}`} />
           <StatCard label="Total Leads" value={String(leads.length)} icon={<Users size={20} />} iconColor="#06B6D4" trend={leads.length > 0} trendValue={`+${leads.length}`} />
           <StatCard label="Ad Spend" value={`₹${(totalSpend / 1000).toFixed(1)}K`} icon={<DollarSign size={20} />} iconColor="#EC4899" trend={null} />
@@ -120,8 +120,8 @@ export default function PortalDashboard() {
         </div>
 
         {/* Campaigns + Account Manager Row */}
-        <div className="grid lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
+          <div className="lg:col-span-2 bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-slate-900">Campaign Performance</h3>
               <span className="text-xs text-slate-400">All Campaigns</span>
@@ -194,7 +194,7 @@ export default function PortalDashboard() {
         </div>
 
         {/* 6 New Widgets — Row 1 */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
 
           {/* Widget 1 — Content Calendar */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200">
@@ -291,7 +291,7 @@ export default function PortalDashboard() {
         </div>
 
         {/* 6 New Widgets — Row 2 */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
 
           {/* Widget 4 — SEO Reports */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200">
@@ -401,7 +401,7 @@ export default function PortalDashboard() {
         </div>
 
         {/* Hot Leads Table */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
+        <div className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-semibold text-slate-900">Hot Leads</h3>
             <Link href="/portal/leads" className="text-xs text-[#4C1D95] hover:underline">View all leads</Link>

@@ -1,11 +1,15 @@
 'use client';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import {
   LayoutDashboard, Users, CalendarDays, BarChart2,
-  Settings, LogOut, Zap, Bell, Search, TrendingUp, Receipt, Briefcase,
+  Settings, LogOut, Zap, Bell, Search, TrendingUp, Receipt, Briefcase, Menu
 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
+import { Avatar } from '@/components/ui/Avatar';
+import { useUiStore } from '@/store/uiStore';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/sales' },
@@ -24,33 +28,121 @@ interface SalesHeaderProps {
 }
 
 export function SalesHeader({ title, subtitle, badge, actions }: SalesHeaderProps) {
+  const { user } = useAuthStore();
+  const { toggleSidebar } = useUiStore();
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{ id: string; title?: string; message: string; is_read: boolean; created_at: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    import('@/services/crmService').then(({ notificationService }) => {
+      notificationService
+        .getAll({ page_size: 10 })
+        .then((res) => {
+          if (!cancelled) setNotifications(res?.items ?? []);
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const handleMarkRead = async (id: string) => {
+    const { notificationService } = await import('@/services/crmService');
+    try {
+      await notificationService.markRead(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+    } catch {
+      // ignore
+    }
+  };
+
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-10">
-      <div className="flex items-center gap-3">
-        <h1 className="text-lg font-bold text-slate-900" style={{ fontFamily: "'Sora', sans-serif" }}>{title}</h1>
-        {badge && (
-          <span className="text-xs bg-violet-50 text-violet-700 border border-violet-200 px-2.5 py-0.5 rounded-full font-semibold">
-            {badge}
-          </span>
-        )}
-        {subtitle && <span className="text-sm text-slate-400">{subtitle}</span>}
-      </div>
-      <div className="flex items-center gap-3">
-        {actions}
-        <div className="relative">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            placeholder="Search leads..."
-            className="pl-10 pr-4 py-2.5 rounded-[10px] bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 w-56"
-          />
-        </div>
-        <button className="relative w-9 h-9 rounded-[10px] bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
-          <Bell size={17} />
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#EC4899] text-white text-[9px] font-bold flex items-center justify-center">3</span>
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 flex-shrink-0 sticky top-0 z-10 gap-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <button 
+          onClick={toggleSidebar}
+          className="md:hidden text-slate-500 hover:text-slate-900 focus:outline-none shrink-0"
+        >
+          <Menu size={20} />
         </button>
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#4C1D95] to-[#7C3AED] flex items-center justify-center text-white text-xs font-bold">
-          SA
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h1 className="text-base md:text-lg font-bold text-slate-900 truncate" style={{ fontFamily: "'Sora', sans-serif" }}>{title}</h1>
+            {badge && (
+              <span className="hidden sm:inline-block text-xs bg-violet-50 text-violet-700 border border-violet-200 px-2.5 py-0.5 rounded-full font-semibold shrink-0">
+                {badge}
+              </span>
+            )}
+          </div>
+          {subtitle && <p className="text-xs text-slate-400 truncate">{subtitle}</p>}
         </div>
+      </div>
+      <div className="flex items-center gap-2 md:gap-3 shrink-0">
+        {actions}
+        <div className="relative" ref={ref}>
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="relative w-9 h-9 rounded-[10px] bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors"
+          >
+            <Bell size={17} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#EC4899] text-white text-[9px] font-bold flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+          {open && (
+            <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-900">Notifications</span>
+                <Link href="/sales/settings" className="text-xs text-[#4C1D95] hover:underline" onClick={() => setOpen(false)}>
+                  View all
+                </Link>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {loading ? (
+                  <p className="text-xs text-slate-400 text-center py-6">Loading...</p>
+                ) : notifications.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-6">No notifications</p>
+                ) : (
+                  notifications.slice(0, 6).map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => handleMarkRead(n.id)}
+                      className="w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 flex gap-2"
+                    >
+                      <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${n.is_read ? 'bg-slate-300' : 'bg-amber-500'}`} />
+                      <div className="min-w-0">
+                         <p className="text-xs text-slate-700 line-clamp-2">{n.title ? `${n.title}: ` : ''}{n.message}</p>
+                         <p className="text-[10px] text-slate-400 mt-0.5">{new Date(n.created_at).toLocaleString()}</p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        <Link href="/sales/settings">
+          <Avatar name={user?.name ?? 'Sales Admin'} image={user?.image} size="sm" />
+        </Link>
       </div>
     </header>
   );
@@ -58,9 +150,22 @@ export function SalesHeader({ title, subtitle, badge, actions }: SalesHeaderProp
 
 export function SalesSidebar() {
   const pathname = usePathname();
+  const { isSidebarOpen, setSidebarOpen } = useUiStore();
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-[#111827] flex flex-col h-screen sticky top-0 overflow-hidden">
+    <>
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside className={`
+        fixed md:sticky top-0 left-0 z-50 h-screen w-64 flex-shrink-0 bg-[#111827] flex flex-col overflow-hidden
+        transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[#1F2937]">
         <Image
@@ -114,6 +219,7 @@ export function SalesSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setSidebarOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all text-sm ${
                 isActive
                   ? 'bg-[#4C1D95] text-white shadow-sm'
@@ -148,5 +254,6 @@ export function SalesSidebar() {
         </Link>
       </div>
     </aside>
+    </>
   );
 }
