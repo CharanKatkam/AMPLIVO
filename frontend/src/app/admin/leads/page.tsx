@@ -13,7 +13,8 @@ const SORT_OPTIONS = [
 ];
 
 function statusColor(status: string) {
-  switch (status) {
+  const normalized = status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : '';
+  switch (normalized) {
     case 'New': return 'bg-blue-50 text-blue-700 border-blue-200';
     case 'Contacted': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
     case 'Qualified': return 'bg-violet-50 text-violet-700 border-violet-200';

@@ -39,6 +39,7 @@ export interface LeadRead {
   converted_client_id: string | null;
   converted_at: string | null;
   notes: string | null;
+  interested_services?: string[] | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

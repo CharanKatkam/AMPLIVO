@@ -2,7 +2,9 @@
 from __future__ import annotations
 import uuid
 from typing import Sequence
+# pyrefly: ignore [missing-import]
 from sqlalchemy import func, select
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.filters import apply_search, apply_sorting
 from app.modules.leads.models import Lead, LeadActivity, LeadFollowup, LeadSource, SalesPipeline
@@ -25,7 +27,7 @@ class LeadRepository(BaseRepository[Lead]):
                                source_id=None, assigned_to=None, client_id=None, sort_by=None,
                                sort_order="desc", offset=0, limit=20) -> Sequence[Lead]:
         stmt = select(Lead)
-        if status: stmt = stmt.where(Lead.status == status)
+        if status: stmt = stmt.where(func.lower(Lead.status) == status.lower())
         if priority: stmt = stmt.where(Lead.priority == priority)
         if source_id: stmt = stmt.where(Lead.source_id == source_id)
         if assigned_to: stmt = stmt.where(Lead.assigned_to == assigned_to)
@@ -38,7 +40,7 @@ class LeadRepository(BaseRepository[Lead]):
     async def count_filtered(self, *, search=None, status=None, priority=None,
                              source_id=None, assigned_to=None, client_id=None) -> int:
         stmt = select(func.count()).select_from(Lead)
-        if status: stmt = stmt.where(Lead.status == status)
+        if status: stmt = stmt.where(func.lower(Lead.status) == status.lower())
         if priority: stmt = stmt.where(Lead.priority == priority)
         if source_id: stmt = stmt.where(Lead.source_id == source_id)
         if assigned_to: stmt = stmt.where(Lead.assigned_to == assigned_to)

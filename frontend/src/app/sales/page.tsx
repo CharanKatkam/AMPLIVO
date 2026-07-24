@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import { SalesHeader } from '@/components/sales/SalesSidebar';
 import { StatCard } from '@/components/ui/StatCard';
 import { LeadStatusBadge } from '@/components/sales/LeadStatusBadge';
@@ -22,7 +23,12 @@ const MeetingTypeIcon = ({ type }: { type: string }) => {
 };
 
 export default function SalesDashboard() {
-  const { leads, meetings } = useSalesStore();
+  const { leads, meetings, fetchLeads } = useSalesStore();
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
 
   const totalLeads = leads.length;
   const newLeads = leads.filter((l) => l.status === 'New').length;

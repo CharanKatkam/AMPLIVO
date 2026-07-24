@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SalesHeader } from '@/components/sales/SalesSidebar';
 import { LeadStatusBadge } from '@/components/sales/LeadStatusBadge';
 import { useSalesStore } from '@/store/salesStore';
@@ -22,10 +22,15 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 export default function SalesLeadsPage() {
-  const { leads } = useSalesStore();
+  const { leads, fetchLeads } = useSalesStore();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<SalesLeadStatus | 'All'>('All');
   const [sortBy, setSortBy] = useState<'budget' | 'date' | 'name'>('date');
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
 
   const filtered = leads
     .filter((l) => activeTab === 'All' || l.status === activeTab)

@@ -40,34 +40,37 @@ export const useSalesStore = create<SalesState>((set, get) => ({
     try {
       const res = await leadService.getAll({ page_size: 100 });
       const backendLeads = res.items || res || [];
-      const salesLeads: SalesLead[] = backendLeads.map((l) => ({
-        id: l.id,
-        firstName: (l.contact_name || '').split(' ')[0] || '',
-        lastName: (l.contact_name || '').split(' ').slice(1).join(' ') || '',
-        email: l.email || '',
-        phone: l.phone || '',
-        designation: '',
-        company: l.company_name || '',
-        industry: '',
-        companySize: '',
-        website: '',
-        city: '',
-        status: (l.status as SalesLeadStatus) || 'New',
-        source: 'Organic' as const,
-        assignedTo: l.assigned_to || '',
-        priority: (l.priority as 'Low' | 'Medium' | 'High' | 'Critical') || 'Medium',
-        budget: l.estimated_value || 0,
-        expectedCloseDate: '',
-        probability: 50,
-        interestedServices: [],
-        notes: l.notes || '',
-        meetings: [],
-        timeline: [],
-        invoiceGenerated: false,
-        createdAt: l.created_at || new Date().toISOString(),
-        lastUpdated: l.updated_at || new Date().toISOString(),
-        followUpDate: '',
-      }));
+      const salesLeads: SalesLead[] = backendLeads.map((l) => {
+        const normalizedStatus = l.status ? l.status.charAt(0).toUpperCase() + l.status.slice(1).toLowerCase() : 'New';
+        return {
+          id: l.id,
+          firstName: (l.contact_name || '').split(' ')[0] || '',
+          lastName: (l.contact_name || '').split(' ').slice(1).join(' ') || '',
+          email: l.email || '',
+          phone: l.phone || '',
+          designation: '',
+          company: l.company_name || '',
+          industry: '',
+          companySize: '',
+          website: '',
+          city: '',
+          status: (normalizedStatus as SalesLeadStatus) || 'New',
+          source: 'Organic' as const,
+          assignedTo: l.assigned_to || '',
+          priority: (l.priority as 'Low' | 'Medium' | 'High' | 'Critical') || 'Medium',
+          budget: l.estimated_value || 0,
+          expectedCloseDate: '',
+          probability: 50,
+          interestedServices: l.interested_services || [],
+          notes: l.notes || '',
+          meetings: [],
+          timeline: [],
+          invoiceGenerated: false,
+          createdAt: l.created_at || new Date().toISOString(),
+          lastUpdated: l.updated_at || new Date().toISOString(),
+          followUpDate: '',
+        };
+      });
       set({ leads: salesLeads, isLoading: false });
     } catch {
       set({ isLoading: false });
