@@ -184,7 +184,7 @@ export default function CrmDashboardPage() {
             {busyEmployees.map(emp => (
               <div key={emp.id} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-violet-600/20 flex items-center justify-center text-xs font-bold text-violet-400 shrink-0">
-                  {emp.name.charAt(0)}
+                  {emp.name?.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-white truncate">{emp.name}</p>
