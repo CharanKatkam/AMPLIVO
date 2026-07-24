@@ -11,8 +11,10 @@ export default function TermsOfServicePage() {
           <div className="not-prose mb-8">
             <BackButton href="/" label="Back to Home" />
           </div>
-          <h1 style={{ fontFamily: "'Sora', sans-serif" }}>Terms of Service</h1>
-          <p className="text-sm text-slate-500">Last updated: July 2024</p>
+          <div className="not-prose text-center mb-10">
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>Terms of Service</h1>
+            <p className="text-sm text-slate-500">Last updated: July 2024</p>
+          </div>
           
           <h2>1. Acceptance of Terms</h2>
           <p>By accessing or using the services provided by Amplivo Digital Growth Private Limited, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access our services.</p>

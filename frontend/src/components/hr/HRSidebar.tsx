@@ -1,10 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import {
   LayoutDashboard, Briefcase, Users, Calendar, Award,
-  BarChart2, Settings, LogOut, Zap, TrendingUp, Search
+  BarChart2, Settings, LogOut, Zap, TrendingUp, Search, Menu
 } from 'lucide-react';
+import { useUiStore } from '@/store/uiStore';
 import { useHrStore, useHrStats } from '@/store/hrStore';
 
 const navItems = [
@@ -20,18 +22,32 @@ const navItems = [
 export function HRSidebar() {
   const pathname = usePathname();
   const stats = useHrStats();
+  const { isSidebarOpen, setSidebarOpen } = useUiStore();
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-[#111827] flex flex-col h-screen sticky top-0 overflow-hidden">
+    <>
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside className={`
+        fixed md:sticky top-0 left-0 z-50 h-screen w-64 flex-shrink-0 bg-[#111827] flex flex-col overflow-hidden
+        transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[#1F2937]">
-        <div className="w-8 h-8 rounded-lg bg-[#EC4899] flex items-center justify-center flex-shrink-0">
-          <Users size={15} className="text-white" />
-        </div>
-        <div>
-          <div className="text-white text-sm font-bold" style={{ fontFamily: "'Sora', sans-serif" }}>Amplivo HR</div>
-          <div className="text-[#4B5563] text-[10px]">Talent & Recruitment</div>
-        </div>
+        <Image
+          src="/images/Logo.png"
+          alt="Amplivo"
+          width={120}
+          height={32}
+          className="object-contain"
+          style={{ height: '32px', width: 'auto' }}
+        />
       </div>
 
       {/* User Info */}
@@ -57,6 +73,7 @@ export function HRSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setSidebarOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all text-sm ${
                 isActive
                   ? 'bg-[#EC4899] text-white'
@@ -88,5 +105,6 @@ export function HRSidebar() {
         </Link>
       </div>
     </aside>
+    </>
   );
 }

@@ -67,16 +67,16 @@ export default function SalesDashboard() {
         actions={
           <Link
             href="/sales/leads"
-            className="flex items-center gap-2 px-4 py-2 bg-[#4C1D95] text-white rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors"
+            className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-[#4C1D95] text-white rounded-xl text-xs md:text-sm font-semibold hover:bg-[#3b1574] transition-colors whitespace-nowrap"
           >
-            <Zap size={15} /> View All Leads
+            <Zap size={15} className="shrink-0" /> <span className="hidden sm:inline">View All Leads</span>
           </Link>
         }
       />
 
-      <div className="p-6 space-y-6 max-w-[1600px]">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-[1600px]">
         {/* KPI Row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard
             label="Total Leads"
             value={String(totalLeads)}
@@ -147,9 +147,9 @@ export default function SalesDashboard() {
         </div>
 
         {/* Charts + Upcoming Meetings Row */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Monthly Lead Chart */}
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200">
+          <div className="lg:col-span-2 bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="font-bold text-slate-900">Lead Pipeline (Monthly)</h3>
@@ -178,7 +178,7 @@ export default function SalesDashboard() {
           </div>
 
           {/* Upcoming Meetings */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
+          <div className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-slate-900">Upcoming Meetings</h3>
               <Link href="/sales/meetings" className="text-xs font-semibold text-[#4C1D95] hover:underline flex items-center gap-1">
@@ -212,9 +212,9 @@ export default function SalesDashboard() {
         </div>
 
         {/* Recent Leads + Activity Feed Row */}
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           {/* Recent Leads */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
+          <div className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-slate-900">Recent Leads</h3>
               <Link href="/sales/leads" className="text-xs font-semibold text-[#4C1D95] hover:underline flex items-center gap-1">
@@ -245,7 +245,7 @@ export default function SalesDashboard() {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
+          <div className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <h3 className="font-bold text-slate-900 mb-5">Recent Activity</h3>
             <ActivityFeed events={recentActivity} />
           </div>

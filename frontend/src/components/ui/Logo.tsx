@@ -1,6 +1,6 @@
 'use client';
-import { Zap } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -9,35 +9,24 @@ interface LogoProps {
 }
 
 const sizeMap = {
-  sm: { icon: 28, font: 'text-lg', iconSize: 14 },
-  md: { icon: 34, font: 'text-xl', iconSize: 17 },
-  lg: { icon: 44, font: 'text-2xl', iconSize: 22 },
+  sm: { width: 200, height: 60 },
+  md: { width: 300, height: 90 },
+  lg: { width: 380, height: 110 },
 };
-
-const variantMap = {
-  dark: 'text-slate-900',
-  light: 'text-slate-900',
-  white: 'text-white',
-};
-
 export function Logo({ size = 'md', variant = 'dark', href = '/' }: LogoProps) {
-  const { icon, font, iconSize } = sizeMap[size];
-  const textColor = variantMap[variant];
+  const { height, width } = sizeMap[size];
 
   const content = (
-    <div className="flex items-center gap-2.5 cursor-pointer">
-      <div
-        className="rounded-xl bg-[#4C1D95] flex items-center justify-center flex-shrink-0"
-        style={{ width: icon, height: icon }}
-      >
-        <Zap size={iconSize} className="text-white" />
-      </div>
-      <span
-        className={`font-bold ${font} ${textColor}`}
-        style={{ fontFamily: "'Sora', sans-serif" }}
-      >
-        Amplivo
-      </span>
+    <div className="flex items-center cursor-pointer">
+      <Image
+        src="/images/Logo.png"
+        alt="Amplivo Digital Growth"
+        width={width}
+        height={height}
+        priority
+        className="object-contain"
+        style={{ height: `${height}px`, width: 'auto' }}
+      />
     </div>
   );
 

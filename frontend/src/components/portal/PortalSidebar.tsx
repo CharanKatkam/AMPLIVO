@@ -1,11 +1,10 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import {
-  LayoutDashboard, Megaphone, TrendingUp, BarChart2, Image as ImageIcon,
+import { usePathname, useRouter } from 'next/navigation';import Image from 'next/image';
+import { LayoutDashboard, Megaphone, TrendingUp, BarChart2, Image as ImageIcon,
   Files, Calendar, MessageSquare, FileText, LifeBuoy, Settings, LogOut, Zap, Bell,
-  FolderKanban, Receipt, Folder,
+  FolderKanban, Receipt, Folder, Menu
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuthStore } from '@/store/authStore';
@@ -13,6 +12,7 @@ import { authService } from '@/services/authService';
 import { campaignService } from '@/services/campaignService';
 import { creativeService, companyService, messagingService } from '@/services';
 import { userManagementService } from '@/services/crmService';
+import { useUiStore } from '@/store/uiStore';
 
 interface AccountManager {
   name: string;
@@ -98,6 +98,7 @@ export function PortalSidebar() {
   const router = useRouter();
   const { user, logout, refreshToken } = useAuthStore();
   const { activeCampaigns, pendingCreatives, unreadMessages, accountManager } = useSidebarData();
+  const { isSidebarOpen, setSidebarOpen } = useUiStore();
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/portal' },
@@ -127,16 +128,29 @@ export function PortalSidebar() {
   };
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-[#111827] flex flex-col h-screen sticky top-0 overflow-hidden">
+    <>
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside className={`
+        fixed md:sticky top-0 left-0 z-50 h-screen w-64 flex-shrink-0 bg-[#111827] flex flex-col overflow-hidden
+        transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[#1F2937]">
-        <div className="w-8 h-8 rounded-lg bg-[#4C1D95] flex items-center justify-center flex-shrink-0">
-          <Zap size={15} className="text-white" />
-        </div>
-        <div>
-          <span className="text-white font-bold text-sm" style={{ fontFamily: "'Sora', sans-serif" }}>Amplivo</span>
-          <div className="text-[#4B5563] text-[10px]">Client Portal</div>
-        </div>
+        <Image
+          src="/images/Logo.png"
+          alt="Amplivo"
+          width={120}
+          height={32}
+          className="object-contain"
+          style={{ height: '32px', width: 'auto' }}
+        />
       </div>
 
       {/* User Info */}
@@ -158,6 +172,7 @@ export function PortalSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setSidebarOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all text-sm ${
                 isActive
                   ? 'bg-[#4C1D95] text-white'
@@ -201,6 +216,7 @@ export function PortalSidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }
 
@@ -211,6 +227,7 @@ interface PortalHeaderProps {
 }
 export function PortalHeader({ title, subtitle }: PortalHeaderProps) {
   const { user } = useAuthStore();
+  const { toggleSidebar } = useUiStore();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Array<{ id: string; title?: string; message: string; is_read: boolean; created_at: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -255,12 +272,20 @@ export function PortalHeader({ title, subtitle }: PortalHeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-10">
-      <div>
-        <h1 className="text-lg font-bold text-slate-900" style={{ fontFamily: "'Sora', sans-serif" }}>{title}</h1>
-        {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 flex-shrink-0 sticky top-0 z-10 gap-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <button 
+          onClick={toggleSidebar}
+          className="md:hidden text-slate-500 hover:text-slate-900 focus:outline-none shrink-0"
+        >
+          <Menu size={20} />
+        </button>
+        <div className="min-w-0">
+          <h1 className="text-base md:text-lg font-bold text-slate-900 truncate" style={{ fontFamily: "'Sora', sans-serif" }}>{title}</h1>
+          {subtitle && <p className="text-xs text-slate-400 truncate">{subtitle}</p>}
+        </div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 md:gap-3 shrink-0">
         <div className="relative" ref={ref}>
           <button
             onClick={() => setOpen((o) => !o)}

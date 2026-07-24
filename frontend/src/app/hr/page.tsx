@@ -1,26 +1,36 @@
 'use client';
 import { useHrStore, useHrStats } from '@/store/hrStore';
 import { AnalyticsCard } from '@/components/hr/AnalyticsCard';
-import { Briefcase, Users, UserCheck, Calendar, Award, FileText } from 'lucide-react';
+import { Briefcase, Users, UserCheck, Calendar, Award, FileText, Menu } from 'lucide-react';
 import Link from 'next/link';
+import { useUiStore } from '@/store/uiStore';
 
 export default function HRDashboard() {
   const stats = useHrStats();
+  const { toggleSidebar } = useUiStore();
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800" style={{ fontFamily: "'Sora', sans-serif" }}>HR Dashboard</h1>
-          <p className="text-slate-500">Overview of talent acquisition and recruitment.</p>
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 md:space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+          <button 
+            onClick={toggleSidebar}
+            className="md:hidden text-slate-500 hover:text-slate-900 focus:outline-none shrink-0"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-800 truncate" style={{ fontFamily: "'Sora', sans-serif" }}>HR Dashboard</h1>
+            <p className="text-xs md:text-sm text-slate-500 truncate">Overview of talent acquisition and recruitment.</p>
+          </div>
         </div>
-        <Link href="/hr/jobs/create" className="bg-[#4C1D95] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3B1574] transition-colors shadow-sm">
+        <Link href="/hr/jobs/create" className="bg-[#4C1D95] text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold hover:bg-[#3B1574] transition-colors shadow-sm shrink-0 whitespace-nowrap">
           + Create Job
         </Link>
       </div>
 
       {/* Analytics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <AnalyticsCard
           title="Active Jobs"
           value={stats.activeJobs}
@@ -49,7 +59,7 @@ export default function HRDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Recruitment Pipeline */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <h2 className="text-lg font-bold text-slate-800 mb-6" style={{ fontFamily: "'Sora', sans-serif" }}>Hiring Pipeline</h2>

@@ -47,7 +47,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <Navbar alwaysSolid={true} />
 
       <article className="pt-32 pb-12">
-        <div className="max-w-3xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-6">
           <AnimateOnScroll animation="fade-in">
           <div className="mb-8 space-y-3">
             <BackButton href="/insights" label="Back to Blog" className="text-slate-500 hover:text-[#4C1D95]" />
@@ -103,7 +103,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </AnimateOnScroll>
 
         {/* Content Body */}
-        <div className="max-w-3xl mx-auto px-6 prose prose-slate prose-lg prose-headings:font-bold prose-headings:text-slate-900 prose-a:text-[#4C1D95]">
+        <div className="max-w-5xl mx-auto px-6 prose prose-slate prose-lg prose-headings:font-bold prose-headings:text-slate-900 prose-a:text-[#4C1D95]">
           {post.content ? (
             post.content.map((paragraph, idx) => (
               <p key={idx} className={idx === 0 ? "lead text-xl text-slate-600 mb-8" : "text-slate-600 mb-6"}>
@@ -145,13 +145,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
         {/* Campaign Performance Insight Card */}
         {post.insight && (
-          <div className="max-w-4xl mx-auto px-6">
+          <div className="max-w-5xl mx-auto px-6">
             <BlogInsightCard insight={post.insight} />
           </div>
         )}
         
         {/* Tags */}
-        <div className="max-w-3xl mx-auto px-6 mt-12 pt-8 border-t border-slate-200">
+        <div className="max-w-5xl mx-auto px-6 mt-12 pt-8 border-t border-slate-200">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-bold text-slate-900 mr-2">Tags:</span>
             {post.tags.map(tag => (

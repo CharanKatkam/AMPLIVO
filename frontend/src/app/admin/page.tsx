@@ -223,16 +223,16 @@ export default function AdminDashboard() {
     <div>
       <AdminHeader title="Overview" subtitle="Agency Command Center" />
       
-      <div className="p-6 space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Active Clients" value={String(data?.activeClients ?? 0)} icon={<Users size={20} />} iconColor="#4C1D95" />
           <StatCard label="Active Campaigns" value={String(data?.totalActiveCampaigns ?? 0)} icon={<Megaphone size={20} />} iconColor="#06B6D4" />
           <StatCard label="Total Leads" value={String(data?.totalLeads ?? 0)} icon={<Target size={20} />} iconColor="#EC4899" />
           <StatCard label="Total Revenue" value={formatCurrency(data?.totalRevenue ?? 0)} icon={<DollarSign size={20} />} iconColor="#10B981" />
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+          <div className="lg:col-span-2 bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-slate-900">Revenue & Ad Spend Trend</h3>
               <select className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-600 focus:outline-none">
@@ -248,7 +248,7 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
+          <div className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <h3 className="font-bold text-slate-900 mb-4">Lead Distribution</h3>
             <LeadSourceChart data={data?.leadDistribution ?? []} height={180} />
             {(!data || data.totalLeads === 0) && (
@@ -270,8 +270,8 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <div className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-slate-900">Top Active Campaigns</h3>
               <Link href="/admin/campaigns" className="text-xs font-semibold text-[#4C1D95] hover:underline">View All</Link>
@@ -304,7 +304,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
+          <div className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-slate-900">My Priority Tasks</h3>
               <Link href="/admin/tasks" className="text-xs font-semibold text-[#4C1D95] hover:underline">Go to Planner</Link>
@@ -334,7 +334,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Consultation Requests */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
+        <div className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 overflow-x-auto">
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-bold text-slate-900">Recent Growth Audit Requests</h3>
             <CalendarCheck size={18} className="text-[#4C1D95]" />
