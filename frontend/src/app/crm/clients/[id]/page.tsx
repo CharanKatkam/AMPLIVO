@@ -152,7 +152,7 @@ export default function CrmClientDetailsPage() {
                 {assignedEmpsFull.map(emp => (
                   <div key={emp.id} className="flex items-center gap-3 p-2 bg-white/5 rounded-lg">
                     <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-white">
-                      {emp.name.charAt(0)}
+                      {emp.name?.charAt(0)}
                     </div>
                     <div>
                       <p className="text-sm text-white">{emp.name}</p>
@@ -233,7 +233,7 @@ export default function CrmClientDetailsPage() {
                         <div className="hidden sm:flex -space-x-2">
                           {p.assignedEmployeeIds.slice(0, 3).map((id, i) => (
                             <div key={i} className="w-6 h-6 rounded-full bg-slate-700 border border-[#12141f] flex items-center justify-center text-[10px] font-bold text-white">
-                              {employees.find(e => e.id === id)?.name.charAt(0) || 'U'}
+                              {employees.find(e => e.id === id)?.name?.charAt(0) || 'U'}
                             </div>
                           ))}
                           {p.assignedEmployeeIds.length > 3 && (
