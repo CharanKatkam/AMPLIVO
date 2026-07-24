@@ -1,10 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import {
   LayoutDashboard, FolderKanban, CheckSquare, UploadCloud, Bell, User, Settings, LogOut, Zap
 } from 'lucide-react';
-import { Logo } from '@/components/ui/Logo';
 import { Avatar } from '@/components/ui/Avatar';
 import { useCrmStore } from '@/store/crmStore';
 
@@ -26,13 +26,14 @@ export function EmployeeSidebar() {
     <aside className="w-64 flex-shrink-0 bg-[#111827] flex flex-col h-screen sticky top-0 overflow-hidden">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[#1F2937]">
-        <div className="w-8 h-8 rounded-lg bg-[#4C1D95] flex items-center justify-center flex-shrink-0">
-          <Zap size={15} className="text-white" />
-        </div>
-        <div>
-          <span className="text-white font-bold text-sm" style={{ fontFamily: "'Sora', sans-serif" }}>Amplivo</span>
-          <div className="text-[#4B5563] text-[10px]">Employee Portal</div>
-        </div>
+        <Image
+          src="/images/Logo.png"
+          alt="Amplivo"
+          width={120}
+          height={32}
+          className="object-contain"
+          style={{ height: '32px', width: 'auto' }}
+        />
       </div>
 
       {/* User Info */}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import {
   LayoutDashboard, Users, FolderKanban, UserCheck,
   FileText, CreditCard, Bell, BarChart3, Settings,
@@ -66,15 +67,14 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
       >
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Briefcase className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <p className="text-white font-bold text-sm leading-tight">AMPLIVO</p>
-              <p className="text-[10px] text-violet-400 font-medium tracking-wide">CRM Portal</p>
-            </div>
-          </div>
+          <Image
+            src="/images/Logo.png"
+            alt="Amplivo"
+            width={120}
+            height={32}
+            className="object-contain"
+            style={{ height: '32px', width: 'auto' }}
+          />
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
