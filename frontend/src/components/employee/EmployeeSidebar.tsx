@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { useCrmStore } from '@/store/crmStore';
+import { useUiStore } from '@/store/uiStore';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/employee' },
@@ -21,9 +22,22 @@ export function EmployeeSidebar() {
   const pathname = usePathname();
   const { activeEmployeeId, getEmployeeById } = useCrmStore();
   const employee = getEmployeeById(activeEmployeeId || '');
+  const { isSidebarOpen, setSidebarOpen } = useUiStore();
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-[#111827] flex flex-col h-screen sticky top-0 overflow-hidden">
+    <>
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside className={`
+        fixed md:sticky top-0 left-0 z-50 h-screen w-64 flex-shrink-0 bg-[#111827] flex flex-col overflow-hidden
+        transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[#1F2937]">
         <Image
@@ -55,6 +69,7 @@ export function EmployeeSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setSidebarOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all text-sm ${
                 isActive
                   ? 'bg-[#4C1D95] text-white'
@@ -79,5 +94,6 @@ export function EmployeeSidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }

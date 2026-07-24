@@ -87,7 +87,7 @@ export default function CrmDashboardPage() {
     .slice(0, 5);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -126,7 +126,7 @@ export default function CrmDashboardPage() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Leads Pending" value={stats.readyLeads} sub="Pending Review" icon={Users} color="bg-violet-600" href="/crm/leads" />
         <StatCard label="Active Clients" value={`${stats.activeClients}/${stats.totalClients}`} sub="Active + Onboarding" icon={Building2} color="bg-emerald-600" href="/crm/clients" />
         <StatCard label="Active Projects" value={`${stats.activeProjects}/${stats.totalProjects}`} sub={`Avg ${stats.avgProgress}% progress`} icon={FolderKanban} color="bg-blue-600" href="/crm/projects" />
@@ -138,7 +138,7 @@ export default function CrmDashboardPage() {
       </div>
 
       {/* Middle Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Active Projects */}
         <div className="lg:col-span-2 bg-[#12141f] border border-white/5 rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
@@ -233,7 +233,7 @@ export default function CrmDashboardPage() {
       </div>
 
       {/* Pipeline Status */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Invoice Sent', color: 'bg-blue-500', count: invoices.filter(i => i.crmStatus === 'Sent').length },
           { label: 'Payment Pending', color: 'bg-amber-500', count: invoices.filter(i => i.crmStatus === 'Payment Pending').length },

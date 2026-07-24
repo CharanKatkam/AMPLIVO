@@ -11,8 +11,10 @@ export default function PrivacyPolicyPage() {
           <div className="not-prose mb-8">
             <BackButton href="/" label="Back to Home" />
           </div>
-          <h1 style={{ fontFamily: "'Sora', sans-serif" }}>Privacy Policy</h1>
-          <p className="text-sm text-slate-500">Last updated: July 2024</p>
+          <div className="not-prose text-center mb-10">
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>Privacy Policy</h1>
+            <p className="text-sm text-slate-500">Last updated: July 2024</p>
+          </div>
           
           <h2>1. Introduction</h2>
           <p>Amplivo Digital Growth Private Limited (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) respects your privacy and is committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website and tell you about your privacy rights.</p>

@@ -3,7 +3,7 @@ import { Navbar } from '@/components/marketing/Navbar';
 import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
 import { teamMembers } from '@/data/team';
-import { Briefcase, MapPin, Calendar, Users, Award, Globe } from 'lucide-react';
+import { Briefcase, MapPin, Calendar, Users, Award, Globe, Linkedin } from 'lucide-react';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
 
 export const metadata: Metadata = {
@@ -42,7 +42,7 @@ export default function AboutPage() {
 
       {/* Hero */}
       <section
-        className="pt-32 pb-24 relative overflow-hidden"
+        className="pt-32 pb-10 relative overflow-hidden"
         style={{ background: 'linear-gradient(140deg, #1a0540 0%, #4C1D95 40%, #7C3AED 80%, #06B6D4 100%)' }}
       >
         <div className="max-w-4xl mx-auto px-6 text-center relative">
@@ -65,7 +65,7 @@ export default function AboutPage() {
       </section>
 
       {/* Mission & Vision */}
-      <section className="py-24 bg-white">
+      <section className="py-10 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12">
             <AnimateOnScroll animation="fade-right">
@@ -95,7 +95,7 @@ export default function AboutPage() {
       </section>
 
       {/* Core Values */}
-      <section className="py-24 bg-[#F9FAFB]">
+      <section className="py-10 bg-[#F9FAFB]">
         <div className="max-w-7xl mx-auto px-6">
           <AnimateOnScroll animation="fade-up">
             <div className="text-center mb-14">
@@ -124,7 +124,7 @@ export default function AboutPage() {
       </section>
 
       {/* Team */}
-      <section id="team" className="py-24 bg-white">
+      <section id="team" className="py-10 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <AnimateOnScroll animation="fade-up">
             <div className="text-center mb-14">
@@ -140,21 +140,19 @@ export default function AboutPage() {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {teamMembers.map((member, i) => (
               <AnimateOnScroll key={member.id} animation="fade-up" delay={i * 60}>
-                <div className="group text-center h-full">
-                  <div className="relative mb-4 overflow-hidden rounded-2xl aspect-square">
+                <div className="group text-center h-full flex flex-col items-center">
+                  <div className="relative mb-4 overflow-hidden rounded-2xl aspect-square w-full">
                     <img src={member.image} alt={member.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#4C1D95]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {member.linkedin && (
-                      <a href={member.linkedin} className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="flex items-center gap-1.5 bg-white text-[#4C1D95] text-xs font-semibold px-3 py-1.5 rounded-full">
-                          <Briefcase size={12} /> LinkedIn
-                        </div>
-                      </a>
-                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#4C1D95]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <h3 className="font-semibold text-slate-900 text-sm">{member.name}</h3>
-                  <p className="text-[#7C3AED] text-xs font-medium">{member.role}</p>
+                  <p className="text-[#7C3AED] text-xs font-medium mb-1">{member.role}</p>
                   <p className="text-slate-400 text-xs">{member.department}</p>
+                  {member.linkedin && (
+                    <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center justify-center gap-1.5 text-slate-400 hover:text-[#0A66C2] transition-colors text-[13px] font-medium w-full py-2 rounded-lg border border-slate-100 hover:border-[#0A66C2]/30 hover:bg-blue-50/50">
+                      <Linkedin size={15} /> LinkedIn
+                    </a>
+                  )}
                 </div>
               </AnimateOnScroll>
             ))}
@@ -163,7 +161,7 @@ export default function AboutPage() {
       </section>
 
       {/* Milestones */}
-      <section className="py-24 bg-[#F9FAFB]">
+      <section className="py-10 bg-[#F9FAFB]">
         <div className="max-w-4xl mx-auto px-6">
           <AnimateOnScroll animation="fade-up">
             <div className="text-center mb-14">
@@ -198,7 +196,7 @@ export default function AboutPage() {
       </section>
 
       {/* Offices */}
-      <section className="py-24 bg-white">
+      <section className="py-10 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <AnimateOnScroll animation="fade-up">
             <div className="text-center mb-14">
