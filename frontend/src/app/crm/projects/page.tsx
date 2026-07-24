@@ -125,7 +125,7 @@ export default function CrmProjectsPage() {
                       <>
                         {project.assignedEmployeeIds.slice(0, 4).map((id, i) => (
                           <div key={i} className="w-8 h-8 rounded-full bg-slate-800 border-2 border-[#12141f] flex items-center justify-center text-xs font-bold text-white relative z-10 hover:z-20 hover:scale-110 transition-transform cursor-pointer" title={employees.find(e => e.id === id)?.name}>
-                            {employees.find(e => e.id === id)?.name.charAt(0) || 'U'}
+                            {employees.find(e => e.id === id)?.name?.charAt(0) || 'U'}
                           </div>
                         ))}
                         {project.assignedEmployeeIds.length > 4 && (

@@ -21,7 +21,7 @@ export default function EmployeeProfile() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1 space-y-6">
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col items-center text-center">
-              <Avatar name={employee.name} size="lg" className="w-24 h-24 mb-4 text-3xl" />
+              <Avatar name={employee.name ?? ''} size="lg" className="w-24 h-24 mb-4 text-3xl" />
               <h2 className="text-xl font-bold text-slate-900">{employee.name}</h2>
               <p className="text-sm text-indigo-600 font-medium mb-1">{employee.role}</p>
               <p className="text-xs text-slate-500 mb-6">{employee.department}</p>

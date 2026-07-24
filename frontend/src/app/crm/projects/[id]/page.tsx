@@ -186,7 +186,7 @@ export default function CrmProjectDetailsPage() {
                 {assignedEmpsFull.map(emp => (
                   <div key={emp.id} className="flex items-center gap-3 p-2 bg-white/5 rounded-lg border border-white/5">
                     <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-white">
-                      {emp.name.charAt(0)}
+                      {emp.name?.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white">{emp.name}</p>

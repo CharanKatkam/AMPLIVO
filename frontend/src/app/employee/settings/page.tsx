@@ -21,9 +21,9 @@ export default function EmployeeSettings() {
   useEffect(() => {
     if (activeEmployee) {
       setFormData({
-        firstName: activeEmployee.firstName,
-        lastName: activeEmployee.lastName,
-        email: activeEmployee.email,
+        firstName: activeEmployee.firstName ?? '',
+        lastName: activeEmployee.lastName ?? '',
+        email: activeEmployee.email ?? '',
         skills: activeEmployee.skills.join(', '),
       });
     }
