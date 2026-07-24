@@ -63,9 +63,9 @@ export function Navbar({ alwaysSolid = false }: NavbarProps) {
           : 'bg-[#1a0540]/60 backdrop-blur-md border-b border-white/10'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4" style={{ height: 72 }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[88px] flex items-center justify-between gap-4">
         {/* Logo */}
-        <Logo variant={isSolid ? 'dark' : 'white'} />
+        <Logo variant={isSolid ? 'dark' : 'white'} size="md" />
 
         {/* Desktop Nav */}
         <nav className="hidden xl:flex items-center gap-2">

@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAxiosError } from 'axios';
 import * as z from 'zod';
+import Image from 'next/image';
 import { Zap, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
@@ -95,11 +96,16 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-6 bg-white">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 mb-10">
-            <div className="w-9 h-9 bg-[#4C1D95] rounded-xl flex items-center justify-center">
-              <Zap size={17} className="text-white" />
-            </div>
-            <span className="text-slate-900 font-bold text-xl" style={{ fontFamily: "'Sora', sans-serif" }}>Amplivo</span>
+          <Link href="/" className="flex items-center mb-10">
+            <Image
+              src="/images/Logo.png"
+              alt="Amplivo Digital Growth"
+              width={160}
+              height={44}
+              priority
+              className="object-contain"
+              style={{ height: '44px', width: 'auto' }}
+            />
           </Link>
 
           <h1 className="text-3xl font-bold text-slate-900 mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>

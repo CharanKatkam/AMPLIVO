@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import {
   LayoutDashboard, Briefcase, Users, Calendar, Award,
   BarChart2, Settings, LogOut, Zap, TrendingUp, Search
@@ -25,13 +26,14 @@ export function HRSidebar() {
     <aside className="w-64 flex-shrink-0 bg-[#111827] flex flex-col h-screen sticky top-0 overflow-hidden">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[#1F2937]">
-        <div className="w-8 h-8 rounded-lg bg-[#EC4899] flex items-center justify-center flex-shrink-0">
-          <Users size={15} className="text-white" />
-        </div>
-        <div>
-          <div className="text-white text-sm font-bold" style={{ fontFamily: "'Sora', sans-serif" }}>Amplivo HR</div>
-          <div className="text-[#4B5563] text-[10px]">Talent & Recruitment</div>
-        </div>
+        <Image
+          src="/images/Logo.png"
+          alt="Amplivo"
+          width={120}
+          height={32}
+          className="object-contain"
+          style={{ height: '32px', width: 'auto' }}
+        />
       </div>
 
       {/* User Info */}

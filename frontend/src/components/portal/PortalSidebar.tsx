@@ -1,9 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import {
-  LayoutDashboard, Megaphone, TrendingUp, BarChart2, Image as ImageIcon,
+import { usePathname, useRouter } from 'next/navigation';import Image from 'next/image';
+import { LayoutDashboard, Megaphone, TrendingUp, BarChart2, Image as ImageIcon,
   Files, Calendar, MessageSquare, FileText, LifeBuoy, Settings, LogOut, Zap, Bell,
   FolderKanban, Receipt, Folder,
 } from 'lucide-react';
@@ -130,13 +129,14 @@ export function PortalSidebar() {
     <aside className="w-64 flex-shrink-0 bg-[#111827] flex flex-col h-screen sticky top-0 overflow-hidden">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[#1F2937]">
-        <div className="w-8 h-8 rounded-lg bg-[#4C1D95] flex items-center justify-center flex-shrink-0">
-          <Zap size={15} className="text-white" />
-        </div>
-        <div>
-          <span className="text-white font-bold text-sm" style={{ fontFamily: "'Sora', sans-serif" }}>Amplivo</span>
-          <div className="text-[#4B5563] text-[10px]">Client Portal</div>
-        </div>
+        <Image
+          src="/images/Logo.png"
+          alt="Amplivo"
+          width={120}
+          height={32}
+          className="object-contain"
+          style={{ height: '32px', width: 'auto' }}
+        />
       </div>
 
       {/* User Info */}
