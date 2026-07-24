@@ -90,7 +90,6 @@ export default function LoginPage() {
   };
 
   return (
-<<<<<<< Updated upstream
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#F8F9FA]">
       {/* Vibrant Premium Background Mesh */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
@@ -98,7 +97,6 @@ export default function LoginPage() {
         <div className="absolute top-[10%] -right-[10%] w-[40vw] h-[40vw] max-w-[600px] max-h-[600px] bg-gradient-to-bl from-[#06B6D4]/30 to-[#3B82F6]/30 rounded-full blur-[100px]" />
         <div className="absolute -bottom-[20%] left-[10%] w-[60vw] h-[60vw] max-w-[900px] max-h-[900px] bg-gradient-to-tr from-[#EC4899]/30 to-[#F43F5E]/30 rounded-full blur-[120px]" />
         <div className="absolute inset-0 bg-white/40 backdrop-blur-[50px]" />
->>>>>>> Stashed changes
       </div>
 
       {/* Centered Login Card */}
