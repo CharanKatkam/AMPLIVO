@@ -16,7 +16,9 @@ class ActivityLogService:
         self._session = session
         self._repo = ActivityLogRepository(session)
 
-    async def list_all(self, skip: int = 0, limit: int = 100) -> list[ActivityLog]:
+    async def list_all(self, skip: int = 0, limit: int = 100, *, entity_type: str | None = None, entity_id: uuid.UUID | None = None) -> list[ActivityLog]:
+        if entity_type or entity_id:
+            return await self._repo.get_all_filtered(entity_type=entity_type, entity_id=entity_id, offset=skip, limit=limit)
         return await self._repo.get_all(offset=skip, limit=limit)
 
     async def get(self, id: uuid.UUID) -> ActivityLog:

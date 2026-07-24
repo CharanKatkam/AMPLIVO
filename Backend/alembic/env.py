@@ -24,6 +24,7 @@ from app.modules.crm import models as crm_models # noqa: F401
 from app.modules.finance import models as finance_models # noqa: F401
 from app.modules.influencers import models as influencers_models # noqa: F401
 from app.modules.leads import models as leads_models # noqa: F401
+from app.modules.meetings import models as meetings_models # noqa: F401
 from app.modules.notifications import models as notifications_models # noqa: F401
 from app.modules.paidads import models as paidads_models # noqa: F401
 from app.modules.seo import models as seo_models # noqa: F401

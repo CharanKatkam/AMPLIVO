@@ -6,7 +6,7 @@ from app.modules.finance.repository import *
 from app.modules.finance.service import *
 
 def get_invoice_service(db: AsyncSession = Depends(get_db)) -> InvoiceService:
-    return InvoiceService(InvoiceRepository(db))
+    return InvoiceService(db, InvoiceRepository(db))
 
 def get_invoice_item_service(db: AsyncSession = Depends(get_db)) -> InvoiceItemService:
     return InvoiceItemService(InvoiceItemRepository(db))

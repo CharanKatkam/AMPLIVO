@@ -19,3 +19,6 @@ def get_client_document_service(db: AsyncSession = Depends(get_db)) -> ClientDoc
 
 def get_client_note_service(db: AsyncSession = Depends(get_db)) -> ClientNoteService:
     return ClientNoteService(db, ClientNoteRepository(db))
+
+def get_proposal_service(db: AsyncSession = Depends(get_db)) -> ProposalService:
+    return ProposalService(db, ProposalRepository(db))

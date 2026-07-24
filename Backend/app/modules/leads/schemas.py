@@ -25,22 +25,24 @@ class LeadCreate(BaseModel):
     company_name: str | None = None; contact_name: str | None = None
     email: str | None = None; phone: str | None = None
     source_id: uuid.UUID | None = None; client_id: uuid.UUID | None = None
-    status: str = "new"; priority: str = "medium"
+    status: str = "new"; pipeline_stage_id: uuid.UUID | None = None; priority: str = "medium"
     estimated_value: float | None = None; assigned_to: uuid.UUID | None = None; notes: str | None = None
+    interested_services: list[str] | None = None
 class LeadUpdate(BaseModel):
     title: str | None = Field(None, min_length=2, max_length=300)
     company_name: str | None = None; contact_name: str | None = None
     email: str | None = None; phone: str | None = None
     source_id: uuid.UUID | None = None; client_id: uuid.UUID | None = None
-    status: str | None = None; priority: str | None = None
+    status: str | None = None; pipeline_stage_id: uuid.UUID | None = None; priority: str | None = None
     estimated_value: float | None = None; assigned_to: uuid.UUID | None = None; notes: str | None = None
+    interested_services: list[str] | None = None
 class LeadRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID; title: str; company_name: str | None; contact_name: str | None
     email: str | None; phone: str | None; source_id: uuid.UUID | None; client_id: uuid.UUID | None
-    status: str; priority: str; estimated_value: float | None
+    status: str; pipeline_stage_id: uuid.UUID | None; priority: str; estimated_value: float | None
     assigned_to: uuid.UUID | None; converted_client_id: uuid.UUID | None
-    converted_at: datetime | None; notes: str | None
+    converted_at: datetime | None; notes: str | None; interested_services: list[str] | None
     created_by: uuid.UUID | None; created_at: datetime; updated_at: datetime
 
 # ── LeadActivity ──
@@ -79,4 +81,5 @@ class SalesPipelineRead(BaseModel):
 
 # ── Lead Conversion ──
 class LeadConvertRequest(BaseModel):
-    client_id: uuid.UUID
+    # If omitted, a new Client is created automatically from the lead's own fields.
+    client_id: uuid.UUID | None = None
