@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Image from 'next/image';
+import { Logo } from '@/components/ui/Logo';
 import { Zap, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
@@ -93,17 +93,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center px-6 bg-white">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <Link href="/" className="flex items-center mb-10">
-            <Image
-              src="/images/Logo.png"
-              alt="Amplivo Digital Growth"
-              width={160}
-              height={44}
-              priority
-              className="object-contain"
-              style={{ height: '44px', width: 'auto' }}
-            />
-          </Link>
+          <Logo size="auth" href="/" className="flex items-center mb-10" />
 
           <h1 className="text-3xl font-bold text-slate-900 mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>
             Create an account
