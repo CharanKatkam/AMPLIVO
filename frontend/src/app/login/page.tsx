@@ -174,6 +174,7 @@ export default function LoginPage() {
             <label className="block text-[13px] font-medium text-slate-700">Email <span className="text-red-500">*</span></label>
             <input
               type="email"
+              placeholder="you@company.com"
               {...register('email')}
               className={`w-full bg-white border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#4C1D95] focus:border-[#4C1D95] transition-shadow shadow-sm ${
                 errors.email ? 'border-red-300' : 'border-slate-200'
@@ -187,6 +188,7 @@ export default function LoginPage() {
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
                 {...register('password')}
                 className={`w-full bg-white border rounded-lg px-3 py-2.5 text-sm pr-9 focus:outline-none focus:ring-1 focus:ring-[#4C1D95] focus:border-[#4C1D95] transition-shadow shadow-sm ${
                   errors.password ? 'border-red-300' : 'border-slate-200'
@@ -206,7 +208,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-between text-[13px] pt-1 pb-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" {...register('rememberMe')} className="rounded border-slate-300 text-[#4C1D95] focus:ring-[#4C1D95]" />
-              <span className="text-slate-600">Remember me for 30 days</span>
+              <span className="text-slate-600">Remember me</span>
             </label>
             <Link href="/forgot-password" className="text-[#4C1D95] font-medium hover:underline">
               Forgot password?

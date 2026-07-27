@@ -140,10 +140,12 @@ export default function InvoicesPage() {
           <h3 className="text-sm font-semibold text-slate-500 mb-1">Total Paid</h3>
           <div className="text-3xl font-bold text-slate-900">₹{totalPaid.toLocaleString()}</div>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm bg-slate-900 text-white flex flex-col justify-center items-start">
-          <h3 className="text-sm font-semibold text-white/70 mb-2">Total Invoices</h3>
-          <div className="text-3xl font-bold">{invoices.length}</div>
-          <p className="text-xs text-white/50 mt-2">{paidInvoices.length} paid / {pendingInvoices.length} pending</p>
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-500 mb-1">Total Invoices</h3>
+          <div className="text-3xl font-bold text-slate-900">{invoices.length}</div>
+          <p className="text-xs text-slate-500 font-medium mt-2">
+            {paidInvoices.length} paid / {pendingInvoices.length} pending
+          </p>
         </div>
       </div>
 
