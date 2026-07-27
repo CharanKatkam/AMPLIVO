@@ -32,7 +32,7 @@ const typeStyle: Record<Meeting['type'], string> = {
 type FilterType = 'All' | 'Upcoming' | 'Completed' | 'No-Show';
 
 export default function MeetingsPage() {
-  const { meetings, leads, scheduleMeeting } = useSalesStore();
+  const { meetings, leads, scheduleMeeting, completeMeeting } = useSalesStore();
   const [filter, setFilter] = useState<FilterType>('All');
   const [showModal, setShowModal] = useState(false);
 
@@ -152,7 +152,10 @@ export default function MeetingsPage() {
                     View Lead
                   </Link>
                   {meeting.status === 'Scheduled' && (
-                    <button className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-colors">
+                    <button 
+                      onClick={() => completeMeeting(meeting.id, meeting.notes || '')}
+                      className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-colors"
+                    >
                       <CheckCircle2 size={12} /> Mark Done
                     </button>
                   )}

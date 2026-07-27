@@ -5,6 +5,7 @@ import { Footer } from '@/components/marketing/Footer';
 import { MapPin, Mail, Clock, ArrowRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
 import { consultationService } from '@/services/moduleServices';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 
 const offices = [
   { city: 'Hyderabad', address: 'Hi-Tech City, Hyderabad, Telangana 500081', email: 'hyderabad@amplivo.in', flag: '🇮🇳', primary: true },
@@ -157,19 +158,21 @@ export default function ContactPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name *</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           name="name"
                           value={form.name}
                           onChange={handleChange}
                           placeholder="Rajesh Kumar"
+                          pattern="[A-Za-z\s]+"
+                          title="Only letters and spaces are allowed"
                           className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95] ${fieldErrors.name ? 'border-red-300' : 'border-slate-200'}`}
                         />
                         {fieldErrors.name && <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Company *</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Company <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           name="company"
@@ -183,7 +186,7 @@ export default function ContactPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Business Email *</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Business Email <span className="text-red-500">*</span></label>
                       <input
                         type="email"
                         name="email"
@@ -197,13 +200,9 @@ export default function ContactPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone Number</label>
-                      <input
-                        type="tel"
-                        name="phone"
+                      <PhoneInput
                         value={form.phone}
-                        onChange={handleChange}
-                        placeholder="Enter phone number"
-                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+                        onChange={(val) => setForm(prev => ({ ...prev, phone: val || '' }))}
                       />
                     </div>
 

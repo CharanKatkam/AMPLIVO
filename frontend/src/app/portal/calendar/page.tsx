@@ -268,7 +268,7 @@ function RequestPostModal({ onClose, onCreated }: { onClose: () => void; onCreat
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMsg && <p className="text-sm text-red-600 bg-red-50 rounded-lg p-2">{errorMsg}</p>}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Title</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Title <span className="text-red-500">*</span></label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} required className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30" placeholder="e.g. Diwali sale announcement" />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -287,7 +287,7 @@ function RequestPostModal({ onClose, onCreated }: { onClose: () => void; onCreat
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">Preferred Date</label>
-            <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+            <input type="date" min={new Date().toISOString().split('T')[0]} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">Brief / Notes</label>

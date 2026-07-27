@@ -98,11 +98,12 @@ export function ScheduleMeetingModal({ leadId, leadName, company, onClose, onSch
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
-                <CalendarDays size={12} className="inline mr-1" />Date
+                <CalendarDays size={12} className="inline mr-1" />Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
                 required
+                min={new Date().toISOString().split('T')[0]}
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
                 className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
@@ -110,7 +111,7 @@ export function ScheduleMeetingModal({ leadId, leadName, company, onClose, onSch
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
-                <Clock size={12} className="inline mr-1" />Time
+                <Clock size={12} className="inline mr-1" />Time <span className="text-red-500">*</span>
               </label>
               <input
                 type="time"

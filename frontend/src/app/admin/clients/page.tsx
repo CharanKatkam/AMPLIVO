@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { AdminHeader } from '@/components/admin/AdminSidebar';
 import { clientService } from '@/services/crmService';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Search, Plus, Filter, MoreHorizontal, Mail, ExternalLink, X, Loader2, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 
 interface ClientRead {
@@ -399,7 +400,7 @@ export default function AdminClients() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Company Name *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Company Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
@@ -413,6 +414,8 @@ export default function AdminClients() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Display Name</label>
                 <input
                   type="text"
+                  pattern="[A-Za-z\s]+"
+                  title="Only letters and spaces are allowed"
                   value={formData.display_name}
                   onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
@@ -458,11 +461,9 @@ export default function AdminClients() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Phone</label>
-                  <input
-                    type="tel"
+                  <PhoneInput
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
+                    onChange={(val) => setFormData({ ...formData, phone: val || '' })}
                     placeholder="+1 234 567 890"
                   />
                 </div>

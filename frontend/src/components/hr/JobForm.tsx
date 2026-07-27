@@ -50,7 +50,7 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
     <form className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Job Title</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Job Title <span className="text-red-500">*</span></label>
           <input
             type="text"
             name="title"
@@ -91,7 +91,7 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Location</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Location <span className="text-red-500">*</span></label>
           <input
             type="text"
             name="location"
@@ -99,6 +99,7 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
             onChange={handleChange}
             className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
             placeholder="e.g. Hyderabad, Remote"
+            required
           />
         </div>
 
@@ -118,7 +119,7 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Vacancies</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Vacancies <span className="text-red-500">*</span></label>
           <input
             type="number"
             name="vacancies"
@@ -126,18 +127,20 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
             onChange={handleChange}
             min={1}
             className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+            required
           />
         </div>
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Job Description</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Job Description <span className="text-red-500">*</span></label>
         <textarea
           name="description"
           value={formData.description}
           onChange={handleChange}
           rows={4}
           className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+          required
         />
       </div>
 

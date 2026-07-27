@@ -218,6 +218,12 @@ export const useSalesStore = create<SalesState>((set, get) => ({
       meetings: state.meetings.map((m) =>
         m.id === meetingId ? { ...m, status: 'Completed', notes } : m,
       ),
+      leads: state.leads.map((lead) => ({
+        ...lead,
+        meetings: lead.meetings.map((m) =>
+          m.id === meetingId ? { ...m, status: 'Completed', notes } : m
+        )
+      })),
     }));
   },
 

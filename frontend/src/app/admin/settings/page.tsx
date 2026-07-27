@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/admin/AdminSidebar';
 import { settingsService } from '@/services/moduleServices';
 import { useAuthStore } from '@/store/authStore';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Settings, Building2, Bell, Shield, Palette, Globe, Check, Loader2 } from 'lucide-react';
 
 export default function AdminSettings() {
@@ -147,7 +148,7 @@ export default function AdminSettings() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Support Phone</label>
-                    <input type="tel" value={form.support_phone} onChange={(e) => updateField('support_phone', e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]" />
+                    <PhoneInput value={form.support_phone} onChange={(val) => updateField('support_phone', val || '')} />
                   </div>
                 </div>
 

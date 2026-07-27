@@ -267,7 +267,7 @@ export default function AdminSocialCalendar() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Title *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Title <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
@@ -308,6 +308,7 @@ export default function AdminSocialCalendar() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Scheduled Date</label>
                 <input
                   type="date"
+                  min={new Date().toISOString().split('T')[0]}
                   value={form.scheduled_date}
                   onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
