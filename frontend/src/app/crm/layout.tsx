@@ -124,7 +124,7 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
         {/* Bottom */}
         <div className="p-3 border-t border-white/5 space-y-1">
           <Link
-            href="/sales/dashboard"
+            href="/sales"
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-all group"
           >
             <CheckCircle className="w-4 h-4 text-emerald-500 group-hover:text-emerald-400" />

@@ -1,10 +1,11 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PortalHeader } from '@/components/portal/PortalSidebar';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { supportTicketService, SupportTicketRead, SupportTicketCommentRead } from '@/services/portalServices';
+import { fileManagerService } from '@/services/moduleServices';
 import { useToastStore } from '@/store/toastStore';
-import { LifeBuoy, Loader2, Plus, Send, X } from 'lucide-react';
+import { LifeBuoy, Loader2, Plus, Send, X, Paperclip, FileText } from 'lucide-react';
 
 const CATEGORIES = ['general', 'billing', 'technical', 'campaign', 'creative'];
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
@@ -70,8 +71,10 @@ export default function SupportTicketsPage() {
             tickets.map((t) => (
               <button key={t.id} onClick={() => setSelected(t)} className="w-full text-left flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  {/* BUG-014: subject and status badge are clearly separated as flex items */}
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-semibold text-slate-900 text-sm truncate">{t.subject}</span>
+                    {/* StatusBadge is a standalone styled element, not mixed into text */}
                     <StatusBadge status={t.status} />
                   </div>
                   <p className="text-xs text-slate-500 truncate">{t.description}</p>
@@ -100,6 +103,10 @@ function CreateTicketModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const [priority, setPriority] = useState('medium');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  // BUG-013: attachment state
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const attachmentRef = useRef<HTMLInputElement>(null);
   const showToast = useToastStore((s) => s.showToast);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,7 +118,28 @@ function CreateTicketModal({ onClose, onCreated }: { onClose: () => void; onCrea
     setSubmitting(true);
     setErrorMsg('');
     try {
-      const ticket = await supportTicketService.create({ subject: subject.trim(), description: description.trim(), category, priority });
+      let attachmentNote = '';
+      // BUG-013: Upload attachment if provided, append URL to description
+      if (attachment) {
+        setUploadingAttachment(true);
+        try {
+          const uploaded = await fileManagerService.uploadBinary(attachment);
+          const apiOrigin = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1').replace(/\/api\/v1\/?$/, '');
+          const url = uploaded.url.startsWith('http') ? uploaded.url : `${apiOrigin}${uploaded.url}`;
+          attachmentNote = `\n\n📎 Attachment: ${uploaded.original_name} - ${url}`;
+        } catch {
+          showToast('Warning: Could not upload attachment. Ticket will be submitted without it.', 'error');
+        } finally {
+          setUploadingAttachment(false);
+        }
+      }
+
+      const ticket = await supportTicketService.create({
+        subject: subject.trim(),
+        description: description.trim() + attachmentNote,
+        category,
+        priority,
+      });
       onCreated(ticket);
       onClose();
     } catch {
@@ -122,9 +150,19 @@ function CreateTicketModal({ onClose, onCreated }: { onClose: () => void; onCrea
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setAttachment(file);
+  };
+
+  const removeAttachment = () => {
+    setAttachment(null);
+    if (attachmentRef.current) attachmentRef.current.value = '';
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-slate-900">New Support Ticket</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
@@ -132,12 +170,31 @@ function CreateTicketModal({ onClose, onCreated }: { onClose: () => void; onCrea
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMsg && <p className="text-sm text-red-600 bg-red-50 rounded-lg p-2">{errorMsg}</p>}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Subject <span className="text-red-500">*</span></label>
-            <input value={subject} onChange={(e) => setSubject(e.target.value)} required className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30" placeholder="Brief summary of your request" />
+            {/* BUG-012: Required asterisk on Subject label */}
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Subject <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              required
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30"
+              placeholder="Brief summary of your request"
+            />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Description <span className="text-red-500">*</span></label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} required rows={4} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30" placeholder="Describe your issue or request in detail" />
+            {/* BUG-012: Required asterisk on Description label */}
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+              rows={4}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30"
+              placeholder="Describe your issue or request in detail"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -153,10 +210,55 @@ function CreateTicketModal({ onClose, onCreated }: { onClose: () => void; onCrea
               </select>
             </div>
           </div>
+
+          {/* BUG-013: Attachment upload field */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Attachment <span className="text-slate-400 font-normal">(optional)</span></label>
+            <input
+              ref={attachmentRef}
+              type="file"
+              accept="image/*,.pdf,.doc,.docx,.txt,.zip"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {attachment ? (
+              <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+                  <FileText size={16} className="text-[#4C1D95]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">{attachment.name}</p>
+                  <p className="text-xs text-slate-400">{(attachment.size / 1024).toFixed(1)} KB</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeAttachment}
+                  className="text-slate-400 hover:text-red-500 p-1 rounded transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => attachmentRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-slate-300 text-slate-500 hover:border-[#4C1D95] hover:text-[#4C1D95] rounded-lg text-sm font-medium w-full justify-center transition-colors"
+              >
+                <Paperclip size={15} />
+                Attach Screenshot / File
+              </button>
+            )}
+          </div>
+
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="flex-1 border border-slate-200 rounded-lg py-2.5 text-sm font-medium text-slate-600">Cancel</button>
-            <button type="submit" disabled={submitting} className="flex-1 bg-[#4C1D95] text-white rounded-lg py-2.5 text-sm font-medium disabled:opacity-60">
-              {submitting ? 'Submitting...' : 'Submit Ticket'}
+            <button
+              type="submit"
+              disabled={submitting || uploadingAttachment}
+              className="flex-1 bg-[#4C1D95] text-white rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {(submitting || uploadingAttachment) && <Loader2 size={14} className="animate-spin" />}
+              {submitting ? 'Submitting...' : uploadingAttachment ? 'Uploading...' : 'Submit Ticket'}
             </button>
           </div>
         </form>
@@ -194,10 +296,12 @@ function TicketDetailModal({ ticket, onClose }: { ticket: SupportTicketRead; onC
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-bold text-slate-900">{ticket.subject}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+          {/* BUG-014: subject clearly separated from status badge */}
+          <h3 className="font-bold text-slate-900 truncate">{ticket.subject}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 shrink-0 ml-2"><X size={18} /></button>
         </div>
         <div className="flex items-center gap-2 mb-4">
+          {/* BUG-014: StatusBadge is standalone, not part of text */}
           <StatusBadge status={ticket.status} />
           <span className="text-xs text-slate-400 capitalize">{ticket.category} · {ticket.priority} priority</span>
         </div>

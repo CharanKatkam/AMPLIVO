@@ -2,12 +2,15 @@
 
 import { useCrmStore } from '@/store/crmStore';
 import { EmployeeHeader } from '@/components/employee/EmployeeHeader';
-import { Bell, Check, Trash2, ArrowRight } from 'lucide-react';
+import { Bell, Check, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EmployeeNotifications() {
   const { notifications, markNotificationRead, markAllNotificationsRead } = useCrmStore();
   const myNotifications = notifications; // In a real app we'd filter by activeEmployeeId if notifs were targeted. For demo we share all CRM notifs for visibility.
+
+  // BUG-08 Fix: Check if there are any unread notifications
+  const hasUnread = myNotifications.some(n => !n.read);
 
   return (
     <div className="flex flex-col min-h-full">
@@ -16,9 +19,13 @@ export default function EmployeeNotifications() {
       <div className="p-6 max-w-4xl mx-auto w-full">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg font-bold text-slate-900">Recent Notifications</h2>
+          
+          {/* BUG-08 Fix: Disable "Mark all as read" button when empty or no unread notifications */}
           <button 
             onClick={() => markAllNotificationsRead()}
-            className="flex items-center gap-2 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors"
+            disabled={!hasUnread}
+            title={!hasUnread ? "No unread notifications" : undefined}
+            className="flex items-center gap-2 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-indigo-600"
           >
             <Check size={16} /> Mark all as read
           </button>

@@ -92,7 +92,7 @@ export default function PortalDashboard() {
   if (loading) {
     return (
       <div>
-        <PortalHeader title="Dashboard" subtitle="Welcome back" />
+        <PortalHeader title="Client User" subtitle="Welcome back to your portal" />
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 size={32} className="animate-spin text-[#4C1D95]" />
         </div>
@@ -102,7 +102,7 @@ export default function PortalDashboard() {
 
   return (
     <div>
-      <PortalHeader title="Dashboard" subtitle="Welcome back" />
+      <PortalHeader title="Client User" subtitle="Welcome back to your portal" />
 
       <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {error && (
