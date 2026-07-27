@@ -203,11 +203,14 @@ export default function LoginPage() {
             {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
           </div>
 
-          <div className="flex items-center text-[13px] pt-1 pb-2">
+          <div className="flex items-center justify-between text-[13px] pt-1 pb-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" {...register('rememberMe')} className="rounded border-slate-300 text-[#4C1D95] focus:ring-[#4C1D95]" />
               <span className="text-slate-600">Remember me for 30 days</span>
             </label>
+            <Link href="/forgot-password" className="text-[#4C1D95] font-medium hover:underline">
+              Forgot password?
+            </Link>
           </div>
 
           <button

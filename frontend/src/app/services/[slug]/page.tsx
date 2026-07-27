@@ -127,9 +127,7 @@ function ServiceHeroBackground({ slug }: { slug: string }) {
   }
 }
 
-export async function generateStaticParams() {
-  return services.map((s) => ({ slug: s.slug }));
-}
+// SSG bypassed
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

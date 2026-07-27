@@ -62,38 +62,44 @@ export default function PortfolioPage() {
           </AnimateOnScroll>
 
           {/* Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-5">
-            {filteredItems.map((item, i) => (
-              <AnimateOnScroll key={item.id} animation="scale-in" delay={i * 60}>
-              <div
-                className={`relative group overflow-hidden rounded-2xl cursor-pointer card-hover ${i === 0 ? 'col-span-2 row-span-1' : ''}`}
-                onClick={() => setSelectedItem(item)}
-              >
-                <div className="w-full overflow-hidden h-56">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-[#111827]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <div className="text-[#06B6D4] text-xs font-semibold uppercase tracking-wider mb-1">{item.category}</div>
-                    <h3 className="text-white font-semibold text-sm mb-2 leading-snug">{item.title}</h3>
-                    <div className="flex flex-wrap gap-1.5">
-                      {item.tags.map((tag) => (
-                        <span key={tag} className="bg-white/15 text-white text-[10px] px-2 py-0.5 rounded">{tag}</span>
-                      ))}
+          {filteredItems.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-5">
+              {filteredItems.map((item, i) => (
+                <AnimateOnScroll key={item.id} animation="scale-in" delay={i * 60}>
+                <div
+                  className={`relative group overflow-hidden rounded-2xl cursor-pointer card-hover ${i === 0 ? 'col-span-2 row-span-1' : ''}`}
+                  onClick={() => setSelectedItem(item)}
+                >
+                  <div className="w-full overflow-hidden h-56">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#111827]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                      <div className="text-[#06B6D4] text-xs font-semibold uppercase tracking-wider mb-1">{item.category}</div>
+                      <h3 className="text-white font-semibold text-sm mb-2 leading-snug">{item.title}</h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.tags.map((tag) => (
+                          <span key={tag} className="bg-white/15 text-white text-[10px] px-2 py-0.5 rounded">{tag}</span>
+                        ))}
+                      </div>
                     </div>
                   </div>
+                  <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    {item.client}
+                  </div>
                 </div>
-                <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-[10px] font-semibold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                  {item.client}
-                </div>
-              </div>
-              </AnimateOnScroll>
-            ))}
-          </div>
+                </AnimateOnScroll>
+              ))}
+            </div>
+          ) : (
+            <div className="py-12 text-center">
+              <p className="text-slate-500 text-lg font-medium">There are currently no portfolio projects available in this category.</p>
+            </div>
+          )}
         </div>
       </section>
 

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+export const dynamic = 'force-dynamic';
 import { PageTransition } from '@/components/PageTransition';
 import './globals.css';
 

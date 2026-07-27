@@ -11,9 +11,7 @@ import { BlogInsightCard } from '@/components/marketing/BlogInsightCard';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
 import { BackButton } from '@/components/ui/BackButton';
 
-export async function generateStaticParams() {
-  return blogPosts.map((post) => ({ slug: post.slug }));
-}
+// SSG bypassed
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
