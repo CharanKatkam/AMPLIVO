@@ -8,7 +8,7 @@ import { useSalesStore } from '@/store/salesStore';
 import { salesMonthlyData } from '@/data/sales';
 import {
   Users, CalendarDays, Clock, Trophy, XCircle, TrendingUp, Zap,
-  ArrowRight, Video, Phone, MapPin, Monitor,
+  ArrowRight, Video, Phone, MapPin, Monitor, Plus
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -69,7 +69,7 @@ export default function SalesDashboard() {
             href="/sales/leads"
             className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-[#4C1D95] text-white rounded-xl text-xs md:text-sm font-semibold hover:bg-[#3b1574] transition-colors whitespace-nowrap"
           >
-            <Zap size={15} className="shrink-0" /> <span className="hidden sm:inline">View All Leads</span>
+            <Plus size={16} className="shrink-0" /> <span className="hidden sm:inline">Add Lead</span>
           </Link>
         }
       />
