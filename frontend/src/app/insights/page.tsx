@@ -7,6 +7,8 @@ import { CTASection } from '@/components/marketing/CTASection';
 import { blogPosts } from '@/data/blogPosts';
 import { Clock, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { PageHero } from '@/components/marketing/PageHero';
+import { insightsHero } from '@/data/heroConfigs';
 
 const categories = ['All', 'Performance Marketing', 'SEO', 'Social Media', 'Content Marketing', 'Influencer Marketing', 'Marketing Automation'];
 
@@ -21,23 +23,7 @@ export default function BlogPage() {
     <main>
       <Navbar />
 
-      {/* Hero */}
-      <section
-        className="pt-32 pb-20 relative overflow-hidden"
-        style={{ background: 'linear-gradient(140deg, #1a0540 0%, #4C1D95 40%, #7C3AED 80%, #06B6D4 100%)' }}
-      >
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <span className="inline-block bg-white/10 border border-white/20 text-white text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-widest">
-            Insights Blog
-          </span>
-          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-5" style={{ fontFamily: "'Sora', sans-serif" }}>
-            Marketing Insights & Growth Strategies
-          </h1>
-          <p className="text-white/75 text-lg max-w-xl mx-auto">
-            Expert perspectives on digital marketing, SEO, performance advertising, and brand building for ambitious businesses.
-          </p>
-        </div>
-      </section>
+      <PageHero config={insightsHero} />
 
       {/* Blog Grid */}
       <section className="py-24 bg-[#F9FAFB]">

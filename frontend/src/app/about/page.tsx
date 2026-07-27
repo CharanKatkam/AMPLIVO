@@ -5,6 +5,8 @@ import { CTASection } from '@/components/marketing/CTASection';
 import { teamMembers } from '@/data/team';
 import { Briefcase, MapPin, Calendar, Users, Award, Globe, Linkedin } from 'lucide-react';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
+import { PageHero } from '@/components/marketing/PageHero';
+import { aboutHero } from '@/data/heroConfigs';
 
 export const metadata: Metadata = {
   title: 'About Amplivo | Premium Digital Marketing Agency | Hyderabad',
@@ -40,51 +42,29 @@ export default function AboutPage() {
     <main>
       <Navbar />
 
-      {/* Hero */}
-      <section
-        className="pt-32 pb-10 relative overflow-hidden"
-        style={{ background: 'linear-gradient(140deg, #1a0540 0%, #4C1D95 40%, #7C3AED 80%, #06B6D4 100%)' }}
-      >
-        <div className="max-w-4xl mx-auto px-6 text-center relative">
-          <AnimateOnScroll animation="fade-in">
-            <span className="inline-block bg-white/10 border border-white/20 text-white text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-widest">
-              About Amplivo
-            </span>
-          </AnimateOnScroll>
-          <AnimateOnScroll animation="fade-up" delay={80}>
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6" style={{ fontFamily: "'Sora', sans-serif" }}>
-              We Are a Digital Growth<br />Agency That Delivers Results
-            </h1>
-          </AnimateOnScroll>
-          <AnimateOnScroll animation="fade-up" delay={160}>
-            <p className="text-white/75 text-lg leading-relaxed max-w-2xl mx-auto">
-              Amplivo combines creativity, technology, and marketing analytics to help businesses amplify their digital presence and accelerate measurable growth.
-            </p>
-          </AnimateOnScroll>
-        </div>
-      </section>
+      <PageHero config={aboutHero} />
 
       {/* Mission & Vision */}
       <section className="py-10 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12">
             <AnimateOnScroll animation="fade-right">
-              <div className="bg-gradient-to-br from-[#4C1D95] to-[#7C3AED] rounded-2xl p-8 text-white h-full">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                  <Globe size={22} className="text-white" />
+              <div className="bg-white rounded-3xl p-8 border border-[#E8ECF4] shadow-[0_8px_32px_rgba(15,23,42,0.06),0_2px_8px_rgba(15,23,42,0.03)] h-full transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-[0_16px_48px_rgba(15,23,42,0.10),0_6px_20px_rgba(15,23,42,0.05)]">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 bg-gradient-to-br from-[#7C3AED]/12 to-[#EC4899]/12">
+                  <Globe size={22} className="text-[#7C3AED]" />
                 </div>
-                <h2 className="text-2xl font-bold mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>Our Vision</h2>
-                <p className="text-white/85 leading-relaxed">
+                <h2 className="text-2xl font-bold text-[#0F172A] mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>Our Vision</h2>
+                <p className="text-slate-600 leading-relaxed">
                   To become a high-performance digital growth company known for measurable campaigns, outstanding creative execution, and transparent client reporting — trusted by ambitious brands across India and globally.
                 </p>
               </div>
             </AnimateOnScroll>
             <AnimateOnScroll animation="fade-left">
-              <div className="bg-[#F9FAFB] rounded-2xl p-8 border border-slate-200 h-full">
-                <div className="w-12 h-12 bg-[#4C1D95]/10 rounded-xl flex items-center justify-center mb-6">
-                  <Award size={22} className="text-[#4C1D95]" />
+              <div className="bg-white rounded-3xl p-8 border border-[#E8ECF4] shadow-[0_8px_32px_rgba(15,23,42,0.06),0_2px_8px_rgba(15,23,42,0.03)] h-full transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-[0_16px_48px_rgba(15,23,42,0.10),0_6px_20px_rgba(15,23,42,0.05)]">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-6 bg-gradient-to-br from-[#7C3AED]/12 to-[#EC4899]/12">
+                  <Award size={22} className="text-[#7C3AED]" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>Our Mission</h2>
+                <h2 className="text-2xl font-bold text-[#0F172A] mb-4" style={{ fontFamily: "'Sora', sans-serif" }}>Our Mission</h2>
                 <p className="text-slate-600 leading-relaxed">
                   To help businesses acquire customers and build strong digital brands through data-driven marketing, compelling content, and scalable technology — delivering measurable ROI on every engagement.
                 </p>

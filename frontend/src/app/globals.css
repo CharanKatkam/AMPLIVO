@@ -243,4 +243,70 @@ a:active, button:active {
   transform: translateY(-4px);
   box-shadow: 0 16px 48px rgba(76,29,149,0.12);
 }
+
+/* ── Gradient Shift ───────────────────────────────────── */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 20s ease infinite;
+}
+
+/* ── Ken Burns ────────────────────────────────────────── */
+@keyframes kenBurns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+.animate-ken-burns {
+  animation: kenBurns 15s ease-in-out infinite alternate;
+}
+
+/* ── Float ────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-8px); }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ── Float Slow ───────────────────────────────────────── */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25%      { transform: translateY(-6px) rotate(0.5deg); }
+  75%      { transform: translateY(4px) rotate(-0.3deg); }
+}
+.animate-float-slow {
+  animation: floatSlow 8s ease-in-out infinite;
+}
+
+/* ── Pulse Node ───────────────────────────────────────── */
+@keyframes pulseNode {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 0.2; transform: scale(1.5); }
+}
+.animate-pulse-node {
+  animation: pulseNode 3s ease-in-out infinite;
+}
+
+/* ── Chart Rise ───────────────────────────────────────── */
+@keyframes chartRise {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+.animate-chart-rise {
+  animation: chartRise 0.8s ease-out forwards;
+}
+
+/* ── Reduced Motion ───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-shift,
+  .animate-ken-burns,
+  .animate-float,
+  .animate-float-slow,
+  .animate-pulse-node { animation: none !important; }
+}
 

@@ -6,6 +6,8 @@ import { CTASection } from '@/components/marketing/CTASection';
 import { services } from '@/data/services';
 import { ArrowRight, Share2, Target, Search, Palette, FileText, Users, Globe, Zap, Star, Video } from 'lucide-react';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
+import { PageHero } from '@/components/marketing/PageHero';
+import { servicesHero } from '@/data/heroConfigs';
 
 export const metadata: Metadata = {
   title: 'Digital Marketing Services | Amplivo | SEO, Ads, Social Media',
@@ -21,27 +23,7 @@ export default function ServicesPage() {
     <main>
       <Navbar />
 
-      {/* Hero */}
-      <section
-        className="pt-32 pb-20 relative overflow-hidden"
-        style={{ background: 'linear-gradient(140deg, #1a0540 0%, #4C1D95 40%, #7C3AED 80%, #06B6D4 100%)' }}
-      >
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <AnimateOnScroll animation="fade-in">
-            <span className="inline-block bg-white/10 border border-white/20 text-white text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-widest">
-              All Services
-            </span>
-          </AnimateOnScroll>
-          <AnimateOnScroll animation="fade-up" delay={80}>
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-5" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Integrated Digital Marketing Services
-            </h1>
-            <p className="text-white/75 text-lg leading-relaxed max-w-2xl mx-auto">
-              From visibility to conversion, every service is designed to create compounding growth and measurable ROI for your business.
-            </p>
-          </AnimateOnScroll>
-        </div>
-      </section>
+      <PageHero config={servicesHero} />
 
       {/* Services Grid */}
       <section className="py-24 bg-[#F9FAFB]">
