@@ -22,7 +22,7 @@ export const caseStudies: CaseStudy[] = [
       { label: 'Booking Conversions', value: '47' },
       { label: 'Campaign ROI', value: '342%' },
     ],
-    image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=500&fit=crop&auto=format',
+    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop&auto=format',
     testimonial: 'Amplivo transformed our digital lead pipeline. The quality of leads improved dramatically and our sales team is closing more deals with less effort.',
     objective: 'Generate qualified real estate leads for luxury 3BHK and 4BHK apartments, reduce the cost per lead (CPL) by 40%, and integrate a automated CRM lead assignment system for the sales team within 90 days.',
     budgetRange: '₹5,00,000 - ₹8,00,000',

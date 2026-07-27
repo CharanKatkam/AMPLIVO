@@ -6,6 +6,8 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Briefcase, MapPin, Clock, ArrowRight, Zap, Users, GraduationCap, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
+import { PageHero } from '@/components/marketing/PageHero';
+import { careersHero } from '@/data/heroConfigs';
 
 export const metadata: Metadata = {
   title: 'Careers | Join Amplivo',
@@ -26,35 +28,7 @@ export default function CareersPage() {
     <main>
       <Navbar />
 
-      {/* Hero */}
-      <section
-        className="pt-32 pb-10 relative overflow-hidden"
-        style={{ background: 'linear-gradient(140deg, #1a0540 0%, #4C1D95 40%, #EC4899 100%)' }}
-      >
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <AnimateOnScroll animation="fade-in">
-            <span className="inline-block bg-white/10 border border-white/20 text-white text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-widest">
-              Careers at Amplivo
-            </span>
-          </AnimateOnScroll>
-          <AnimateOnScroll animation="fade-up" delay={80}>
-            <h1 className="text-4xl lg:text-6xl font-bold text-white mb-5" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Do the Best Work of Your Life
-            </h1>
-            <p className="text-white/75 text-lg max-w-xl mx-auto mb-8">
-              We are always looking for curious, driven, and creative individuals to join our mission of amplifying brand growth.
-            </p>
-          </AnimateOnScroll>
-          <AnimateOnScroll animation="scale-in" delay={160}>
-            <a
-              href="#open-roles"
-              className="inline-flex items-center gap-2 bg-white text-[#4C1D95] font-semibold px-8 py-3.5 rounded-xl hover:bg-white/92 transition-all shadow-lg hover:-translate-y-1"
-            >
-              View Open Roles <ArrowRight size={16} />
-            </a>
-          </AnimateOnScroll>
-        </div>
-      </section>
+      <PageHero config={careersHero} />
 
       {/* Why Join Us */}
       <section className="py-10 bg-white">

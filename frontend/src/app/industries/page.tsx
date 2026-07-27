@@ -7,6 +7,8 @@ import { industries } from '@/data/industries';
 import { Building2, GraduationCap, Heart, Cpu, ShoppingBag, Shirt, Hotel, UtensilsCrossed, Car, TrendingUp, Rocket, Factory, Music, UserCircle, Briefcase, Package, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
+import { PageHero } from '@/components/marketing/PageHero';
+import { industriesHero } from '@/data/heroConfigs';
 
 export const metadata: Metadata = {
   title: 'Industries We Serve | Amplivo',
@@ -22,27 +24,7 @@ export default function IndustriesPage() {
     <main>
       <Navbar />
 
-      {/* Hero */}
-      <section
-        className="pt-32 pb-12 relative overflow-hidden"
-        style={{ background: 'linear-gradient(140deg, #1a0540 0%, #4C1D95 40%, #06B6D4 100%)' }}
-      >
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <AnimateOnScroll animation="fade-in">
-            <span className="inline-block bg-white/10 border border-white/20 text-white text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-widest">
-              Industries
-            </span>
-          </AnimateOnScroll>
-          <AnimateOnScroll animation="fade-up" delay={80}>
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-5" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Industries We Serve
-            </h1>
-            <p className="text-white/75 text-lg max-w-xl mx-auto">
-              We bring deep domain expertise to craft digital strategies that solve the unique challenges of your industry.
-            </p>
-          </AnimateOnScroll>
-        </div>
-      </section>
+      <PageHero config={industriesHero} />
 
       {/* Industries Grid */}
       <section className="pt-12 pb-24 bg-[#F9FAFB]">

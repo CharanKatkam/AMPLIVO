@@ -5,6 +5,8 @@ import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
 import { portfolioItems, portfolioCategories } from '@/data/portfolio';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
+import { PageHero } from '@/components/marketing/PageHero';
+import { portfolioHero } from '@/data/heroConfigs';
 import Link from 'next/link';
 import { X, ArrowRight } from 'lucide-react';
 
@@ -19,27 +21,7 @@ export default function PortfolioPage() {
     <main>
       <Navbar />
 
-      {/* Hero */}
-      <section
-        className="pt-32 pb-20 relative overflow-hidden"
-        style={{ background: 'linear-gradient(140deg, #1a0540 0%, #4C1D95 40%, #7C3AED 80%, #EC4899 100%)' }}
-      >
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <AnimateOnScroll animation="fade-in">
-            <span className="inline-block bg-white/10 border border-white/20 text-white text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-widest">
-              Our Portfolio
-            </span>
-          </AnimateOnScroll>
-          <AnimateOnScroll animation="fade-up" delay={80}>
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-5" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Work We Are Proud Of
-            </h1>
-            <p className="text-white/75 text-lg max-w-xl mx-auto">
-              Browse our campaigns across social media, SEO, paid advertising, branding, web development, and influencer marketing.
-            </p>
-          </AnimateOnScroll>
-        </div>
-      </section>
+      <PageHero config={portfolioHero} />
 
       {/* Portfolio Grid */}
       <section className="py-24 bg-[#F9FAFB]">
