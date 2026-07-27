@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { User as UserIcon, Building2, Bell, Shield, LogOut, Check, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';

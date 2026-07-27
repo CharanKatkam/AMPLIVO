@@ -1,14 +1,14 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import { Navbar } from '@/components/marketing/Navbar';
 import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
 import { caseStudies } from '@/data/caseStudies';
 import { CaseStudyDetailClient } from '@/components/marketing/CaseStudyDetailClient';
 
-export async function generateStaticParams() {
-  return caseStudies.map((cs) => ({ slug: cs.slug }));
-}
+// SSG bypassed
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

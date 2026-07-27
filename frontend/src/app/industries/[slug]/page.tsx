@@ -1,5 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Navbar } from '@/components/marketing/Navbar';
@@ -32,9 +34,7 @@ const industryImages: Record<string, string> = {
   'consumer-products': '/images/industries/industry_ecommerce_1784618574063.png',
 };
 
-export function generateStaticParams() {
-  return industries.map((ind) => ({ slug: ind.slug }));
-}
+// SSG bypassed due to workStore bug in Next 16 Turbopack
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
