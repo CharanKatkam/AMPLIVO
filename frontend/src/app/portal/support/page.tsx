@@ -132,11 +132,11 @@ function CreateTicketModal({ onClose, onCreated }: { onClose: () => void; onCrea
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMsg && <p className="text-sm text-red-600 bg-red-50 rounded-lg p-2">{errorMsg}</p>}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Subject</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Subject <span className="text-red-500">*</span></label>
             <input value={subject} onChange={(e) => setSubject(e.target.value)} required className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30" placeholder="Brief summary of your request" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Description</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Description <span className="text-red-500">*</span></label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} required rows={4} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30" placeholder="Describe your issue or request in detail" />
           </div>
           <div className="grid grid-cols-2 gap-3">

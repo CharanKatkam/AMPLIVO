@@ -220,7 +220,7 @@ export default function AdminCreatives() {
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">{saveError}</div>
               )}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Project Name *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Project Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required

@@ -279,6 +279,8 @@ export default function AdminFinance() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Client Name</label>
                 <input
                   type="text"
+                  pattern="[A-Za-z\s]+"
+                  title="Only letters and spaces are allowed"
                   value={form.client_name}
                   onChange={(e) => setForm({ ...form, client_name: e.target.value })}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
@@ -287,7 +289,7 @@ export default function AdminFinance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Amount (INR) *</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Amount (INR) <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     required
@@ -317,6 +319,7 @@ export default function AdminFinance() {
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Issue Date</label>
                   <input
                     type="date"
+                    min={new Date().toISOString().split('T')[0]}
                     value={form.issue_date}
                     onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
@@ -326,6 +329,7 @@ export default function AdminFinance() {
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Due Date</label>
                   <input
                     type="date"
+                    min={new Date().toISOString().split('T')[0]}
                     value={form.due_date}
                     onChange={(e) => setForm({ ...form, due_date: e.target.value })}
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"

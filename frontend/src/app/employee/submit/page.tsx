@@ -129,7 +129,7 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Select Task</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Select Task <span className="text-red-500">*</span></label>
             <select 
               value={selectedTaskId}
               onChange={(e) => setSelectedTaskId(e.target.value)}
@@ -145,7 +145,7 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Submission Title</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Submission Title <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               value={title}
@@ -212,7 +212,7 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
 
           {!isRevision && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Work Summary</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Work Summary <span className="text-red-500">*</span></label>
               <textarea 
                 value={workSummary}
                 onChange={(e) => setWorkSummary(e.target.value)}

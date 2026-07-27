@@ -227,10 +227,12 @@ export default function AdminInfluencers() {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Name *</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     required
+                    pattern="[A-Za-z\s]+"
+                    title="Only letters and spaces are allowed"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"

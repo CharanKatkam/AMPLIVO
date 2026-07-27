@@ -118,7 +118,7 @@ export default function RegisterPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 {...register('full_name')}
@@ -126,12 +126,14 @@ export default function RegisterPage() {
                   errors.full_name ? 'border-red-300' : 'border-slate-200'
                 }`}
                 placeholder="John Doe"
+                pattern="[A-Za-z\s]+"
+                title="Only letters and spaces are allowed"
               />
               {errors.full_name && <p className="text-red-500 text-xs mt-1.5">{errors.full_name.message}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address <span className="text-red-500">*</span></label>
               <input
                 type="email"
                 {...register('email')}
@@ -144,7 +146,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Username</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Username <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 {...register('username')}
@@ -157,7 +159,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password <span className="text-red-500">*</span></label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -179,7 +181,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm Password</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm Password <span className="text-red-500">*</span></label>
               <input
                 type="password"
                 {...register('confirmPassword')}

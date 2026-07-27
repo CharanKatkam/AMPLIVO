@@ -250,7 +250,7 @@ export default function AdminSEOProjects() {
                 <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">{saveError}</div>
               )}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Project Name *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Project Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
@@ -264,6 +264,8 @@ export default function AdminSEOProjects() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Client Name</label>
                 <input
                   type="text"
+                  pattern="[A-Za-z\s]+"
+                  title="Only letters and spaces are allowed"
                   value={form.client_name}
                   onChange={(e) => setForm({ ...form, client_name: e.target.value })}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
@@ -271,7 +273,7 @@ export default function AdminSEOProjects() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Domain</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Domain <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
