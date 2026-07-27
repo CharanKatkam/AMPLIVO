@@ -140,12 +140,10 @@ export default function InvoicesPage() {
           <h3 className="text-sm font-semibold text-slate-500 mb-1">Total Paid</h3>
           <div className="text-3xl font-bold text-slate-900">₹{totalPaid.toLocaleString()}</div>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-500 mb-1">Total Invoices</h3>
-          <div className="text-3xl font-bold text-slate-900">{invoices.length}</div>
-          <p className="text-xs text-slate-500 font-medium mt-2">
-            {paidInvoices.length} paid / {pendingInvoices.length} pending
-          </p>
+        <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-sm text-white flex flex-col justify-center items-start">
+          <h3 className="text-sm font-semibold text-white/70 mb-2">Total Invoices</h3>
+          <div className="text-3xl font-bold">{invoices.length}</div>
+          <p className="text-xs text-white/50 mt-2">{paidInvoices.length} paid / {pendingInvoices.length} pending</p>
         </div>
       </div>
 
@@ -160,9 +158,9 @@ export default function InvoicesPage() {
               <tr className="border-b border-slate-200 bg-slate-50">
                 <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Invoice</th>
                 <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Amount</th>
-                <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Status</th>
-                <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Action</th>
+                <th className="py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Amount</th>
+                <th className="py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                <th className="py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -185,8 +183,8 @@ export default function InvoicesPage() {
                       <div className="text-sm text-slate-900">{new Date(invoice.issue_date).toLocaleDateString()}</div>
                       <div className="text-xs text-slate-500">Due: {new Date(invoice.due_date).toLocaleDateString()}</div>
                     </td>
-                    <td className="py-4 px-6 text-right font-bold text-slate-900">₹{(invoice.total_amount || 0).toLocaleString()}</td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-4 px-4 text-right font-bold text-slate-900">₹{(invoice.total_amount || 0).toLocaleString()}</td>
+                    <td className="py-4 px-4 text-center">
                       {['paid', 'Paid', 'Completed'].includes(invoice.status) ? (
                         <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 text-xs font-bold px-2.5 py-1 rounded-full">
                           <CheckCircle2 size={12} /> Paid
@@ -197,7 +195,7 @@ export default function InvoicesPage() {
                         </span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-4 px-4 text-center">
                       <button
                         onClick={() => handleDownload(invoice)}
                         disabled={downloadingId === invoice.id}

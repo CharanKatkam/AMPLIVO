@@ -4,7 +4,7 @@ import { PortalHeader } from '@/components/portal/PortalSidebar';
 import { creativeService } from '@/services/moduleServices';
 import { useToastStore } from '@/store/toastStore';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Search, Image as ImageIcon, MessageSquare, Check, Download, History, Loader2, X, Send } from 'lucide-react';
+import { Search, Image as ImageIcon, MessageSquare, Check, Download, History, Loader2, X, Send, AlertTriangle } from 'lucide-react';
 
 interface CreativeProject { id: string; name: string; description?: string | null }
 interface CreativeAsset {
@@ -67,6 +67,8 @@ export default function PortalCreatives() {
   });
 
   const [showRejectModal, setShowRejectModal] = useState<AssetWithProject | null>(null);
+  // BUG-07: Separate state for "Request Changes" confirmation modal
+  const [showRequestChangesModal, setShowRequestChangesModal] = useState<AssetWithProject | null>(null);
 
   const handleApprove = async (asset: AssetWithProject) => {
     setUpdatingId(asset.id);
@@ -95,6 +97,27 @@ export default function PortalCreatives() {
     } finally {
       setUpdatingId(null);
       setShowRejectModal(null);
+    }
+  };
+
+  // BUG-07: Handle request changes - submit feedback and mark as changes_requested
+  const handleRequestChanges = async (asset: AssetWithProject, changeDetails: string) => {
+    setUpdatingId(asset.id);
+    try {
+      await creativeService.createFeedback(asset.id, { content: `Change request: ${changeDetails}` });
+      // Optionally update status to pending/changes_requested if API supports it
+      try {
+        await creativeService.updateAsset(asset.id, { status: 'changes_requested' });
+        setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, status: 'changes_requested' } : a)));
+      } catch {
+        // If status update isn't supported, just post the feedback
+      }
+      showToast('Change request submitted successfully.', 'success');
+    } catch {
+      showToast('Failed to submit change request.', 'error');
+    } finally {
+      setUpdatingId(null);
+      setShowRequestChangesModal(null);
     }
   };
 
@@ -194,8 +217,12 @@ export default function PortalCreatives() {
                       >
                         {updatingId === asset.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Approve
                       </button>
-                      <button onClick={() => setCommentAsset(asset)} className="flex items-center justify-center gap-1 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors">
-                        <MessageSquare size={14} /> Changes
+                      {/* BUG-07: "Changes" now opens RequestChangesModal, not comment thread */}
+                      <button
+                        onClick={() => setShowRequestChangesModal(asset)}
+                        className="flex items-center justify-center gap-1 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors"
+                      >
+                        <AlertTriangle size={14} /> Changes
                       </button>
                       <button
                         onClick={() => setShowRejectModal(asset)}
@@ -216,8 +243,12 @@ export default function PortalCreatives() {
                           {updatingId === asset.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Re-approve
                         </button>
                       ) : (
-                        <button onClick={() => setCommentAsset(asset)} className="flex items-center justify-center gap-1 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors">
-                          <MessageSquare size={14} /> Request Changes
+                        /* BUG-07: "Request Changes" now opens proper confirmation modal */
+                        <button
+                          onClick={() => setShowRequestChangesModal(asset)}
+                          className="flex items-center justify-center gap-1 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors"
+                        >
+                          <AlertTriangle size={14} /> Request Changes
                         </button>
                       )}
                       <button onClick={() => setCommentAsset(asset)} className="flex items-center justify-center gap-1 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">
@@ -271,6 +302,16 @@ export default function PortalCreatives() {
         />
       )}
 
+      {/* BUG-07: New Request Changes confirmation modal */}
+      {showRequestChangesModal && (
+        <RequestChangesModal
+          asset={showRequestChangesModal}
+          onConfirm={(details) => handleRequestChanges(showRequestChangesModal, details)}
+          onCancel={() => setShowRequestChangesModal(null)}
+          loading={updatingId === showRequestChangesModal.id}
+        />
+      )}
+
       {commentAsset && (
         <CommentThreadModal asset={commentAsset} onClose={() => setCommentAsset(null)} />
       )}
@@ -310,6 +351,47 @@ function RejectModal({ asset, onConfirm, onCancel, loading }: { asset: AssetWith
   );
 }
 
+// BUG-07: Dedicated Request Changes modal — separate from comment thread
+function RequestChangesModal({ asset, onConfirm, onCancel, loading }: { asset: AssetWithProject; onConfirm: (details: string) => void; onCancel: () => void; loading: boolean }) {
+  const [details, setDetails] = useState('');
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onCancel}>
+      <div className="bg-white rounded-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="font-bold text-slate-900 flex items-center gap-2">
+            <AlertTriangle size={18} className="text-amber-500" />
+            Request Changes
+          </h3>
+          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+        </div>
+        <p className="text-sm text-slate-500 mb-4">
+          You are requesting changes to <strong className="text-slate-700">{asset.name}</strong>. Please describe what you&apos;d like adjusted.
+        </p>
+        <textarea
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder="Describe the changes you'd like to see (e.g. adjust color scheme, resize logo, update copy)..."
+          rows={4}
+          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30 resize-none"
+        />
+        {!details.trim() && (
+          <p className="text-xs text-slate-400 mt-1.5">Please describe the requested changes before submitting.</p>
+        )}
+        <div className="flex gap-3 pt-4">
+          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">Cancel</button>
+          <button
+            onClick={() => onConfirm(details)}
+            disabled={loading || !details.trim()}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-colors disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <AlertTriangle size={16} />} Submit Request
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CommentThreadModal({ asset, onClose }: { asset: AssetWithProject; onClose: () => void }) {
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -339,7 +421,7 @@ function CommentThreadModal({ asset, onClose }: { asset: AssetWithProject; onClo
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-slate-900">{asset.name} — Feedback</h3>
+          <h3 className="font-bold text-slate-900">{asset.name} — Feedback Thread</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
         </div>
         <div className="flex-1 overflow-y-auto space-y-3">

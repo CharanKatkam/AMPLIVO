@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amplivo ERP — Backend/API & Technology Stack Documentation</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    /* ── Suppress Chrome print header/footer (URL + page number) ── */
+    @page {
+      margin: 1.2cm 1.5cm;
+      size: A4;
+      /* Chrome respects this to suppress its own running headers/footers */
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #6366f1;
+      --primary-d: #4f46e5;
+      --accent:    #06b6d4;
+      --green:     #10b981;
+      --red:       #ef4444;
+      --orange:    #f59e0b;
+      --text:      #1e293b;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --bg:        #f8fafc;
+      --card:      #ffffff;
+      --code-bg:   #0f172a;
+      --code-text: #e2e8f0;
+    }
+
+    html { font-size: 14px; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page-wrap { max-width: 1000px; margin: 0 auto; padding: 0 2rem; }
+
+    /* COVER */
+    .cover {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 70%, #4338ca 100%);
+      color: #fff;
+      padding: 5rem 3rem;
+      text-align: center;
+      page-break-after: always;
+    }
+    .cover-logo { display: inline-flex; align-items: center; gap: 0.75rem; margin-bottom: 3rem; }
+    .cover-logo-icon {
+      width: 60px; height: 60px;
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+    }
+    .cover-logo-text { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+    .cover h1 { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 1rem; }
+    .cover-sub { font-size: 1.1rem; color: rgba(255,255,255,0.7); max-width: 600px; margin: 0 auto 3rem; }
+    .cover-meta { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+    .cover-meta-item {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.85rem;
+    }
+    .cover-meta-item strong { display: block; color: #a5b4fc; font-size: 0.75rem; margin-bottom: 0.2rem; }
+
+    /* TOC */
+    .toc-section { padding: 3rem 0; page-break-after: always; }
+    .toc-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 2rem; }
+    .toc-list { list-style: none; }
+    .toc-list li { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px dashed var(--border); }
+    .toc-list li:last-child { border-bottom: none; }
+    .toc-num { font-weight: 700; color: var(--primary); min-width: 2.5rem; font-size: 0.9rem; }
+    .toc-link { color: var(--text); text-decoration: none; font-size: 0.95rem; }
+    .toc-dots { flex: 1; border-bottom: 1px dotted #cbd5e1; margin: 0 0.5rem 4px; }
+
+    /* SECTION */
+    .section { padding: 2rem 0; page-break-inside: avoid; }
+    .section + .section { border-top: 2px solid var(--border); margin-top: 1rem; }
+    .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+    .section-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
+    .icon-blue   { background: #eff6ff; }
+    .icon-purple { background: #f5f3ff; }
+    .icon-green  { background: #f0fdf4; }
+    .icon-orange { background: #fff7ed; }
+    .icon-cyan   { background: #ecfeff; }
+    .icon-red    { background: #fef2f2; }
+    .section-num { font-size: 0.75rem; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em; }
+    .section-title { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+
+    /* CARDS */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+    .card-title { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+    .card-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.6; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    /* TECH BADGE */
+    .tech-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: #f1f5f9; border: 1px solid var(--border); border-radius: 8px; padding: 0.3rem 0.75rem; font-size: 0.8rem; font-weight: 500; color: var(--text); margin: 0.2rem; }
+
+    /* TABLE */
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 1.5rem; }
+    thead tr { background: #f1f5f9; }
+    th { text-align: left; padding: 0.6rem 0.85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.06em; border-bottom: 2px solid var(--border); }
+    td { padding: 0.6rem 0.85rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    /* METHODS */
+    .method { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; }
+    .GET    { background: #dcfce7; color: #166534; }
+    .POST   { background: #dbeafe; color: #1e40af; }
+    .PUT    { background: #fef9c3; color: #854d0e; }
+    .DELETE { background: #fee2e2; color: #991b1b; }
+
+    /* CODE */
+    pre { background: var(--code-bg); color: var(--code-text); border-radius: 10px; padding: 1rem 1.25rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.6; overflow-x: auto; margin-bottom: 1rem; }
+    code { font-family: 'JetBrains Mono', monospace; background: #f1f5f9; color: #7c3aed; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.82rem; }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .kw { color: #818cf8; } .str { color: #34d399; } .num { color: #fb923c; } .cm { color: #94a3b8; font-style: italic; } .key { color: #60a5fa; }
+
+    /* ALERTS */
+    .info-box { background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 0.85rem 1.1rem; margin-bottom: 1rem; font-size: 0.875rem; color: #1e40af; }
+    .warn-box { background: #fff7ed; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 0.85rem 1.1rem; margin-bottom: 1rem; font-size: 0.875rem; color: #92400e; }
+
+    /* MIDDLEWARE */
+    .mw-stack { display: flex; flex-direction: column; gap: 0.5rem; }
+    .mw-item { display: flex; align-items: center; gap: 0.75rem; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 1rem; }
+    .mw-order { width: 28px; height: 28px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+    .mw-name { font-weight: 600; font-size: 0.875rem; }
+    .mw-desc { font-size: 0.8rem; color: var(--muted); margin-top: 0.1rem; }
+
+    /* SECURITY */
+    .security-item { display: flex; gap: 1rem; align-items: flex-start; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+    .security-icon { font-size: 1.4rem; }
+    .security-label { font-weight: 600; font-size: 0.9rem; }
+    .security-desc { font-size: 0.82rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* ARCH */
+    .arch-layer { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1.2rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1rem; }
+    .arch-layer-icon { font-size: 1.5rem; }
+    .arch-layer-name { font-weight: 600; font-size: 0.9rem; }
+    .arch-layer-detail { font-size: 0.8rem; color: var(--muted); }
+    .arch-arrow { text-align: center; color: var(--primary); font-size: 1.2rem; margin: -0.25rem 0; }
+
+    /* PILLS */
+    .pill { display: inline-block; background: #f1f5f9; border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.65rem; font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+    .pill-green { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
+    .pill-blue  { background: #dbeafe; border-color: #bfdbfe; color: #1e40af; }
+
+    /* MODULE TAG */
+    .module-tag { display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border-radius: 6px; padding: 0.15rem 0.55rem; font-size: 0.72rem; font-weight: 600; margin: 0.15rem; }
+
+    /* PRINT */
+    @media print {
+      body { background: #fff; }
+      .no-print { display: none; }
+      .section { page-break-inside: avoid; }
+      .section-page-break { page-break-before: always; }
+      pre { white-space: pre-wrap; word-break: break-word; }
+    }
+
+    /* UTILS */
+    p { margin-bottom: 0.75rem; }
+    ul, ol { margin-left: 1.5rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.3rem; font-size: 0.875rem; }
+    h2 { font-size: 1.15rem; font-weight: 700; margin: 1.25rem 0 0.75rem; }
+    .mt-1 { margin-top: 0.5rem; }
+    .env-table tr td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #7c3aed; }
+  </style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-logo">
+    <div class="cover-logo-icon">🚀</div>
+    <span class="cover-logo-text">AMPLIVO</span>
+  </div>
+  <h1>Backend / API &amp;<br>Technology Stack Documentation</h1>
+  <p class="cover-sub">Complete technical reference for the Amplivo Digital Marketing ERP &amp; Client Portal — covering architecture, API endpoints, security model, data models, and deployment strategy.</p>
+</div>
+
+<div class="page-wrap">
+
+<!-- TOC -->
+<div class="toc-section">
+  <h1 class="toc-title">Table of Contents</h1>
+  <ol class="toc-list">
+    <li><span class="toc-num">1.</span><a class="toc-link" href="#tech-stack">Technology Stack Overview</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">2.</span><a class="toc-link" href="#architecture">System Architecture</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">3.</span><a class="toc-link" href="#backend-core">Backend Core &amp; Configuration</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">4.</span><a class="toc-link" href="#database">Database &amp; ORM</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">5.</span><a class="toc-link" href="#middleware">Middleware Stack</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">6.</span><a class="toc-link" href="#auth-api">Authentication API Reference</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">7.</span><a class="toc-link" href="#modules-api">Business Module APIs</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">8.</span><a class="toc-link" href="#security">Security Model</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">9.</span><a class="toc-link" href="#data-models">Core Data Models</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">10.</span><a class="toc-link" href="#frontend-tech">Frontend Technology</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">11.</span><a class="toc-link" href="#env-vars">Environment Variables Reference</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">12.</span><a class="toc-link" href="#deployment">Deployment &amp; Infrastructure</a><span class="toc-dots"></span></li>
+    <li><span class="toc-num">13.</span><a class="toc-link" href="#health-api">Health &amp; Monitoring</a><span class="toc-dots"></span></li>
+  </ol>
+</div>
+
+<!-- 1. TECH STACK -->
+<div id="tech-stack" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-purple">⚡</div>
+    <div><div class="section-num">Section 1</div><h1 class="section-title">Technology Stack Overview</h1></div>
+  </div>
+
+  <h2>Backend Stack</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Runtime &amp; Language</div>
+      <div class="card-desc"><span class="tech-badge">Python 3.12+</span><span class="tech-badge">AsyncIO</span><span class="tech-badge">uvicorn 0.32</span><p class="mt-1">Async-first Python on Uvicorn ASGI server with standard extras (websockets, lifespan).</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Web Framework</div>
+      <div class="card-desc"><span class="tech-badge">FastAPI 0.115</span><span class="tech-badge">Starlette</span><span class="tech-badge">Pydantic v2</span><p class="mt-1">FastAPI with automatic OpenAPI schema generation, dependency injection, Pydantic v2 validation.</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Database ORM</div>
+      <div class="card-desc"><span class="tech-badge">SQLAlchemy 2.0</span><span class="tech-badge">asyncpg 0.30</span><span class="tech-badge">Alembic 1.13</span><p class="mt-1">SQLAlchemy 2.0 async ORM with asyncpg driver and Alembic for schema migrations.</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Auth &amp; Security</div>
+      <div class="card-desc"><span class="tech-badge">PyJWT 2.9</span><span class="tech-badge">passlib 1.7.4</span><span class="tech-badge">bcrypt 4.0.1</span><p class="mt-1">JWT-based stateless authentication with bcrypt password hashing (12 rounds).</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Data Validation</div>
+      <div class="card-desc"><span class="tech-badge">Pydantic 2.9.2</span><span class="tech-badge">pydantic-settings 2.5</span><span class="tech-badge">email-validator</span><p class="mt-1">Pydantic v2 for request/response validation and settings management via environment variables.</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cloud Infrastructure</div>
+      <div class="card-desc"><span class="tech-badge">Supabase PostgreSQL</span><span class="tech-badge">Render</span><span class="tech-badge">Vercel</span><p class="mt-1">Supabase managed PostgreSQL with Supavisor pooler. Backend on Render, frontend on Vercel.</p></div>
+    </div>
+  </div>
+
+  <h2>Frontend Stack</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Framework</div>
+      <div class="card-desc"><span class="tech-badge">Next.js 16</span><span class="tech-badge">React 19</span><span class="tech-badge">TypeScript 5.9</span><p class="mt-1">Next.js App Router with React Server Components and TypeScript strict mode.</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Styling</div>
+      <div class="card-desc"><span class="tech-badge">TailwindCSS v4</span><span class="tech-badge">clsx</span><span class="tech-badge">tailwind-merge</span><p class="mt-1">Utility-first CSS with Tailwind v4, merge utilities for conditional class management.</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">API Client</div>
+      <div class="card-desc"><span class="tech-badge">Axios 1.18</span><span class="tech-badge">JWT Bearer Auth</span><span class="tech-badge">Auto-refresh</span><p class="mt-1">Axios with interceptors for automatic token attachment and silent token refresh on 401.</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">State &amp; Forms</div>
+      <div class="card-desc"><span class="tech-badge">Zustand 5</span><span class="tech-badge">React Hook Form 7</span><span class="tech-badge">Zod 4</span><p class="mt-1">Zustand for global state, React Hook Form + Zod for type-safe form validation.</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Charts &amp; Icons</div>
+      <div class="card-desc"><span class="tech-badge">Recharts 3.9</span><span class="tech-badge">Lucide React</span><span class="tech-badge">React Icons 5</span><p class="mt-1">Recharts for dashboard analytics, Lucide + React Icons for UI iconography.</p></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Dev Tooling</div>
+      <div class="card-desc"><span class="tech-badge">ESLint 9</span><span class="tech-badge">PostCSS</span><span class="tech-badge">Node 20+</span><p class="mt-1">ESLint with Next.js config, PostCSS pipeline for Tailwind, Node 20 LTS runtime.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. ARCHITECTURE -->
+<div id="architecture" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-blue">🏗️</div>
+    <div><div class="section-num">Section 2</div><h1 class="section-title">System Architecture</h1></div>
+  </div>
+
+  <p>Amplivo follows a <strong>monorepo two-tier architecture</strong>: a Next.js frontend and FastAPI backend deployed independently, communicating via RESTful JSON API.</p>
+
+  <h2>Deployment Architecture</h2>
+  <div class="arch-layer"><div class="arch-layer-icon">👤</div><div><div class="arch-layer-name">End Users / Browsers</div><div class="arch-layer-detail">Internal staff, marketing agents, clients via Client Portal — HTTPS only</div></div></div>
+  <div class="arch-arrow">↕</div>
+  <div class="arch-layer"><div class="arch-layer-icon">▲</div><div><div class="arch-layer-name">Vercel CDN (Frontend)</div><div class="arch-layer-detail">Next.js 16 · amplivo-front-and-backend.vercel.app · Edge network, SSR, static assets</div></div></div>
+  <div class="arch-arrow">↕ HTTPS REST API</div>
+  <div class="arch-layer"><div class="arch-layer-icon">🌐</div><div><div class="arch-layer-name">Render Web Service (Backend)</div><div class="arch-layer-detail">FastAPI 0.115 · amplivo-front-and-backend.onrender.com · Python 3.12 · uvicorn</div></div></div>
+  <div class="arch-arrow">↕ SSL PostgreSQL (asyncpg)</div>
+  <div class="arch-layer"><div class="arch-layer-icon">🐘</div><div><div class="arch-layer-name">Supabase PostgreSQL</div><div class="arch-layer-detail">Managed Postgres · Supavisor pooler (port 6543, transaction mode) · ap-south-1 Mumbai</div></div></div>
+
+  <h2>Backend Layered Architecture</h2>
+  <div class="card">
+    <pre><code><span class="cm">Backend/app/
+├── api/v1/            ← HTTP route handlers (thin layer)
+│   ├── auth/          ← Authentication endpoints
+│   └── router.py      ← Central API router (35 modules)
+├── modules/           ← Feature domain modules (35+)
+│   ├── crm/           ← CRM: clients, contacts, proposals
+│   ├── leads/         ← Lead management and sales pipeline
+│   ├── finance/       ← Invoices, payments, expenses
+│   └── ...            ← 30+ other business modules
+├── services/          ← Business logic layer
+├── repositories/      ← Data access layer
+├── models/            ← SQLAlchemy ORM models
+├── schemas/           ← Pydantic request/response schemas
+├── middleware/        ← 8 middleware components
+├── core/              ← Config, exceptions, pagination
+├── db/                ← Database session management
+├── dependencies/      ← FastAPI DI providers (auth, db, rbac)
+└── utils/             ← JWT, password, request context</span></code></pre>
+  </div>
+
+  <h2>35 Domain Modules</h2>
+  <div style="margin-bottom:1rem">
+    <span class="module-tag">Activity Timeline</span><span class="module-tag">Analytics</span><span class="module-tag">Approval System</span>
+    <span class="module-tag">Campaigns</span><span class="module-tag">Careers</span><span class="module-tag">Case Studies</span>
+    <span class="module-tag">Client Portal</span><span class="module-tag">CMS</span><span class="module-tag">Companies</span>
+    <span class="module-tag">Consultation Requests</span><span class="module-tag">Contact Forms</span><span class="module-tag">Content Calendar</span>
+    <span class="module-tag">Creative</span><span class="module-tag">CRM</span><span class="module-tag">FAQs</span>
+    <span class="module-tag">File Manager</span><span class="module-tag">Finance</span><span class="module-tag">Influencers</span>
+    <span class="module-tag">Leads</span><span class="module-tag">Marketing Automation</span><span class="module-tag">Meetings</span>
+    <span class="module-tag">Messaging</span><span class="module-tag">Notifications</span><span class="module-tag">Paid Ads</span>
+    <span class="module-tag">Portfolio</span><span class="module-tag">SEO</span><span class="module-tag">Settings</span>
+    <span class="module-tag">Social</span><span class="module-tag">Support Tickets</span><span class="module-tag">Tasks</span>
+    <span class="module-tag">Testimonials</span><span class="module-tag">Timesheets</span><span class="module-tag">Users</span>
+    <span class="module-tag">Websites</span>
+  </div>
+</div>
+
+<!-- 3. BACKEND CORE -->
+<div id="backend-core" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-orange">⚙️</div>
+    <div><div class="section-num">Section 3</div><h1 class="section-title">Backend Core &amp; Configuration</h1></div>
+  </div>
+
+  <h2>Application Bootstrap (app/main.py)</h2>
+  <ul>
+    <li><strong>Title:</strong> Amplivo ERP Auth Service &nbsp;|&nbsp; <strong>Version:</strong> 2.0.0</li>
+    <li><strong>API Prefix:</strong> <code>/api/v1</code> &nbsp;|&nbsp; <strong>Swagger UI:</strong> <code>/api/v1/docs</code> &nbsp;|&nbsp; <strong>ReDoc:</strong> <code>/api/v1/redoc</code></li>
+    <li><strong>OpenAPI JSON:</strong> <code>/api/v1/openapi.json</code></li>
+    <li><strong>Static Files:</strong> <code>/uploads</code> → <code>Backend/uploads/</code></li>
+    <li><strong>Lifespan:</strong> Validates DB connection at startup, disposes engine pool on shutdown</li>
+    <li><strong>Root <code>/</code>:</strong> Redirects to Swagger UI</li>
+  </ul>
+
+  <h2>Settings (app/core/config.py)</h2>
+  <p>All settings managed via <code>pydantic-settings</code> with env var overrides. Singleton via <code>@lru_cache</code>.</p>
+  <table>
+    <thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>PROJECT_NAME</code></td><td>Amplivo ERP Auth Service</td><td>Application name in docs</td></tr>
+      <tr><td><code>API_V1_PREFIX</code></td><td>/api/v1</td><td>All API routes prefixed with this</td></tr>
+      <tr><td><code>ENVIRONMENT</code></td><td>development</td><td>Runtime environment flag</td></tr>
+      <tr><td><code>DATABASE_URL</code></td><td>postgresql+asyncpg://…</td><td>Async PostgreSQL connection string</td></tr>
+      <tr><td><code>DB_POOL_SIZE</code></td><td>5</td><td>SQLAlchemy connection pool size</td></tr>
+      <tr><td><code>DB_MAX_OVERFLOW</code></td><td>10</td><td>Max connections above pool size</td></tr>
+      <tr><td><code>DB_POOL_RECYCLE_SECONDS</code></td><td>1800</td><td>Connection recycle interval (30 min)</td></tr>
+      <tr><td><code>DB_SSL_MODE</code></td><td>require</td><td>"require" for remote; "disable" for local</td></tr>
+      <tr><td><code>JWT_SECRET_KEY</code></td><td>CHANGE_ME</td><td>HMAC secret for JWT signing</td></tr>
+      <tr><td><code>JWT_ALGORITHM</code></td><td>HS256</td><td>JWT signing algorithm</td></tr>
+      <tr><td><code>ACCESS_TOKEN_EXPIRE_MINUTES</code></td><td>30</td><td>Access token TTL</td></tr>
+      <tr><td><code>REFRESH_TOKEN_EXPIRE_DAYS</code></td><td>7</td><td>Refresh token TTL</td></tr>
+      <tr><td><code>BCRYPT_ROUNDS</code></td><td>12</td><td>Password hashing cost factor</td></tr>
+      <tr><td><code>MAX_FAILED_LOGIN_ATTEMPTS</code></td><td>5</td><td>Lockout threshold</td></tr>
+      <tr><td><code>ACCOUNT_LOCK_MINUTES</code></td><td>15</td><td>Lockout duration</td></tr>
+      <tr><td><code>RATE_LIMIT_LOGIN_PER_MINUTE</code></td><td>5</td><td>Login rate limit per IP</td></tr>
+      <tr><td><code>RATE_LIMIT_REGISTER_PER_MINUTE</code></td><td>3</td><td>Register rate limit per IP</td></tr>
+      <tr><td><code>RATE_LIMIT_REFRESH_PER_MINUTE</code></td><td>10</td><td>Token refresh rate limit</td></tr>
+      <tr><td><code>SESSION_INACTIVITY_TIMEOUT_MINUTES</code></td><td>60</td><td>Session inactivity timeout</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 4. DATABASE -->
+<div id="database" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-green">🗄️</div>
+    <div><div class="section-num">Section 4</div><h1 class="section-title">Database &amp; ORM</h1></div>
+  </div>
+
+  <p>The application uses <strong>PostgreSQL</strong> hosted on <strong>Supabase</strong> with the <strong>Supavisor</strong> connection pooler (port 6543, transaction mode). Driver: <strong>asyncpg</strong>.</p>
+
+  <div class="info-box">⚠️ <strong>Supavisor &amp; Prepared Statements:</strong> Because Supavisor reuses physical connections across logical sessions, prepared statement names must be globally unique. The app uses <code>prepared_statement_name_func = lambda: f"__asyncpg_{uuid.uuid4().hex}__"</code> and disables asyncpg's statement cache (<code>statement_cache_size=0</code>) to prevent <code>DuplicatePreparedStatementError</code>.</div>
+
+  <h2>Connection Pool (Production)</h2>
+  <table>
+    <thead><tr><th>Parameter</th><th>Value</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>pool_size</td><td>3</td><td>Base connection count</td></tr>
+      <tr><td>max_overflow</td><td>5</td><td>Max burst connections</td></tr>
+      <tr><td>pool_recycle</td><td>300s</td><td>Recycle idle connections</td></tr>
+      <tr><td>pool_timeout</td><td>60s</td><td>Acquire timeout</td></tr>
+      <tr><td>pool_pre_ping</td><td>True</td><td>Test connections before use</td></tr>
+      <tr><td>DB_STARTUP_TIMEOUT</td><td>10s</td><td>Boot connectivity check</td></tr>
+    </tbody>
+  </table>
+
+  <h2>ORM Pattern</h2>
+  <ul>
+    <li>SQLAlchemy 2.0 with <code>async_sessionmaker</code> and <code>AsyncSession</code></li>
+    <li>Sessions use <code>expire_on_commit=False</code>, <code>autoflush=False</code></li>
+    <li>Sessions injected via FastAPI dependency <code>get_db()</code></li>
+    <li>Alembic manages all schema migrations — applied at each deploy</li>
+    <li>All primary keys: <code>UUID v4</code> (Python-generated)</li>
+    <li>Timestamps: <code>DateTime(timezone=True)</code> with <code>func.now()</code> server defaults</li>
+    <li>Soft deletes via <code>is_deleted / deleted_at / deleted_by</code> on User model</li>
+  </ul>
+
+  <h2>Core Database Tables</h2>
+  <table>
+    <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>users</code></td><td>Central identity: auth + RBAC + org-structure</td></tr>
+      <tr><td><code>refresh_tokens</code></td><td>Hashed refresh tokens with device/IP metadata</td></tr>
+      <tr><td><code>user_sessions</code></td><td>Device-level session tracking for multi-device management</td></tr>
+      <tr><td><code>audit_logs</code></td><td>Immutable event log with JSONB old/new data snapshots</td></tr>
+      <tr><td><code>email_verification_tokens</code></td><td>One-time tokens for email verification (24h TTL)</td></tr>
+      <tr><td><code>password_reset_tokens</code></td><td>Time-limited tokens for password reset (30 min TTL)</td></tr>
+      <tr><td><code>roles</code></td><td>RBAC role definitions</td></tr>
+      <tr><td><code>departments</code></td><td>Organizational departments</td></tr>
+      <tr><td><code>branches</code></td><td>Company branch/office locations</td></tr>
+      <tr><td><code>clients</code></td><td>CRM client companies</td></tr>
+      <tr><td><code>leads</code></td><td>Sales lead records</td></tr>
+      <tr><td><code>invoices</code></td><td>Finance invoices</td></tr>
+      <tr><td><code>+ 30 module tables</code></td><td>All business module domain data</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 5. MIDDLEWARE -->
+<div id="middleware" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-cyan">🔗</div>
+    <div><div class="section-num">Section 5</div><h1 class="section-title">Middleware Stack</h1></div>
+  </div>
+
+  <p>Starlette processes middleware LIFO (last-added = outermost). Order below shows <strong>request-processing order</strong> (outermost → innermost):</p>
+
+  <div class="mw-stack">
+    <div class="mw-item"><div class="mw-order">1</div><div><div class="mw-name">CORSMiddleware</div><div class="mw-desc">Handles preflight OPTIONS before any auth checks. Allows: localhost:3000/3001, Vercel deployments. Credentials allowed, all methods/headers.</div></div></div>
+    <div class="mw-item"><div class="mw-order">2</div><div><div class="mw-name">UnhandledErrorMiddleware</div><div class="mw-desc">Catches unhandled exceptions and converts to structured JSON — ensures CORS headers preserved even on uncaught DB errors.</div></div></div>
+    <div class="mw-item"><div class="mw-order">3</div><div><div class="mw-name">RateLimiterMiddleware</div><div class="mw-desc">Fixed-window in-memory limiter by (path, IP). Limits: login 5/min, register 3/min, refresh 10/min. Returns HTTP 429.</div></div></div>
+    <div class="mw-item"><div class="mw-order">4</div><div><div class="mw-name">SecurityHeadersMiddleware</div><div class="mw-desc">Injects X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy, CSP. Docs paths get relaxed CSP.</div></div></div>
+    <div class="mw-item"><div class="mw-order">5</div><div><div class="mw-name">AuditMiddleware</div><div class="mw-desc">Parses User-Agent once per request; caches IP/device/browser/OS on <code>request.state.client_context</code> for service-layer audit logging.</div></div></div>
+    <div class="mw-item"><div class="mw-order">6</div><div><div class="mw-name">SessionMiddleware</div><div class="mw-desc">Resolves <code>request.state.session_id</code> from authenticated user's active session for session-scoped operations.</div></div></div>
+    <div class="mw-item"><div class="mw-order">7</div><div><div class="mw-name">ActivityMiddleware</div><div class="mw-desc">Updates last_seen timestamp and session last_activity on authenticated requests for inactivity tracking.</div></div></div>
+    <div class="mw-item"><div class="mw-order">8</div><div><div class="mw-name">AuthenticationMiddleware</div><div class="mw-desc">Decodes Bearer JWT → sets <code>request.state.user_id</code>. Never rejects — route-level <code>get_current_user</code> dependency enforces protection.</div></div></div>
+  </div>
+</div>
+
+<!-- 6. AUTH API -->
+<div id="auth-api" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-red">🔐</div>
+    <div><div class="section-num">Section 6</div><h1 class="section-title">Authentication API Reference</h1></div>
+  </div>
+
+  <p><strong>Base URL:</strong> <code>https://amplivo-front-and-backend.onrender.com/api/v1</code></p>
+
+  <h2>Core Authentication Endpoints</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/register</code></td><td><span class="pill">Public</span></td><td>Register new user → returns UserRead (201). Rate-limited 3/min.</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/login</code></td><td><span class="pill">Public</span></td><td>Authenticate with email/username + password → JWT pair. Rate-limited 5/min.</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/refresh</code></td><td><span class="pill">Public</span></td><td>Exchange refresh token → new access+refresh pair. Rate-limited 10/min.</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/logout</code></td><td><span class="pill">Public</span></td><td>Revoke refresh token (ends session). Returns success message.</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/auth/me</code></td><td><span class="pill-blue pill">JWT</span></td><td>Get authenticated user profile with role → UserRead.</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/change-password</code></td><td><span class="pill-blue pill">JWT</span></td><td>Change password (requires current + new password).</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/auth/check-email</code></td><td><span class="pill">Public</span></td><td>Check if email is registered. Query: <code>?email=</code></td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/auth/check-username</code></td><td><span class="pill">Public</span></td><td>Check if username is taken. Query: <code>?username=</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Email Verification Endpoints</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/send-verification</code></td><td><span class="pill-blue pill">JWT</span></td><td>Send/resend verification email to current user</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/verify-email</code></td><td><span class="pill">Public</span></td><td>Verify email using one-time token → updated UserRead</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/resend-verification</code></td><td><span class="pill">Public</span></td><td>Request verification by address without auth (safe: no info leak)</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/auth/verification-status</code></td><td><span class="pill-blue pill">JWT</span></td><td>Get email verification status and timestamp</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Password Reset Endpoints</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/forgot-password</code></td><td>Request reset email. Safe response regardless of email existence.</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/auth/reset-password</code></td><td>Reset password using valid token. Invalidates all existing sessions.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Session Management Endpoints</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method GET">GET</span></td><td><code>/auth/sessions</code></td><td>List current user's active sessions (device, browser, OS, IP, last activity)</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/auth/devices</code></td><td>List all devices user ever logged in from (historical)</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/auth/sessions/current</code></td><td>Terminate the current active session</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/auth/sessions/{session_id}</code></td><td>Terminate a specific session by UUID</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/auth/sessions</code></td><td>Terminate all sessions except current (logout all other devices)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Token Response Schema</h2>
+  <pre><code>{
+  <span class="key">"access_token"</span>:  <span class="str">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>,
+  <span class="key">"refresh_token"</span>: <span class="str">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>,
+  <span class="key">"token_type"</span>:    <span class="str">"bearer"</span>
+}</code></pre>
+</div>
+
+<!-- 7. BUSINESS MODULES -->
+<div id="modules-api" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-purple">📦</div>
+    <div><div class="section-num">Section 7</div><h1 class="section-title">Business Module APIs</h1></div>
+  </div>
+
+  <div class="info-box">All business module endpoints require <strong>Bearer JWT</strong> via <code>Authorization: Bearer &lt;token&gt;</code>. List endpoints support pagination: <code>?page=1&amp;page_size=20&amp;search=&amp;sort_by=&amp;sort_order=asc</code>. Pagination response: <code>{"items":[],"total":N,"page":1,"page_size":20,"pages":P}</code></div>
+
+  <h2>CRM — Clients (/api/v1/clients)</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method GET">GET</span></td><td><code>/clients</code></td><td>any</td><td>Paginated list; filter by status, type, assigned_to, branch, is_active</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/clients</code></td><td>sales</td><td>Create new client</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/clients/me</code></td><td>client</td><td>Get own company (client portal users)</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/clients/{id}</code></td><td>any</td><td>Get single client (tenant-scoped for portal users)</td></tr>
+      <tr><td><span class="method PUT">PUT</span></td><td><code>/clients/{id}</code></td><td>sales</td><td>Update client</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/clients/{id}</code></td><td>sales</td><td>Delete client (204)</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/clients/{id}/contacts</code></td><td>any</td><td>List client contacts</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/clients/{id}/contacts</code></td><td>sales</td><td>Add contact to client</td></tr>
+      <tr><td><span class="method PUT">PUT</span></td><td><code>/contacts/{id}</code></td><td>sales</td><td>Update contact</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/contacts/{id}</code></td><td>sales</td><td>Delete contact</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/clients/{id}/addresses</code></td><td>any</td><td>List client addresses</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/clients/{id}/addresses</code></td><td>sales</td><td>Add address</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/clients/{id}/documents</code></td><td>any</td><td>List client documents</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/clients/{id}/documents</code></td><td>sales</td><td>Upload document</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/clients/{id}/notes</code></td><td>any</td><td>List client notes</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/clients/{id}/notes</code></td><td>sales</td><td>Add note</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/clients/{id}/proposals</code></td><td>any</td><td>List proposals</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/clients/{id}/proposals</code></td><td>sales</td><td>Create proposal</td></tr>
+      <tr><td><span class="method PUT">PUT</span></td><td><code>/proposals/{id}</code></td><td>sales</td><td>Update proposal</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/proposals/{id}</code></td><td>sales</td><td>Delete proposal</td></tr>
+    </tbody>
+  </table>
+
+  <h2>CRM — Leads (/api/v1/leads)</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method GET">GET</span></td><td><code>/leads</code></td><td>Paginated leads; filter by status, priority, source, assigned_to, client</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/leads</code></td><td>Create lead</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/leads/dashboard-stats</code></td><td>Live sales KPI rollup (role-scoped)</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/leads/sales-reports</code></td><td>Sales reports: conversion, revenue, won-vs-lost. Query: <code>?type=</code></td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/leads/{id}</code></td><td>Get single lead (tenant-scoped)</td></tr>
+      <tr><td><span class="method PUT">PUT</span></td><td><code>/leads/{id}</code></td><td>Update lead</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/leads/{id}</code></td><td>Delete lead</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/leads/{id}/convert</code></td><td>Convert lead to client</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/leads/{id}/activities</code></td><td>List lead activities</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/leads/{id}/activities</code></td><td>Add activity to lead</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/leads/{id}/followups</code></td><td>List follow-ups</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/leads/{id}/followups</code></td><td>Add follow-up</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/lead-sources</code></td><td>List lead sources</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/lead-sources</code></td><td>Create lead source</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/sales-pipeline</code></td><td>List pipeline stages</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/sales-pipeline</code></td><td>Create pipeline stage</td></tr>
+      <tr><td><span class="method PUT">PUT</span></td><td><code>/sales-pipeline/{id}</code></td><td>Update pipeline stage</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/sales-pipeline/{id}</code></td><td>Delete pipeline stage</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Finance (/api/v1/finance)</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method GET">GET</span></td><td><code>/finance/invoices</code></td><td>List invoices; filter by client_id, status</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/finance/invoices</code></td><td>Create invoice</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/finance/invoices/{id}</code></td><td>Get invoice (tenant-scoped)</td></tr>
+      <tr><td><span class="method PUT">PUT</span></td><td><code>/finance/invoices/{id}</code></td><td>Update invoice</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/finance/invoices/{id}</code></td><td>Delete invoice</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/finance/invoices/{id}/items</code></td><td>List invoice line items</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/finance/invoices/{id}/items</code></td><td>Add invoice line item</td></tr>
+      <tr><td><span class="method PUT">PUT</span></td><td><code>/finance/invoice-items/{id}</code></td><td>Update line item</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/finance/invoice-items/{id}</code></td><td>Delete line item</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/finance/invoices/{id}/payments</code></td><td>List payments for invoice</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/finance/invoices/{id}/payments</code></td><td>Add payment</td></tr>
+      <tr><td><span class="method GET">GET</span></td><td><code>/finance/expenses</code></td><td>List expenses; filter by category</td></tr>
+      <tr><td><span class="method POST">POST</span></td><td><code>/finance/expenses</code></td><td>Log expense</td></tr>
+      <tr><td><span class="method PUT">PUT</span></td><td><code>/finance/expenses/{id}</code></td><td>Update expense</td></tr>
+      <tr><td><span class="method DELETE">DELETE</span></td><td><code>/finance/expenses/{id}</code></td><td>Delete expense</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Other Modules (Standard CRUD Pattern)</h2>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Analytics (/analytics)</div><div class="card-desc">Dashboard KPIs, reporting, cross-module aggregations.</div></div>
+    <div class="card"><div class="card-title">Campaigns (/campaigns)</div><div class="card-desc">Marketing campaign management and analytics.</div></div>
+    <div class="card"><div class="card-title">Content Calendar (/content-calendar)</div><div class="card-desc">Editorial scheduling, post planning.</div></div>
+    <div class="card"><div class="card-title">Messaging (/messaging)</div><div class="card-desc">Internal messaging, conversation threads.</div></div>
+    <div class="card"><div class="card-title">Notifications (/notifications)</div><div class="card-desc">User notifications, read/unread tracking.</div></div>
+    <div class="card"><div class="card-title">Tasks (/tasks)</div><div class="card-desc">Task management, assignment, status tracking.</div></div>
+    <div class="card"><div class="card-title">Support Tickets (/support-tickets)</div><div class="card-desc">Client ticket creation, assignment, resolution.</div></div>
+    <div class="card"><div class="card-title">Timesheets (/timesheets)</div><div class="card-desc">Employee time tracking, approval workflow.</div></div>
+    <div class="card"><div class="card-title">Meetings (/meetings)</div><div class="card-desc">Meeting scheduling, notes, follow-ups.</div></div>
+    <div class="card"><div class="card-title">SEO (/seo)</div><div class="card-desc">SEO projects, keyword tracking, reports.</div></div>
+    <div class="card"><div class="card-title">File Manager (/files)</div><div class="card-desc">File uploads, document organization.</div></div>
+    <div class="card"><div class="card-title">Users (/users)</div><div class="card-desc">User management, profiles, role assignment.</div></div>
+  </div>
+</div>
+
+<!-- 8. SECURITY -->
+<div id="security" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-red">🛡️</div>
+    <div><div class="section-num">Section 8</div><h1 class="section-title">Security Model</h1></div>
+  </div>
+
+  <div class="security-item"><div class="security-icon">🔑</div><div><div class="security-label">JWT Authentication (Bearer Token)</div><div class="security-desc">Access tokens (30 min TTL) signed HS256 HMAC. Refresh tokens (7 days TTL) stored as hashes. Token type claim validated (access vs refresh). Protected routes use <code>get_current_user</code> dependency.</div></div></div>
+  <div class="security-item"><div class="security-icon">🔒</div><div><div class="security-label">Password Security</div><div class="security-desc">bcrypt at 12 rounds. Password strength validation on register/change. Constant-time comparison via passlib to prevent timing attacks.</div></div></div>
+  <div class="security-item"><div class="security-icon">🚫</div><div><div class="security-label">Account Lockout</div><div class="security-desc">After 5 consecutive failures → locked 15 minutes. State in <code>users.locked_until</code>. Reset on successful login.</div></div></div>
+  <div class="security-item"><div class="security-icon">⏱️</div><div><div class="security-label">Rate Limiting</div><div class="security-desc">Fixed-window in-memory by (path, IP). Login: 5/min, Register: 3/min, Refresh: 10/min. Returns HTTP 429 with structured error.</div></div></div>
+  <div class="security-item"><div class="security-icon">📋</div><div><div class="security-label">Audit Logging</div><div class="security-desc">All auth events → audit_logs table. Fields: action, user_id, IP, device info, old/new data (JSONB), timestamp. Events: register, login_success, login_failed, logout, refresh, access_denied, invalid_token, verification_*, password_reset_*, session_*, new_device_login.</div></div></div>
+  <div class="security-item"><div class="security-icon">🌐</div><div><div class="security-label">CORS</div><div class="security-desc">Specific origins only: localhost:3000/3001, amplivo-front-and-backend.vercel.app, amplivo-2.vercel.app. Credentials allowed.</div></div></div>
+  <div class="security-item"><div class="security-icon">🔏</div><div><div class="security-label">Security Headers (Every Response)</div><div class="security-desc"><code>X-Frame-Options: DENY</code> · <code>X-Content-Type-Options: nosniff</code> · <code>Referrer-Policy: strict-origin-when-cross-origin</code> · <code>Permissions-Policy: geolocation=(), microphone=(), camera=()</code> · <code>CSP: default-src 'self'; frame-ancestors 'none'</code></div></div></div>
+  <div class="security-item"><div class="security-icon">🏢</div><div><div class="security-label">RBAC + Tenant Isolation</div><div class="security-desc">Routes protected with <code>require_roles("role_slug")</code>. Client portal users scoped to their company via <code>users.client_id</code> — enforced by <code>get_current_client_id</code> dependency on all relevant endpoints.</div></div></div>
+  <div class="security-item"><div class="security-icon">📱</div><div><div class="security-label">Device &amp; Session Tracking</div><div class="security-desc">Each login creates session record: device, browser, OS, IP, country, city. Multi-device management: view, terminate individual or all other sessions. Session inactivity timeout (60 min).</div></div></div>
+</div>
+
+<!-- 9. DATA MODELS -->
+<div id="data-models" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-green">🗂️</div>
+    <div><div class="section-num">Section 9</div><h1 class="section-title">Core Data Models</h1></div>
+  </div>
+
+  <h2>User Model (users table)</h2>
+  <table>
+    <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>UUID PK</td><td>Auto-generated UUIDv4</td></tr>
+      <tr><td><code>email</code></td><td>VARCHAR(255) UNIQUE</td><td>Email address (indexed)</td></tr>
+      <tr><td><code>username</code></td><td>VARCHAR(50) UNIQUE</td><td>Unique username (indexed)</td></tr>
+      <tr><td><code>full_name</code></td><td>VARCHAR(150)</td><td>Display name</td></tr>
+      <tr><td><code>phone</code></td><td>VARCHAR(20) NULL</td><td>Optional phone number</td></tr>
+      <tr><td><code>hashed_password</code></td><td>VARCHAR(255)</td><td>bcrypt hash of password</td></tr>
+      <tr><td><code>user_type</code></td><td>TEXT</td><td>"internal" | "client" | etc.</td></tr>
+      <tr><td><code>status</code></td><td>TEXT</td><td>"pending" | "active" | "inactive"</td></tr>
+      <tr><td><code>role_id</code></td><td>UUID FK → roles</td><td>RBAC role assignment</td></tr>
+      <tr><td><code>department_id</code></td><td>UUID FK → departments</td><td>Org department</td></tr>
+      <tr><td><code>branch_id</code></td><td>UUID FK → branches</td><td>Office branch</td></tr>
+      <tr><td><code>reporting_manager_id</code></td><td>UUID FK → users</td><td>Hierarchical reporting</td></tr>
+      <tr><td><code>client_id</code></td><td>UUID FK → clients</td><td>Portal user's company link</td></tr>
+      <tr><td><code>is_active</code></td><td>BOOLEAN</td><td>Account active status</td></tr>
+      <tr><td><code>is_verified</code></td><td>BOOLEAN</td><td>Email verification status</td></tr>
+      <tr><td><code>verified_at</code></td><td>TIMESTAMPTZ NULL</td><td>Email verification timestamp</td></tr>
+      <tr><td><code>last_login_at</code></td><td>TIMESTAMPTZ NULL</td><td>Last successful login</td></tr>
+      <tr><td><code>last_login_ip</code></td><td>VARCHAR(45) NULL</td><td>IPv4/IPv6 of last login</td></tr>
+      <tr><td><code>last_seen</code></td><td>TIMESTAMPTZ NULL</td><td>Last API activity (activity middleware)</td></tr>
+      <tr><td><code>failed_login_attempts</code></td><td>INTEGER</td><td>Consecutive failure count</td></tr>
+      <tr><td><code>locked_until</code></td><td>TIMESTAMPTZ NULL</td><td>Account lockout expiry</td></tr>
+      <tr><td><code>is_deleted</code></td><td>BOOLEAN</td><td>Soft-delete flag (indexed)</td></tr>
+      <tr><td><code>deleted_at / deleted_by</code></td><td>TIMESTAMPTZ / UUID</td><td>Soft-delete audit trail</td></tr>
+      <tr><td><code>created_at / updated_at</code></td><td>TIMESTAMPTZ</td><td>Server-set timestamps</td></tr>
+    </tbody>
+  </table>
+
+  <h2>RefreshToken Model (refresh_tokens)</h2>
+  <table>
+    <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>UUID PK</td><td>Token ID</td></tr>
+      <tr><td><code>user_id</code></td><td>UUID FK → users CASCADE</td><td>Owning user</td></tr>
+      <tr><td><code>token_hash</code></td><td>VARCHAR(255) UNIQUE</td><td>Hash of the raw token</td></tr>
+      <tr><td><code>is_revoked</code></td><td>BOOLEAN</td><td>Revocation status</td></tr>
+      <tr><td><code>expires_at</code></td><td>TIMESTAMPTZ</td><td>Token expiry</td></tr>
+      <tr><td><code>device_name / browser / os</code></td><td>VARCHAR</td><td>Device fingerprint at issue time</td></tr>
+      <tr><td><code>ip_address</code></td><td>VARCHAR(45)</td><td>IP at issue time</td></tr>
+      <tr><td><code>last_used</code></td><td>TIMESTAMPTZ NULL</td><td>Last use timestamp</td></tr>
+      <tr><td><code>revoked_at</code></td><td>TIMESTAMPTZ NULL</td><td>Revocation timestamp</td></tr>
+    </tbody>
+  </table>
+
+  <h2>AuditLog Model (audit_logs)</h2>
+  <table>
+    <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>UUID PK</td><td>Log entry ID</td></tr>
+      <tr><td><code>table_name</code></td><td>VARCHAR(100) NULL</td><td>Affected table</td></tr>
+      <tr><td><code>record_id</code></td><td>UUID NULL</td><td>Affected record ID</td></tr>
+      <tr><td><code>action</code></td><td>VARCHAR(50)</td><td>AuditAction enum value</td></tr>
+      <tr><td><code>old_data / new_data</code></td><td>JSONB NULL</td><td>State snapshots before/after</td></tr>
+      <tr><td><code>performed_by</code></td><td>UUID FK → users NULL</td><td>Actor user ID</td></tr>
+      <tr><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>Client IP address</td></tr>
+      <tr><td><code>created_at</code></td><td>TIMESTAMP</td><td>Event timestamp (server)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 10. FRONTEND -->
+<div id="frontend-tech" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-blue">🌐</div>
+    <div><div class="section-num">Section 10</div><h1 class="section-title">Frontend Technology Details</h1></div>
+  </div>
+
+  <h2>Application Structure</h2>
+  <div class="card">
+    <pre><code><span class="cm">frontend/src/
+├── app/                    ← Next.js App Router pages
+│   ├── admin/              ← Admin panel
+│   ├── crm/                ← CRM dashboard
+│   ├── employee/           ← Employee portal
+│   ├── hr/                 ← HR module
+│   ├── portal/             ← Client portal (messages, etc.)
+│   ├── sales/              ← Sales module
+│   ├── login/ register/    ← Auth pages
+│   └── (public pages)      ← about, blog, careers, contact, faq...
+├── components/             ← Reusable UI components
+├── services/               ← API client (axios)
+├── store/                  ← Zustand state stores
+├── hooks/                  ← Custom React hooks
+├── types/                  ← TypeScript type definitions
+├── lib/                    ← Utility functions
+└── constants/              ← App constants</span></code></pre>
+  </div>
+
+  <h2>API Client (src/services/api.ts)</h2>
+  <ul>
+    <li><strong>Base URL:</strong> <code>NEXT_PUBLIC_API_URL</code> or <code>http://127.0.0.1:8000/api/v1</code></li>
+    <li><strong>Request Interceptor:</strong> Attaches <code>Authorization: Bearer &lt;token&gt;</code> from Zustand auth store</li>
+    <li><strong>401 Handling:</strong> Silently refreshes token via <code>POST /auth/refresh</code>; queues concurrent 401 requests; falls back to logout on refresh failure</li>
+  </ul>
+
+  <h2>Frontend Dependencies</h2>
+  <table>
+    <thead><tr><th>Package</th><th>Version</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>next</td><td>^16.2.10</td><td>React framework, App Router, SSR/SSG</td></tr>
+      <tr><td>react / react-dom</td><td>^19.2.4</td><td>UI library with Server Components</td></tr>
+      <tr><td>typescript</td><td>5.9.3</td><td>Type-safe JavaScript</td></tr>
+      <tr><td>tailwindcss</td><td>^4</td><td>Utility-first CSS framework</td></tr>
+      <tr><td>axios</td><td>^1.18.1</td><td>HTTP client with interceptors</td></tr>
+      <tr><td>zustand</td><td>^5.0.14</td><td>Lightweight global state</td></tr>
+      <tr><td>react-hook-form</td><td>^7.82.0</td><td>Performant form state</td></tr>
+      <tr><td>@hookform/resolvers</td><td>^5.4.0</td><td>Zod integration for RHF</td></tr>
+      <tr><td>zod</td><td>^4.4.3</td><td>TypeScript-first schema validation</td></tr>
+      <tr><td>recharts</td><td>^3.9.2</td><td>Composable chart library</td></tr>
+      <tr><td>lucide-react</td><td>^0.469.0</td><td>Open-source icon set</td></tr>
+      <tr><td>react-icons</td><td>^5.7.0</td><td>Popular icon packs as components</td></tr>
+      <tr><td>clsx + tailwind-merge</td><td>^2 / ^3</td><td>Conditional CSS class utilities</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 11. ENV VARS -->
+<div id="env-vars" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-orange">🔧</div>
+    <div><div class="section-num">Section 11</div><h1 class="section-title">Environment Variables Reference</h1></div>
+  </div>
+
+  <div class="warn-box">⚠️ <strong>Security:</strong> Never commit .env files to version control. Use Render environment groups and Vercel project settings for production secrets.</div>
+
+  <h2>Backend (Backend/.env)</h2>
+  <table class="env-table">
+    <thead><tr><th>Variable</th><th>Required</th><th>Default / Notes</th></tr></thead>
+    <tbody>
+      <tr><td>DATABASE_URL</td><td><span class="pill-green pill">Required</span></td><td>postgresql+asyncpg://user:pass@host:port/dbname</td></tr>
+      <tr><td>JWT_SECRET_KEY</td><td><span class="pill-green pill">Required</span></td><td>Long random string — auto-generated by Render in prod</td></tr>
+      <tr><td>ENVIRONMENT</td><td><span class="pill">Optional</span></td><td>development | production (default: development)</td></tr>
+      <tr><td>DB_POOL_SIZE</td><td><span class="pill">Optional</span></td><td>5 (dev) / 3 (prod)</td></tr>
+      <tr><td>DB_MAX_OVERFLOW</td><td><span class="pill">Optional</span></td><td>10 (dev) / 5 (prod)</td></tr>
+      <tr><td>DB_POOL_RECYCLE_SECONDS</td><td><span class="pill">Optional</span></td><td>1800 (dev) / 300 (prod)</td></tr>
+      <tr><td>DB_POOL_TIMEOUT_SECONDS</td><td><span class="pill">Optional</span></td><td>30 (dev) / 60 (prod)</td></tr>
+      <tr><td>DB_STARTUP_TIMEOUT_SECONDS</td><td><span class="pill">Optional</span></td><td>5.0 (dev) / 10.0 (prod)</td></tr>
+      <tr><td>DB_SSL_MODE</td><td><span class="pill">Optional</span></td><td>require (remote) / disable (local)</td></tr>
+      <tr><td>DB_ECHO</td><td><span class="pill">Optional</span></td><td>false (dev only: true for SQL logging)</td></tr>
+      <tr><td>SUPABASE_URL</td><td><span class="pill">Optional</span></td><td>For Supabase SDK features (not used by SQLAlchemy)</td></tr>
+      <tr><td>SUPABASE_ANON_KEY</td><td><span class="pill">Optional</span></td><td>Public anon key</td></tr>
+      <tr><td>SUPABASE_SERVICE_ROLE_KEY</td><td><span class="pill">Optional</span></td><td>Admin operations key</td></tr>
+      <tr><td>JWT_ALGORITHM</td><td><span class="pill">Optional</span></td><td>HS256</td></tr>
+      <tr><td>ACCESS_TOKEN_EXPIRE_MINUTES</td><td><span class="pill">Optional</span></td><td>30</td></tr>
+      <tr><td>REFRESH_TOKEN_EXPIRE_DAYS</td><td><span class="pill">Optional</span></td><td>7</td></tr>
+      <tr><td>BCRYPT_ROUNDS</td><td><span class="pill">Optional</span></td><td>12</td></tr>
+      <tr><td>CORS_ORIGINS</td><td><span class="pill">Optional</span></td><td>Comma-separated or JSON array of allowed origins</td></tr>
+      <tr><td>MAX_FAILED_LOGIN_ATTEMPTS</td><td><span class="pill">Optional</span></td><td>5</td></tr>
+      <tr><td>ACCOUNT_LOCK_MINUTES</td><td><span class="pill">Optional</span></td><td>15</td></tr>
+      <tr><td>RATE_LIMIT_LOGIN_PER_MINUTE</td><td><span class="pill">Optional</span></td><td>5 (dev) / 20 (prod)</td></tr>
+      <tr><td>RATE_LIMIT_REGISTER_PER_MINUTE</td><td><span class="pill">Optional</span></td><td>3 (dev) / 10 (prod)</td></tr>
+      <tr><td>RATE_LIMIT_REFRESH_PER_MINUTE</td><td><span class="pill">Optional</span></td><td>10 (dev) / 30 (prod)</td></tr>
+      <tr><td>EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS</td><td><span class="pill">Optional</span></td><td>24</td></tr>
+      <tr><td>PASSWORD_RESET_TOKEN_EXPIRE_MINUTES</td><td><span class="pill">Optional</span></td><td>30</td></tr>
+      <tr><td>SESSION_INACTIVITY_TIMEOUT_MINUTES</td><td><span class="pill">Optional</span></td><td>60</td></tr>
+      <tr><td>REDIS_URL</td><td><span class="pill">Optional</span></td><td>For future distributed rate limiting</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Frontend (frontend/.env.local)</h2>
+  <table class="env-table">
+    <thead><tr><th>Variable</th><th>Required</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>NEXT_PUBLIC_API_URL</td><td><span class="pill-green pill">Required</span></td><td>https://amplivo-front-and-backend.onrender.com/api/v1</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 12. DEPLOYMENT -->
+<div id="deployment" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-cyan">🚀</div>
+    <div><div class="section-num">Section 12</div><h1 class="section-title">Deployment &amp; Infrastructure</h1></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Backend — Render Web Service</div>
+      <div class="card-desc">
+        <ul>
+          <li><strong>Runtime:</strong> Python 3.12</li>
+          <li><strong>Root Dir:</strong> Backend/</li>
+          <li><strong>Build:</strong> <code>pip install -r requirements.txt &amp;&amp; alembic upgrade head</code></li>
+          <li><strong>Start:</strong> <code>uvicorn app.main:app --host 0.0.0.0 --port $PORT</code></li>
+          <li><strong>URL:</strong> amplivo-front-and-backend.onrender.com</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Frontend — Vercel</div>
+      <div class="card-desc">
+        <ul>
+          <li><strong>Runtime:</strong> Node.js 20+</li>
+          <li><strong>Root Dir:</strong> frontend/</li>
+          <li><strong>Build:</strong> <code>npm ci &amp;&amp; npm run build</code></li>
+          <li><strong>Start:</strong> <code>npm start</code></li>
+          <li><strong>URL:</strong> amplivo-front-and-backend.vercel.app</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Database — Supabase PostgreSQL</div>
+    <div class="card-desc">
+      <ul>
+        <li><strong>Region:</strong> ap-south-1 (Mumbai, India)</li>
+        <li><strong>Pooler:</strong> Supavisor, port 6543, transaction mode</li>
+        <li><strong>SSL:</strong> Required (cert verification disabled for pooler)</li>
+        <li><strong>Migrations:</strong> Alembic — applied at each deploy via build command</li>
+        <li><strong>JWT Secret:</strong> Auto-generated by Render on first deploy (<code>generateValue: true</code>)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Local Development</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Backend Local</div>
+      <pre style="font-size:0.75rem;padding:0.75rem;margin:0.5rem 0 0"><code>cd Backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+# Set DB_SSL_MODE=disable in .env
+alembic upgrade head
+uvicorn app.main:app --reload
+# API: http://localhost:8000</code></pre>
+    </div>
+    <div class="card">
+      <div class="card-title">Frontend Local</div>
+      <pre style="font-size:0.75rem;padding:0.75rem;margin:0.5rem 0 0"><code>cd frontend
+npm install
+# Create frontend/.env.local:
+# NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+npm run dev
+# App: http://localhost:3000</code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- 13. HEALTH -->
+<div id="health-api" class="section section-page-break">
+  <div class="section-header">
+    <div class="section-icon icon-green">💚</div>
+    <div><div class="section-num">Section 13</div><h1 class="section-title">Health &amp; Monitoring</h1></div>
+  </div>
+
+  <h2>Health Check Endpoints</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Use Case</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="method GET">GET</span></td>
+        <td><code>/health</code></td>
+        <td><strong>Liveness probe</strong> — never touches DB</td>
+        <td><code>{"status":"ok"}</code> HTTP 200</td>
+      </tr>
+      <tr>
+        <td><span class="method GET">GET</span></td>
+        <td><code>/health/database</code></td>
+        <td><strong>Readiness probe</strong> — executes SELECT 1</td>
+        <td><code>{"status":"healthy","database":"connected","latency":"2.5 ms"}</code> 200 or 503</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">📌 <strong>Probe Strategy:</strong> Use <code>/health</code> as the liveness probe (container restart decisions) and <code>/health/database</code> as the readiness probe (traffic routing). This prevents unnecessary restarts when DB is temporarily unreachable during deployment.</div>
+
+  <h2>Live API Documentation</h2>
+  <table>
+    <thead><tr><th>Tool</th><th>URL</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Swagger UI</td><td><code>/api/v1/docs</code></td><td>Interactive try-it-out API explorer</td></tr>
+      <tr><td>ReDoc</td><td><code>/api/v1/redoc</code></td><td>Clean, readable API reference</td></tr>
+      <tr><td>OpenAPI JSON</td><td><code>/api/v1/openapi.json</code></td><td>Machine-readable OpenAPI 3.0 spec</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Startup &amp; Shutdown Behavior</h2>
+  <ul>
+    <li>Startup: DB connectivity check bounded to <code>DB_STARTUP_TIMEOUT_SECONDS</code> — app still boots even if DB unreachable</li>
+    <li>Startup failure: logs warning, continues boot — <code>/health</code> returns ok, <code>/health/database</code> returns 503</li>
+    <li>Shutdown: <code>engine.dispose()</code> called via lifespan context — graceful connection pool cleanup</li>
+    <li>Static files: <code>/uploads</code> served from <code>Backend/uploads/</code> via Starlette StaticFiles</li>
+  </ul>
+
+  <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:0.8rem;">
+    <p><strong>Amplivo ERP</strong> — Backend/API &amp; Technology Stack Documentation v2.0.0</p>
+    <p>Generated: July 2026 &nbsp;|&nbsp; Classification: Internal Technical Reference</p>
+    <p>FastAPI 0.115 · Python 3.12 · Next.js 16 · PostgreSQL (Supabase) · Render · Vercel</p>
+  </div>
+</div>
+
+</div><!-- .page-wrap -->
+
+<!-- Floating Print Button -->
+<div class="no-print" style="position:fixed;bottom:2rem;right:2rem;z-index:999;">
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#6366f1,#4f46e5);color:white;border:none;padding:0.85rem 1.75rem;border-radius:12px;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(99,102,241,0.4);">
+    🖨️ Print / Save as PDF
+  </button>
+</div>
+
+</body>
+</html>

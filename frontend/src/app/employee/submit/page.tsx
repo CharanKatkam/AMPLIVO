@@ -114,9 +114,13 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
       <EmployeeHeader title={isRevision ? "Resubmit Revision" : "Submit Work"} subtitle="Send your deliverables for CRM review" />
       
       <div className="p-6 max-w-3xl mx-auto w-full">
-        <Link href="/employee/tasks" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors mb-6">
-          <ArrowLeft size={16} /> Back to Tasks
-        </Link>
+        
+        {/* BUG-9 Fix: Render "Back to Tasks" link ONLY if navigated from a task context (taskId present) */}
+        {taskId && (
+          <Link href="/employee/tasks" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors mb-6">
+            <ArrowLeft size={16} /> Back to Tasks
+          </Link>
+        )}
         
         {existingSub && existingSub.currentStatus === 'CRM_CHANGES_REQUESTED' && (
           <div className="mb-6 bg-red-50 p-5 rounded-xl border border-red-200">
@@ -128,13 +132,18 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
         )}
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+          
+          {/* BUG-41 Fix: Visual required indicator (*) for Select Task */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Select Task <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Select Task <span className="text-red-500">*</span>
+            </label>
             <select 
               value={selectedTaskId}
               onChange={(e) => setSelectedTaskId(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
+              aria-required="true"
               disabled={isRevision}
             >
               <option value="">-- Select a task --</option>
@@ -144,14 +153,18 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
             </select>
           </div>
           
+          {/* BUG-41 Fix: Visual required indicator (*) for Submission Title */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Submission Title <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Submission Title <span className="text-red-500">*</span>
+            </label>
             <input 
               type="text" 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
+              aria-required="true"
               disabled={isRevision}
             />
           </div>
@@ -184,7 +197,7 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">File Upload</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">File Upload (Optional)</label>
             <input 
               type="file" 
               ref={fileInputRef}
@@ -210,21 +223,25 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
             </div>
           </div>
 
+          {/* BUG-41 Fix: Visual required indicator (*) for Work Summary */}
           {!isRevision && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Work Summary <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Work Summary <span className="text-red-500">*</span>
+              </label>
               <textarea 
                 value={workSummary}
                 onChange={(e) => setWorkSummary(e.target.value)}
                 rows={3}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
+                aria-required="true"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{isRevision ? "Revision Notes" : "Comments for CRM"}</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{isRevision ? "Revision Notes" : "Comments for CRM (Optional)"}</label>
             <textarea 
               value={employeeComment}
               onChange={(e) => setEmployeeComment(e.target.value)}

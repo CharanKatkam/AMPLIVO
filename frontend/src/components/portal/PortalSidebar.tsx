@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';import Image from 'next/image';
 import { LayoutDashboard, Megaphone, TrendingUp, BarChart2, Image as ImageIcon,
   Files, Calendar, MessageSquare, FileText, LifeBuoy, Settings, LogOut, Zap, Bell,
-  FolderKanban, Receipt, Folder, Menu
+  FolderKanban, Receipt, Folder, Menu, CheckCheck
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuthStore } from '@/store/authStore';
@@ -153,7 +153,7 @@ export function PortalSidebar() {
         />
       </div>
 
-      {/* User Info */}
+      {/* User Info — BUG-018: use user?.image so sidebar updates when avatar changes */}
       <div className="px-5 py-4 border-b border-[#1F2937]">
         <div className="flex items-center gap-3">
           <Avatar name={user?.name ?? 'Client'} image={user?.image} size="sm" />
@@ -226,6 +226,7 @@ interface PortalHeaderProps {
   subtitle?: string;
 }
 export function PortalHeader({ title, subtitle }: PortalHeaderProps) {
+  // BUG-018: read user from auth store so avatar reflects latest upload
   const { user } = useAuthStore();
   const { toggleSidebar } = useUiStore();
   const [open, setOpen] = useState(false);
@@ -261,11 +262,30 @@ export function PortalHeader({ title, subtitle }: PortalHeaderProps) {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  // BUG-06: Auto-close popup when all notifications become read
+  useEffect(() => {
+    if (open && unreadCount === 0 && !loading && notifications.length > 0) {
+      setOpen(false);
+    }
+  }, [unreadCount, open, loading, notifications.length]);
+
   const handleMarkRead = async (id: string) => {
     const { notificationService } = await import('@/services/crmService');
     try {
       await notificationService.markRead(id);
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+    } catch {
+      // ignore
+    }
+  };
+
+  // BUG-06: Mark all as read from within the popup and close it
+  const handleMarkAllRead = async () => {
+    const { notificationService } = await import('@/services/crmService');
+    try {
+      await notificationService.markAllRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setOpen(false); // close popup after marking all as read
     } catch {
       // ignore
     }
@@ -302,9 +322,22 @@ export function PortalHeader({ title, subtitle }: PortalHeaderProps) {
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-900">Notifications</span>
-                <Link href="/portal/notifications" className="text-xs text-[#4C1D95] hover:underline" onClick={() => setOpen(false)}>
-                  View all
-                </Link>
+                <div className="flex items-center gap-2">
+                  {/* BUG-06: Mark all read button inside popup */}
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllRead}
+                      className="text-xs text-[#4C1D95] hover:underline flex items-center gap-1"
+                      title="Mark all as read"
+                    >
+                      <CheckCheck size={12} />
+                      Mark all read
+                    </button>
+                  )}
+                  <Link href="/portal/notifications" className="text-xs text-slate-400 hover:underline" onClick={() => setOpen(false)}>
+                    View all
+                  </Link>
+                </div>
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {loading ? (
@@ -330,6 +363,7 @@ export function PortalHeader({ title, subtitle }: PortalHeaderProps) {
             </div>
           )}
         </div>
+        {/* BUG-018: Avatar reads from user?.image which is updated by login() on avatar upload */}
         <Avatar name={user?.name ?? 'Client'} image={user?.image} size="sm" />
       </div>
     </header>

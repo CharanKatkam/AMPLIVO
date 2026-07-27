@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 import { useEffect, useRef, useState } from 'react';
-import { User as UserIcon, Building2, Bell, Shield, LogOut, Check, Loader2 } from 'lucide-react';
+import { User as UserIcon, Building2, Bell, Shield, Check, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useToastStore } from '@/store/toastStore';
 import { useRouter } from 'next/navigation';
@@ -32,14 +32,26 @@ export default function SettingsPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  // BUG-017: Track original profile values to detect dirty state
+  const [originalFullName, setOriginalFullName] = useState(user?.name ?? '');
+  const [originalPhone, setOriginalPhone] = useState('');
+  const isProfileDirty = fullName !== originalFullName || phone !== originalPhone;
+
   // Company state
   const [company, setCompany] = useState<ClientRead | null>(null);
   const [companyForm, setCompanyForm] = useState({ display_name: '', website: '', phone: '' });
+  const [originalCompanyForm, setOriginalCompanyForm] = useState({ display_name: '', website: '', phone: '' });
   const [savingCompany, setSavingCompany] = useState(false);
+  const isCompanyDirty = JSON.stringify(companyForm) !== JSON.stringify(originalCompanyForm);
 
   // Notifications preferences
   const [preferences, setPreferences] = useState<{ theme: string; email_notifications: boolean; in_app_notifications: boolean } | null>(null);
+  const [originalPreferences, setOriginalPreferences] = useState<{ theme: string; email_notifications: boolean; in_app_notifications: boolean } | null>(null);
   const [savingPrefs, setSavingPrefs] = useState(false);
+  // BUG-017: Only enable save prefs if preferences have changed
+  const isPreferencesDirty = preferences && originalPreferences
+    ? JSON.stringify(preferences) !== JSON.stringify(originalPreferences)
+    : false;
 
   // Security
   const [currentPassword, setCurrentPassword] = useState('');
@@ -47,6 +59,10 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  // BUG-015: Password visibility toggles
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -57,14 +73,26 @@ export default function SettingsPage() {
       settingsService.getMyPreferences().catch(() => null),
       companyService.getMine().catch(() => null),
     ]).then(([detail, profile, prefs, myCompany]) => {
-      if (detail?.phone) setPhone(detail.phone);
-      if (detail?.full_name) setFullName(detail.full_name);
+      const loadedName = detail?.full_name ?? user?.name ?? '';
+      const loadedPhone = detail?.phone ?? '';
+      if (detail?.phone) setPhone(loadedPhone);
+      if (detail?.full_name) setFullName(loadedName);
+      // BUG-017: set original values for dirty detection
+      setOriginalFullName(loadedName);
+      setOriginalPhone(loadedPhone);
+
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
-      if (prefs) setPreferences(prefs);
-      else setPreferences({ theme: 'light', email_notifications: true, in_app_notifications: true });
+
+      const defaultPrefs = { theme: 'light', email_notifications: true, in_app_notifications: true };
+      const resolvedPrefs = prefs ?? defaultPrefs;
+      setPreferences(resolvedPrefs);
+      setOriginalPreferences(resolvedPrefs);
+
       if (myCompany) {
         setCompany(myCompany);
-        setCompanyForm({ display_name: myCompany.display_name ?? '', website: myCompany.website ?? '', phone: myCompany.phone ?? '' });
+        const compForm = { display_name: myCompany.display_name ?? '', website: myCompany.website ?? '', phone: myCompany.phone ?? '' };
+        setCompanyForm(compForm);
+        setOriginalCompanyForm(compForm);
       }
       setLoading(false);
     });
@@ -77,6 +105,8 @@ export default function SettingsPage() {
     try {
       await userManagementService.updateUser(user.id, { full_name: fullName.trim(), phone: phone.trim() });
       login({ ...user, name: fullName.trim() }, token ?? '', refreshToken ?? undefined);
+      setOriginalFullName(fullName.trim());
+      setOriginalPhone(phone.trim());
       showToast('Profile updated successfully.', 'success');
     } catch {
       showToast('Failed to update profile.', 'error');
@@ -93,6 +123,7 @@ export default function SettingsPage() {
       const url = resolveUrl(uploaded.url);
       await userManagementService.upsertUserProfile(user.id, { full_name: fullName.trim() || user.name, avatar_url: url });
       setAvatarUrl(url);
+      // BUG-018: Update auth store so sidebar/header Avatar re-renders with new image
       login({ ...user, image: url }, token ?? '', refreshToken ?? undefined);
       showToast('Avatar updated.', 'success');
     } catch {
@@ -110,6 +141,7 @@ export default function SettingsPage() {
     try {
       const updated = await companyService.update(company.id, companyForm);
       setCompany(updated);
+      setOriginalCompanyForm({ ...companyForm });
       showToast('Company details updated.', 'success');
     } catch {
       showToast('Failed to update company details.', 'error');
@@ -123,6 +155,7 @@ export default function SettingsPage() {
     setSavingPrefs(true);
     try {
       await settingsService.updateMyPreferences(preferences);
+      setOriginalPreferences({ ...preferences });
       showToast('Notification preferences saved.', 'success');
     } catch {
       showToast('Failed to save preferences.', 'error');
@@ -157,17 +190,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      if (refreshToken) await authService.logout(refreshToken);
-    } catch {
-      // ignore
-    } finally {
-      logout();
-      router.push('/login');
-    }
-  };
-
   if (loading) {
     return (
       <div className="p-8 max-w-5xl mx-auto">
@@ -178,6 +200,7 @@ export default function SettingsPage() {
     );
   }
 
+  // BUG-016: Removed 'Sign out' from the tab navigation — it already exists in the sidebar
   const navButtons: { key: Tab; label: string; icon: typeof UserIcon }[] = [
     { key: 'profile', label: 'Profile', icon: UserIcon },
     { key: 'company', label: 'Company details', icon: Building2 },
@@ -193,6 +216,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        {/* BUG-016: No Sign Out button here — only navigation tabs */}
         <div className="md:col-span-1 space-y-1">
           {navButtons.map(({ key, label, icon: Icon }) => (
             <button
@@ -205,12 +229,6 @@ export default function SettingsPage() {
               <Icon size={18} /> {label}
             </button>
           ))}
-
-          <div className="pt-4 mt-4 border-t border-slate-200">
-            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium text-sm transition-colors">
-              <LogOut size={18} /> Sign out
-            </button>
-          </div>
         </div>
 
         <div className="md:col-span-3 space-y-6">
@@ -255,7 +273,13 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="pt-4 border-t border-slate-100 flex justify-end">
-                  <button type="submit" disabled={savingProfile} className="flex items-center gap-2 bg-[#4C1D95] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors disabled:opacity-50">
+                  {/* BUG-017: Disabled when form is pristine */}
+                  <button
+                    type="submit"
+                    disabled={savingProfile || !isProfileDirty}
+                    title={!isProfileDirty ? 'No changes to save' : undefined}
+                    className="flex items-center gap-2 bg-[#4C1D95] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     {savingProfile ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                     {savingProfile ? 'Saving...' : 'Save Changes'}
                   </button>
@@ -307,7 +331,13 @@ export default function SettingsPage() {
                   </div>
                   <p className="text-xs text-slate-500">Tax/registration details can only be updated by your account manager.</p>
                   <div className="pt-4 border-t border-slate-100 flex justify-end">
-                    <button type="submit" disabled={savingCompany} className="flex items-center gap-2 bg-[#4C1D95] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors disabled:opacity-50">
+                    {/* BUG-017: Disabled when company form is pristine */}
+                    <button
+                      type="submit"
+                      disabled={savingCompany || !isCompanyDirty}
+                      title={!isCompanyDirty ? 'No changes to save' : undefined}
+                      className="flex items-center gap-2 bg-[#4C1D95] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       {savingCompany ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                       {savingCompany ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -347,7 +377,13 @@ export default function SettingsPage() {
                 </label>
               </div>
               <div className="pt-6 mt-2 border-t border-slate-100 flex justify-end">
-                <button onClick={handleSavePreferences} disabled={savingPrefs} className="flex items-center gap-2 bg-[#4C1D95] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors disabled:opacity-50">
+                {/* BUG-017: Disabled when preferences are pristine */}
+                <button
+                  onClick={handleSavePreferences}
+                  disabled={savingPrefs || !isPreferencesDirty}
+                  title={!isPreferencesDirty ? 'No changes to save' : undefined}
+                  className="flex items-center gap-2 bg-[#4C1D95] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {savingPrefs ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                   {savingPrefs ? 'Saving...' : 'Save Preferences'}
                 </button>
@@ -360,21 +396,81 @@ export default function SettingsPage() {
               <h2 className="text-lg font-bold text-slate-900 mb-6" style={{ fontFamily: "'Sora', sans-serif" }}>Password & Security</h2>
               <form className="space-y-4 max-w-md" onSubmit={handleChangePassword}>
                 {passwordError && <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3">{passwordError}</p>}
+
+                {/* BUG-015: Current Password with eye toggle */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Current Password</label>
-                  <input type="password" required value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]" />
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      required
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
+
+                {/* BUG-015: New Password with eye toggle */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">New Password</label>
-                  <input type="password" required minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]" />
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                   <p className="text-xs text-slate-500 mt-1.5">At least 8 characters, with an uppercase letter, lowercase letter, number, and symbol.</p>
                 </div>
+
+                {/* BUG-015: Confirm Password with eye toggle */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm New Password</label>
-                  <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]" />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
+
                 <div className="pt-4 border-t border-slate-100 flex justify-end">
-                  <button type="submit" disabled={changingPassword} className="flex items-center gap-2 bg-[#4C1D95] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors disabled:opacity-50">
+                  <button
+                    type="submit"
+                    disabled={changingPassword}
+                    className="flex items-center gap-2 bg-[#4C1D95] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors disabled:opacity-50"
+                  >
                     {changingPassword ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                     {changingPassword ? 'Updating...' : 'Change Password'}
                   </button>
