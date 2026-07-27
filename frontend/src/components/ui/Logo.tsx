@@ -3,17 +3,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 interface LogoProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'sidebar' | 'auth' | 'login';
   variant?: 'dark' | 'light' | 'white';
   href?: string;
+  className?: string;
 }
 
 const sizeMap = {
+  login: { width: 280, height: 84 },
+  auth: { width: 200, height: 60 },
+  sidebar: { width: 120, height: 32 },
   sm: { width: 200, height: 60 },
   md: { width: 300, height: 90 },
   lg: { width: 380, height: 110 },
 };
-export function Logo({ size = 'md', variant = 'dark', href = '/' }: LogoProps) {
+export function Logo({ size = 'md', variant = 'dark', href = '/', className }: LogoProps) {
   const { height, width } = sizeMap[size];
   const showWhite = variant === 'white' || variant === 'light';
 
@@ -46,5 +50,5 @@ export function Logo({ size = 'md', variant = 'dark', href = '/' }: LogoProps) {
     </div>
   );
 
-  return href ? <Link href={href}>{content}</Link> : content;
+  return href ? <Link href={href} className={className}>{content}</Link> : className ? <div className={className}>{content}</div> : content;
 }

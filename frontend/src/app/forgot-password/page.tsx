@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Zap, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -41,11 +42,7 @@ export default function ForgotPasswordPage() {
 
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center justify-center mb-4">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
-              <Zap size={18} className="text-white" />
-            </div>
-          </Link>
+          <Logo size="auth" href="/" className="inline-flex items-center justify-center mb-4" />
           <h1 className="text-xl font-bold text-slate-900 tracking-tight mb-2" style={{ fontFamily: "'Sora', sans-serif" }}>
             Reset your password
           </h1>

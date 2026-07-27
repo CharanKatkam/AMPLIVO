@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isAxiosError } from 'axios';
 import * as z from 'zod';
-import { Zap, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
 
@@ -104,15 +105,10 @@ export default function LoginPage() {
         
         {/* Logo & Header */}
         <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center justify-center mb-4">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
-              <Zap size={18} className="text-white" />
-            </div>
-          </Link>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight mb-1" style={{ fontFamily: "'Sora', sans-serif" }}>
+          <Logo size="login" href="/" className="inline-flex items-center justify-center mb-4" />
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: "'Sora', sans-serif" }}>
             Welcome to Amplivo
           </h1>
-          <p className="text-slate-500 text-sm">Sign in to your client portal</p>
         </div>
 
         {/* Demo credentials */}

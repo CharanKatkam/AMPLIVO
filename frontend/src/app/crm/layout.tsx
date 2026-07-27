@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Image from 'next/image';
+import { Logo } from '@/components/ui/Logo';
 import {
   LayoutDashboard, Users, FolderKanban, UserCheck,
   FileText, CreditCard, Bell, BarChart3, Settings,
@@ -67,14 +67,7 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
       >
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-          <Image
-            src="/images/Logo.png"
-            alt="Amplivo"
-            width={120}
-            height={32}
-            className="object-contain"
-            style={{ height: '32px', width: 'auto' }}
-          />
+          <Logo size="sidebar" variant="white" href="/crm" />
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
