@@ -1,7 +1,7 @@
 """Service layer for Tasks."""
 from __future__ import annotations
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import BadRequestException, NotFoundException
@@ -13,8 +13,9 @@ from app.modules.tasks.repository import (
 from app.utils.sales_events import log_activity, notify_role, notify_users
 
 class ProjectService:
-    def __init__(self, repo: ProjectRepository) -> None:
+    def __init__(self, repo: ProjectRepository, db: AsyncSession | None = None) -> None:
         self._repo = repo
+        self._db = db or repo._db
     async def list_projects(self, *, search=None, client_id=None, status=None, manager_id=None, sort_by=None, sort_order="desc", offset=0, limit=20):
         items = await self._repo.get_all_filtered(search=search, client_id=client_id, status=status, manager_id=manager_id, sort_by=sort_by, sort_order=sort_order, offset=offset, limit=limit)
         total = await self._repo.count_filtered(search=search, client_id=client_id, status=status, manager_id=manager_id)
@@ -35,6 +36,34 @@ class ProjectService:
         await self.get_project(project_id, scoped_client_id=scoped_client_id)
         if not await self._repo.delete(project_id): raise NotFoundException("Project")
 
+    async def complete_project(self, project_id: uuid.UUID, *, actor_id: uuid.UUID | None) -> Project:
+        """Final step of the whole workflow - marks the project done and
+        writes PROJECT_COMPLETED back onto its originating lead (via
+        converted_project_id) for Sales/CRM closed-won reporting. Previously
+        there was no archive/completion concept at all (Project.status
+        stayed whatever free-text value it already had, forever)."""
+        from app.modules.leads.repository import LeadRepository
+        from app.core import lead_pipeline
+        from app.utils.time import utc_now
+
+        project = await self.get_project(project_id)
+        project.status = "completed"
+        project.completed_at = utc_now()
+        await self._db.flush()
+        await self._db.refresh(project)
+
+        lead = await LeadRepository(self._db).find_by_converted_project(project_id)
+        if lead is not None:
+            lead.status = lead_pipeline.PROJECT_COMPLETED
+            await self._db.flush()
+
+        await log_activity(
+            self._db, user_id=actor_id, entity_type="project", entity_id=project_id,
+            action="project_completed", description=f"Project '{project.name}' marked completed.",
+        )
+        await notify_role(self._db, "admin", title="Project completed", message=f"Project '{project.name}' has been marked completed.")
+        return project
+
 class ProjectMemberService:
     def __init__(self, repo: ProjectMemberRepository, project_repo: ProjectRepository, db: AsyncSession) -> None:
         self._repo = repo
@@ -42,6 +71,8 @@ class ProjectMemberService:
         self._db = db
     async def list_members(self, project_id: uuid.UUID) -> Sequence[ProjectMember]:
         return await self._repo.list_by_project(project_id)
+    async def list_member_ids_map(self, project_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, list[uuid.UUID]]:
+        return await self._repo.list_ids_by_projects(project_ids)
     async def add_member(self, project_id: uuid.UUID, user_id: uuid.UUID, *, actor_id: uuid.UUID | None) -> ProjectMember:
         project = await self._project_repo.get_by_id(project_id)
         if project is None: raise NotFoundException("Project")
@@ -82,6 +113,7 @@ class TaskService:
         return t
     async def create_task(self, data: dict, created_by: uuid.UUID | None = None) -> Task:
         data["created_by"] = created_by
+        data["task_number"] = await self._repo.next_task_number()
         task = await self._repo.create_from_dict(data)
         if task.assigned_to:
             await notify_users(
@@ -167,7 +199,8 @@ class TaskSubmissionService:
             self._db, user_id=submitted_by, entity_type="task", entity_id=task_id,
             action="work_submitted", description=f"Work submitted for task '{task.title}'.",
         )
-        await notify_role(self._db, "admin", title="Task submitted for review", message=f"Work submitted for task '{task.title}'.")
+        for role_slug in ("admin", "crm"):
+            await notify_role(self._db, role_slug, title="Task submitted for review", message=f"Work submitted for task '{task.title}'.")
         return submission
     async def resubmit(self, submission_id: uuid.UUID, data: dict, *, submitted_by: uuid.UUID | None) -> TaskSubmission:
         existing = await self.get(submission_id)
@@ -182,7 +215,8 @@ class TaskSubmissionService:
             self._db, user_id=submitted_by, entity_type="task", entity_id=existing.task_id,
             action="work_resubmitted", description=f"Work resubmitted (v{updated.version_number}) for task '{task.title if task else ''}'.",
         )
-        await notify_role(self._db, "admin", title="Task resubmitted for review", message=f"Work resubmitted for task '{task.title if task else ''}'.")
+        for role_slug in ("admin", "crm"):
+            await notify_role(self._db, role_slug, title="Task resubmitted for review", message=f"Work resubmitted for task '{task.title if task else ''}'.")
         return updated
     async def review(self, submission_id: uuid.UUID, *, approve: bool, reviewer_feedback: str | None, reviewer_id: uuid.UUID | None) -> TaskSubmission:
         existing = await self.get(submission_id)
@@ -205,4 +239,43 @@ class TaskSubmissionService:
                 message=f"Your submission for '{task.title if task else 'a task'}' was {'approved' if approve else 'sent back for changes'}."
                 + (f" Feedback: {reviewer_feedback}" if reviewer_feedback else ""),
             )
+        if approve and task is not None and task.project_id is not None:
+            await self._maybe_generate_final_invoice(task.project_id, task_submission_id=submission_id, actor_id=reviewer_id)
         return updated
+
+    async def _maybe_generate_final_invoice(self, project_id: uuid.UUID, *, task_submission_id: uuid.UUID, actor_id: uuid.UUID | None) -> None:
+        """Once every task on the project is complete, the remaining 75% is
+        due - generate that invoice automatically instead of leaving Finance
+        to notice and create it by hand. No-ops if there's still outstanding
+        work, or a final invoice already exists for this project."""
+        from app.modules.finance.repository import InvoiceRepository
+        from app.modules.finance.service import InvoiceService
+        from app.modules.leads.repository import LeadRepository
+
+        project_tasks = await self._task_repo.get_all_filtered(project_id=project_id, limit=1000)
+        if not project_tasks or any(t.status != "completed" for t in project_tasks):
+            return
+
+        invoice_repo = InvoiceRepository(self._db)
+        if await invoice_repo.exists_final_for_project(project_id):
+            return
+
+        lead = await LeadRepository(self._db).find_by_converted_project(project_id)
+        advance_invoice = await invoice_repo.get_advance_for_lead(lead.id) if lead else None
+        if advance_invoice is None or advance_invoice.subtotal <= 0:
+            # No advance-invoice trail to derive the deal total from (e.g. a
+            # project created via the manual /leads/convert path with no
+            # advance-invoice pipeline) - nothing to safely auto-generate.
+            return
+
+        total_deal_amount = advance_invoice.subtotal / 0.25
+        tax_rate = (advance_invoice.tax_total / advance_invoice.subtotal * 100) if advance_invoice.subtotal else 0.0
+        due_date = (datetime.now(timezone.utc) + timedelta(days=14)).date()
+
+        invoice_service = InvoiceService(self._db, invoice_repo)
+        await invoice_service.create_final_invoice_for_project(
+            project_id=project_id, task_submission_id=task_submission_id, total_deal_amount=total_deal_amount,
+            tax_rate=tax_rate, due_date=due_date, currency=advance_invoice.currency,
+            notes="Final 75% invoice - auto-generated after all project tasks were approved.",
+            actor_id=actor_id,
+        )

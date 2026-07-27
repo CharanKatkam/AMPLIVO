@@ -6,15 +6,19 @@ import { CheckSquare, Play, AlertOctagon, MessageSquare, UploadCloud, CheckCircl
 import Link from 'next/link';
 
 export default function EmployeeTasks() {
-  const { activeEmployeeId, getTasksByEmployee, startTask, updateTaskProgress, markTaskBlocked } = useCrmStore();
+  const { activeEmployeeId, getTasksByEmployee, startTask, updateTaskProgress, markTaskBlocked, dataLoaded } = useCrmStore();
   const tasks = getTasksByEmployee(activeEmployeeId || '');
 
   return (
     <div className="flex flex-col min-h-full">
       <EmployeeHeader title="My Tasks" subtitle="Your assigned work" />
-      
+
       <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
-        {tasks.length === 0 ? (
+        {!dataLoaded ? (
+          <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-500 text-sm">
+            Loading your tasks…
+          </div>
+        ) : tasks.length === 0 ? (
           <div className="bg-white p-8 rounded-xl border border-slate-200 text-center">
             <CheckSquare className="mx-auto text-slate-300 mb-4" size={48} />
             <h3 className="text-lg font-bold text-slate-900 mb-1">No Tasks Assigned</h3>
@@ -27,7 +31,7 @@ export default function EmployeeTasks() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-xs font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">
-                      {task.id}
+                      {task.taskNumber}
                     </span>
                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
                       task.status === 'DONE' ? 'bg-green-100 text-green-700' :

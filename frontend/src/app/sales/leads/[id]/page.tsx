@@ -38,6 +38,7 @@ export default function LeadDetailPage({ params }: PageProps) {
   const [servicesValue, setServicesValue] = useState(lead?.interestedServices ?? []);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [invoiceSuccess, setInvoiceSuccess] = useState(false);
+  const [invoiceError, setInvoiceError] = useState<string | null>(null);
 
   if (!lead) {
     return (
@@ -49,22 +50,37 @@ export default function LeadDetailPage({ params }: PageProps) {
     );
   }
 
-  const handleGenerateInvoice = () => {
+  const handleGenerateInvoice = async () => {
     setGeneratingInvoice(true);
-    setTimeout(() => {
-      const invoice = generateInvoice(lead.id);
-      setGeneratingInvoice(false);
+    setInvoiceError(null);
+    try {
+      const invoice = await generateInvoice(lead.id);
       if (invoice) {
         setInvoiceSuccess(true);
         setTimeout(() => router.push(`/sales/invoices/${invoice.id}`), 1200);
       }
-    }, 800);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate invoice. Please check the lead details and try again.';
+      setInvoiceError(message);
+    } finally {
+      setGeneratingInvoice(false);
+    }
   };
 
   const canGenerateInvoice =
     !lead.invoiceGenerated &&
     ['Negotiation', 'Won', 'Proposal Sent'].includes(lead.status) &&
-    lead.interestedServices.length > 0;
+    lead.interestedServices.length > 0 &&
+    lead.budget > 0;
+
+  // The backend rejects total_deal_amount <= 0 (HTTP 422) - leads created
+  // automatically from the public contact/consultation forms never have a
+  // budget set, so Sales must set one before an invoice can be generated.
+  const blockedByMissingBudget =
+    !lead.invoiceGenerated &&
+    ['Negotiation', 'Won', 'Proposal Sent'].includes(lead.status) &&
+    lead.interestedServices.length > 0 &&
+    !(lead.budget > 0);
 
   return (
     <div>
@@ -117,6 +133,17 @@ export default function LeadDetailPage({ params }: PageProps) {
           </div>
         }
       />
+
+      {/* Invoice Error Toast */}
+      {invoiceError && (
+        <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+          <AlertCircle className="text-red-500 flex-shrink-0" size={20} />
+          <div>
+            <div className="font-semibold text-red-700">Couldn&apos;t generate invoice</div>
+            <div className="text-sm text-red-600">{invoiceError}</div>
+          </div>
+        </div>
+      )}
 
       {/* Invoice Success Toast */}
       {invoiceSuccess && (
@@ -426,6 +453,20 @@ export default function LeadDetailPage({ params }: PageProps) {
 
           {/* RIGHT COLUMN */}
           <div className="space-y-5">
+            {/* Budget missing warning - the reason Generate Invoice is hidden */}
+            {blockedByMissingBudget && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
+                <AlertCircle className="text-amber-500 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <div className="font-bold text-amber-800 text-sm">Set a budget before invoicing</div>
+                  <p className="text-amber-700 text-xs mt-1 leading-relaxed">
+                    This lead has no budget set, so a 25% advance invoice can&apos;t be generated (amount would be ₹0).
+                    Edit the <strong>Monthly Budget</strong> field in Deal Overview first.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Generate Invoice CTA (if eligible) */}
             {canGenerateInvoice && (
               <div className="bg-gradient-to-br from-[#4C1D95] to-[#7C3AED] rounded-2xl p-6 text-white relative overflow-hidden">

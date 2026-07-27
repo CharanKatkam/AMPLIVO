@@ -9,6 +9,7 @@ from app.modules.contact_forms.models import ContactSubmission
 from app.modules.contact_forms.repository import ContactSubmissionRepository
 from app.modules.contact_forms.schemas import ContactSubmissionCreate, ContactSubmissionUpdate
 from app.modules.leads.repository import LeadRepository
+from app.core import lead_pipeline
 from app.core.exceptions import NotFoundException
 
 
@@ -41,15 +42,15 @@ class ContactSubmissionService:
             "company_name": data.company,
             "email": data.email,
             "phone": data.phone,
-            "status": "New",
+            "status": lead_pipeline.NEW_LEAD,
             "priority": "Medium",
             "notes": notes.strip(),
         }
         lead = await self._lead_repo.create_from_dict(lead_data)
-        
-        # Optionally link back if schema allows
-        # submission.converted_lead_id = lead.id
-        
+        submission.converted_lead_id = lead.id
+        await self._session.flush()
+        await self._session.refresh(submission)
+
         return submission
 
     async def update(self, id: uuid.UUID, data: ContactSubmissionUpdate) -> ContactSubmission:

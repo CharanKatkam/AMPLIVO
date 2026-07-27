@@ -42,6 +42,7 @@ class LeadRead(BaseModel):
     email: str | None; phone: str | None; source_id: uuid.UUID | None; client_id: uuid.UUID | None
     status: str; pipeline_stage_id: uuid.UUID | None; priority: str; estimated_value: float | None
     assigned_to: uuid.UUID | None; converted_client_id: uuid.UUID | None
+    converted_project_id: uuid.UUID | None
     converted_at: datetime | None; notes: str | None; interested_services: list[str] | None
     created_by: uuid.UUID | None; created_at: datetime; updated_at: datetime
 
@@ -83,3 +84,8 @@ class SalesPipelineRead(BaseModel):
 class LeadConvertRequest(BaseModel):
     # If omitted, a new Client is created automatically from the lead's own fields.
     client_id: uuid.UUID | None = None
+
+class LeadMarkLostRequest(BaseModel):
+    reason: str | None = None
+    # 'LOST' (meeting/negotiation fell through) or 'REJECTED' (client actively declined).
+    terminal_status: str = "LOST"

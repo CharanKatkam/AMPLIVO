@@ -131,13 +131,21 @@ class Proposal(Base):
     __tablename__ = "proposals"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    client_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False
+    # Nullable because a proposal is created against a Lead, before any
+    # Client exists (see migration 0020) - client_id only gets populated
+    # once the deal converts. At least one of lead_id/client_id is always
+    # set (DB CHECK constraint ck_proposals_lead_or_client).
+    client_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=True
+    )
+    lead_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("leads.id", ondelete="SET NULL"), nullable=True
     )
     title: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     amount: Mapped[float | None] = mapped_column(Float, nullable=True)
-    status: Mapped[str] = mapped_column(Text, nullable=False, default="draft")  # draft, sent, accepted, rejected
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="draft")  # draft, sent, accepted, rejected, revision_requested
+    decision_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by: Mapped[uuid.UUID | None] = mapped_column(

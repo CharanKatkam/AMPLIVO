@@ -2,7 +2,7 @@
 from __future__ import annotations
 import uuid
 from typing import Sequence
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import selectinload
 from app.core.filters import apply_search, apply_sorting
 from app.modules.tasks.models import Project, ProjectMember, Task, TaskAttachment, TaskComment, TaskSubmission
@@ -35,6 +35,13 @@ class ProjectRepository(BaseRepository[Project]):
 class TaskRepository(BaseRepository[Task]):
     model = Task
     searchable_columns = [Task.title, Task.description]
+    async def next_task_number(self) -> str:
+        """Explicit sequence pull instead of relying on the column's
+        server_default (migration 0018) being applied implicitly - avoids a
+        NOT NULL violation on task_number when the ORM includes an unset
+        attribute as a bound NULL rather than omitting it from the INSERT."""
+        result = await self._db.execute(text("SELECT nextval('tasks_task_number_seq')"))
+        return f"TASK-{result.scalar_one():04d}"
     async def get_detail(self, task_id: uuid.UUID) -> Task | None:
         stmt = select(Task).options(selectinload(Task.comments), selectinload(Task.attachments)).where(Task.id == task_id)
         result = await self._db.execute(stmt)
@@ -65,6 +72,19 @@ class ProjectMemberRepository(BaseRepository[ProjectMember]):
     async def list_by_project(self, project_id: uuid.UUID) -> Sequence[ProjectMember]:
         r = await self._db.execute(select(ProjectMember).where(ProjectMember.project_id == project_id).order_by(ProjectMember.assigned_at))
         return r.scalars().all()
+    async def list_ids_by_projects(self, project_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, list[uuid.UUID]]:
+        """Map each project id to its list of assigned user ids, in one query."""
+        if not project_ids:
+            return {}
+        r = await self._db.execute(
+            select(ProjectMember.project_id, ProjectMember.user_id)
+            .where(ProjectMember.project_id.in_(project_ids))
+            .order_by(ProjectMember.assigned_at)
+        )
+        member_map: dict[uuid.UUID, list[uuid.UUID]] = {pid: [] for pid in project_ids}
+        for project_id, user_id in r.all():
+            member_map[project_id].append(user_id)
+        return member_map
     async def get_by_project_and_user(self, project_id: uuid.UUID, user_id: uuid.UUID) -> ProjectMember | None:
         r = await self._db.execute(
             select(ProjectMember).where(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id)

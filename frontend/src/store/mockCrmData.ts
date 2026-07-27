@@ -49,6 +49,7 @@ export const MOCK_PROJECTS: CrmProject[] = [
 export const MOCK_TASKS: CrmTask[] = [
   {
     id: 'TASK-001',
+    taskNumber: 'TASK-001',
     projectId: 'PRJ-001',
     projectName: 'Website Redesign',
     clientId: 'CLT-001',

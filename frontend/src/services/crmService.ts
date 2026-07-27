@@ -124,6 +124,20 @@ export const projectService = {
   delete: async (id: string) => {
     await api.delete(`/projects/${id}`);
   },
+
+  getMembers: async (projectId: string) => {
+    const { data } = await api.get(`/projects/${projectId}/members`);
+    return data;
+  },
+
+  addMember: async (projectId: string, userId: string) => {
+    const { data } = await api.post(`/projects/${projectId}/members`, { user_id: userId });
+    return data;
+  },
+
+  removeMember: async (projectId: string, userId: string) => {
+    await api.delete(`/projects/${projectId}/members/${userId}`);
+  },
 };
 
 // ── Tasks ─────────────────────────────────────────────────────────────────────
@@ -179,6 +193,31 @@ export const taskService = {
   },
 };
 
+// ── Task Submissions ───────────────────────────────────────────────────────────
+
+export const taskSubmissionService = {
+  getAll: async (taskId: string) => {
+    const { data } = await api.get(`/tasks/${taskId}/submissions`);
+    return data;
+  },
+
+  create: async (taskId: string, payload: {
+    title: string; work_summary?: string; deliverable_type?: string;
+    external_url?: string; completion_percentage?: number;
+  }) => {
+    const { data } = await api.post(`/tasks/${taskId}/submissions`, payload);
+    return data;
+  },
+
+  resubmit: async (submissionId: string, payload: {
+    title?: string; work_summary?: string; deliverable_type?: string;
+    external_url?: string; completion_percentage?: number;
+  }) => {
+    const { data } = await api.put(`/submissions/${submissionId}`, payload);
+    return data;
+  },
+};
+
 // ── Notifications ─────────────────────────────────────────────────────────────
 
 export const notificationService = {
@@ -220,6 +259,11 @@ export const financeService = {
     return data;
   },
 
+  getAdvanceInvoiceForLead: async (leadId: string) => {
+    const { data } = await api.get(`/finance/invoices/by-lead/${leadId}/advance`);
+    return data;
+  },
+
   createInvoice: async (payload: Record<string, unknown>) => {
     const { data } = await api.post('/finance/invoices', payload);
     return data;
@@ -251,6 +295,44 @@ export const financeService = {
 
   addPayment: async (invoiceId: string, payload: Record<string, unknown>) => {
     const { data } = await api.post(`/finance/invoices/${invoiceId}/payments`, payload);
+    return data;
+  },
+
+  createAdvanceInvoice: async (payload: {
+    lead_id: string; proposal_id?: string; total_deal_amount: number;
+    tax_rate?: number; due_date: string; currency?: string; notes?: string;
+  }) => {
+    const { data } = await api.post('/finance/invoices/advance', payload);
+    return data;
+  },
+
+  createFinalInvoice: async (payload: {
+    project_id: string; task_submission_id?: string; total_deal_amount: number;
+    tax_rate?: number; due_date: string; currency?: string; notes?: string;
+  }) => {
+    const { data } = await api.post('/finance/invoices/final', payload);
+    return data;
+  },
+
+  crmApproveInvoice: async (invoiceId: string) => {
+    const { data } = await api.post(`/finance/invoices/${invoiceId}/crm-approve`);
+    return data;
+  },
+
+  getInvoicePdfUrl: (invoiceId: string) => `${api.defaults.baseURL}/finance/invoices/${invoiceId}/pdf`,
+
+  verifyPaymentFinance: async (paymentId: string) => {
+    const { data } = await api.post(`/finance/payments/${paymentId}/verify-finance`);
+    return data;
+  },
+
+  verifyPaymentCrm: async (paymentId: string) => {
+    const { data } = await api.post(`/finance/payments/${paymentId}/verify-crm`);
+    return data;
+  },
+
+  rejectPayment: async (paymentId: string, reason?: string) => {
+    const { data } = await api.post(`/finance/payments/${paymentId}/reject`, { reason });
     return data;
   },
 

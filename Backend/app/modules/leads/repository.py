@@ -48,6 +48,14 @@ class LeadRepository(BaseRepository[Lead]):
         stmt = apply_search(stmt, search=search, columns=self.searchable_columns)
         return (await self._db.execute(stmt)).scalar_one()
 
+    async def find_by_converted_project(self, project_id) -> Lead | None:
+        result = await self._db.execute(select(Lead).where(Lead.converted_project_id == project_id))
+        return result.scalar_one_or_none()
+
+    async def find_by_converted_client(self, client_id) -> Lead | None:
+        result = await self._db.execute(select(Lead).where(Lead.converted_client_id == client_id).order_by(Lead.converted_at.desc()))
+        return result.scalars().first()
+
 
 class LeadActivityRepository(BaseRepository[LeadActivity]):
     model = LeadActivity

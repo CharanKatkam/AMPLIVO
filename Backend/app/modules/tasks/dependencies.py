@@ -6,7 +6,7 @@ from app.modules.tasks.repository import *
 from app.modules.tasks.service import *
 
 def get_project_service(db: AsyncSession = Depends(get_db)) -> ProjectService:
-    return ProjectService(ProjectRepository(db))
+    return ProjectService(ProjectRepository(db), db)
 
 def get_project_member_service(db: AsyncSession = Depends(get_db)) -> ProjectMemberService:
     return ProjectMemberService(ProjectMemberRepository(db), ProjectRepository(db), db)

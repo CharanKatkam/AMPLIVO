@@ -2,10 +2,12 @@
 from __future__ import annotations
 import uuid
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
+from app.dependencies.rbac import require_roles
 from app.dependencies.tenant import get_current_client_id
 from app.models.user import User
 from app.modules.finance.dependencies import *
@@ -33,9 +35,48 @@ async def list_invoices(
     return PaginatedResponse[InvoiceRead].create(items=[InvoiceRead.model_validate(x) for x in items], total=total, page=params.page, page_size=params.page_size)
 
 @router.post("/invoices", response_model=InvoiceRead, status_code=status.HTTP_201_CREATED, summary="Create invoice")
-async def create_invoice(payload: InvoiceCreate, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user)):
-    i = await svc.create_invoice(payload.model_dump()); await db.commit()
+async def create_invoice(payload: InvoiceCreate, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), current_user: User = Depends(get_current_user)):
+    i = await svc.create_invoice(payload.model_dump(), actor_id=current_user.id); await db.commit()
     return InvoiceRead.model_validate(i)
+
+@router.post("/invoices/advance", response_model=InvoiceRead, status_code=status.HTTP_201_CREATED, summary="Generate the 25% advance invoice for a lead (auto CRM handoff)")
+async def create_advance_invoice(payload: AdvanceInvoiceCreateRequest, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("sales"))):
+    i = await svc.create_advance_invoice_for_lead(
+        lead_id=payload.lead_id, proposal_id=payload.proposal_id, total_deal_amount=payload.total_deal_amount,
+        tax_rate=payload.tax_rate, due_date=payload.due_date, currency=payload.currency, notes=payload.notes,
+        actor_id=current_user.id,
+    )
+    await db.commit()
+    return InvoiceRead.model_validate(i)
+
+@router.post("/invoices/final", response_model=InvoiceRead, status_code=status.HTTP_201_CREATED, summary="Generate the remaining 75% final invoice for a project")
+async def create_final_invoice(payload: FinalInvoiceCreateRequest, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("finance", "admin"))):
+    i = await svc.create_final_invoice_for_project(
+        project_id=payload.project_id, task_submission_id=payload.task_submission_id, total_deal_amount=payload.total_deal_amount,
+        tax_rate=payload.tax_rate, due_date=payload.due_date, currency=payload.currency, notes=payload.notes,
+        actor_id=current_user.id,
+    )
+    await db.commit()
+    return InvoiceRead.model_validate(i)
+
+@router.post("/invoices/{invoice_id}/crm-approve", response_model=InvoiceRead, summary="CRM approves the advance/final invoice - sends the payment-link email")
+async def crm_approve_invoice(invoice_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("crm"))):
+    i = await svc.crm_approve_advance(invoice_id, actor_id=current_user.id); await db.commit()
+    return InvoiceRead.model_validate(i)
+
+@router.get("/invoices/by-lead/{lead_id}/advance", response_model=InvoiceRead | None, summary="Get the advance invoice for a lead, if one exists")
+async def get_advance_invoice_for_lead(lead_id: uuid.UUID, svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user)):
+    invoice = await svc.get_advance_for_lead(lead_id)
+    return InvoiceRead.model_validate(invoice) if invoice else None
+
+@router.get("/invoices/{invoice_id}/pdf", summary="Download invoice as PDF")
+async def get_invoice_pdf(invoice_id: uuid.UUID, svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
+    from app.services.pdf_service import render_invoice_pdf
+    invoice = await svc.get_invoice(invoice_id, scoped_client_id=scoped_client_id)
+    pdf_bytes = render_invoice_pdf(invoice)
+    return Response(content=pdf_bytes, media_type="application/pdf", headers={
+        "Content-Disposition": f'inline; filename="invoice-{invoice.invoice_number}.pdf"'
+    })
 
 @router.get("/invoices/{invoice_id}", response_model=InvoiceRead, summary="Get invoice")
 async def get_invoice(invoice_id: uuid.UUID, svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
@@ -89,6 +130,22 @@ async def update_payment(payment_id: uuid.UUID, payload: PaymentUpdate, db: Asyn
 @router.delete("/payments/{payment_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete payment")
 async def delete_payment(payment_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), _: User = Depends(get_current_user)):
     await svc.delete_payment(payment_id); await db.commit()
+
+# ── Two-step manual payment verification (Finance, then CRM) ──
+@router.post("/payments/{payment_id}/verify-finance", response_model=PaymentRead, summary="Finance verifies a submitted payment")
+async def finance_verify_payment(payment_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
+    p = await svc.finance_verify(payment_id, actor_id=current_user.id); await db.commit()
+    return PaymentRead.model_validate(p)
+
+@router.post("/payments/{payment_id}/verify-crm", response_model=PaymentRead, summary="CRM gives final sign-off on a finance-verified payment")
+async def crm_verify_payment(payment_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("crm"))):
+    p = await svc.crm_verify(payment_id, actor_id=current_user.id); await db.commit()
+    return PaymentRead.model_validate(p)
+
+@router.post("/payments/{payment_id}/reject", response_model=PaymentRead, summary="Reject a submitted payment")
+async def reject_payment(payment_id: uuid.UUID, payload: PaymentRejectRequest, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("finance", "crm"))):
+    p = await svc.reject_payment(payment_id, reason=payload.reason, actor_id=current_user.id); await db.commit()
+    return PaymentRead.model_validate(p)
 
 # ── Expenses ──
 @router.get("/expenses", response_model=PaginatedResponse[ExpenseRead], summary="List expenses")

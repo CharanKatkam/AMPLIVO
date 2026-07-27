@@ -2,7 +2,7 @@
 from __future__ import annotations
 import uuid
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 # ── Project ──
 class ProjectBase(BaseModel):
@@ -34,8 +34,10 @@ class ProjectRead(BaseModel):
     start_date: date | None
     end_date: date | None
     manager_id: uuid.UUID | None
+    completed_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    member_ids: list[uuid.UUID] = Field(default_factory=list)
 
 # ── ProjectMember ──
 class ProjectMemberCreate(BaseModel):
@@ -73,6 +75,7 @@ class TaskUpdate(BaseModel):
 class TaskRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
+    task_number: str
     title: str
     description: str | None
     project_id: uuid.UUID | None
@@ -84,6 +87,15 @@ class TaskRead(BaseModel):
     created_by: uuid.UUID | None
     created_at: datetime
     updated_at: datetime
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def assigned_employee_id(self) -> uuid.UUID | None:
+        """Alias of `assigned_to` under the name the employee-facing
+        frontend expects - `assigned_to` stays the column/FK name everywhere
+        else (repository, service, other schemas) to avoid an unrelated
+        rename across the module."""
+        return self.assigned_to
 
 # ── TaskComment ──
 class TaskCommentBase(BaseModel):

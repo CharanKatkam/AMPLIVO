@@ -10,7 +10,7 @@ from app.dependencies.db import get_db
 from app.dependencies.rbac import require_roles
 from app.models.user import User
 from app.modules.meetings.dependencies import get_meeting_service
-from app.modules.meetings.schemas import MeetingCompleteRequest, MeetingCreate, MeetingRead, MeetingUpdate
+from app.modules.meetings.schemas import MeetingCancelRequest, MeetingCompleteRequest, MeetingCreate, MeetingRead, MeetingRescheduleRequest, MeetingUpdate
 from app.modules.meetings.service import MeetingService
 
 router = APIRouter(prefix="/meetings", tags=["Sales — Meetings"])
@@ -59,6 +59,28 @@ async def update_meeting(
     _role: str = Depends(require_roles("sales")),
 ):
     meeting = await svc.update_meeting(meeting_id, payload.model_dump(exclude_unset=True))
+    await db.commit()
+    return MeetingRead.model_validate(meeting)
+
+
+@router.patch("/{meeting_id}/reschedule", response_model=MeetingRead, summary="Reschedule meeting")
+async def reschedule_meeting(
+    meeting_id: uuid.UUID, payload: MeetingRescheduleRequest, db: AsyncSession = Depends(get_db),
+    svc: MeetingService = Depends(get_meeting_service), current_user: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("sales")),
+):
+    meeting = await svc.reschedule_meeting(meeting_id, new_time=payload.scheduled_at, reason=payload.reason, actor_id=current_user.id)
+    await db.commit()
+    return MeetingRead.model_validate(meeting)
+
+
+@router.post("/{meeting_id}/cancel", response_model=MeetingRead, summary="Cancel meeting (soft - keeps the record)")
+async def cancel_meeting(
+    meeting_id: uuid.UUID, payload: MeetingCancelRequest, db: AsyncSession = Depends(get_db),
+    svc: MeetingService = Depends(get_meeting_service), current_user: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("sales")),
+):
+    meeting = await svc.cancel_meeting(meeting_id, reason=payload.reason, actor_id=current_user.id)
     await db.commit()
     return MeetingRead.model_validate(meeting)
 

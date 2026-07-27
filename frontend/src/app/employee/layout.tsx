@@ -12,24 +12,31 @@ export default function EmployeeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { theme, employees, activeEmployeeId, setActiveEmployee } = useCrmStore();
+  const { theme, activeEmployeeId, setActiveEmployee, fetchAllData, fetchEmployees } = useCrmStore();
   const user = useAuthStore(state => state.user);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   useEffect(() => {
-    if (user && user.email) {
-      const matchingEmployee = employees.find(e => e.email === user.email);
-      if (matchingEmployee && activeEmployeeId !== matchingEmployee.id) {
-        setActiveEmployee(matchingEmployee.id);
-      } else if (!matchingEmployee && activeEmployeeId !== 'EMP-001') {
-        setActiveEmployee('EMP-001');
-      }
+    // The employee's identity is the real authenticated user's UUID - it
+    // must match `assigned_to`/`submitted_by` on the backend's tasks and
+    // task_submissions rows exactly, so no mock-employee lookup or
+    // placeholder id (e.g. 'EMP-001') can stand in for it.
+    if (user?.id && activeEmployeeId !== user.id) {
+      setActiveEmployee(user.id);
     }
-  }, [user, employees, activeEmployeeId, setActiveEmployee]);
+  }, [user, activeEmployeeId, setActiveEmployee]);
+
+  useEffect(() => {
+    // Real tasks/projects (fetchAllData) and real employee records
+    // (fetchEmployees) - the mock arrays these replace only exist as the
+    // store's pre-fetch initial state and must never reach the UI.
+    fetchAllData();
+    fetchEmployees();
+  }, [fetchAllData, fetchEmployees]);
 
   const isDark = mounted && theme === 'dark';
 

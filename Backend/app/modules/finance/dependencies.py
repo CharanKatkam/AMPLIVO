@@ -12,7 +12,7 @@ def get_invoice_item_service(db: AsyncSession = Depends(get_db)) -> InvoiceItemS
     return InvoiceItemService(InvoiceItemRepository(db))
 
 def get_payment_service(db: AsyncSession = Depends(get_db)) -> PaymentService:
-    return PaymentService(PaymentRepository(db))
+    return PaymentService(db, PaymentRepository(db))
 
 def get_expense_service(db: AsyncSession = Depends(get_db)) -> ExpenseService:
     return ExpenseService(ExpenseRepository(db))
