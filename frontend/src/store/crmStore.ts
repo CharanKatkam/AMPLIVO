@@ -461,6 +461,43 @@ const mapBackendEmployee = (
   };
 };
 
+// ─── NOTIFICATION MAPPER ──────────────────────────────────────────────────────
+// fetchAllData/fetchNotifications used to set raw backend Notification rows
+// directly into state. The real model has `is_read`/`created_at` and no
+// `type`/`linkedId`/`linkedType` at all (see
+// Backend/app/modules/notifications/models.py) - so `n.read` was always
+// undefined (every notification showed as unread forever, badge counts were
+// always wrong, "mark as read" only appeared to work until the next refetch)
+// and `n.linkedId` was always undefined (the "View Details" link never
+// rendered for any real notification). `type` is inferred from the title
+// since the backend doesn't persist a category - a real gap: notify_role()/
+// notify_users() call sites know the entity they're about but currently
+// discard it, so true deep-linking needs an entity_type/entity_id column
+// added to the Notification model (not done here - flagged as a follow-up).
+const inferNotificationType = (title: string): CrmNotification['type'] => {
+  const t = title.toLowerCase();
+  if (t.includes('invoice')) return 'invoice_sent';
+  if (t.includes('payment')) return 'payment_received';
+  if (t.includes('credential')) return 'credentials_generated';
+  if (t.includes('client')) return 'client_created';
+  if (t.includes('project') || t.includes('assign')) return 'project_assigned';
+  if (t.includes('lead')) return 'lead_approved';
+  return 'reminder';
+};
+
+const mapBackendNotification = (raw: Record<string, any>): CrmNotification => {
+  const created = raw.created_at ? new Date(raw.created_at) : new Date();
+  return {
+    id: raw.id || '',
+    type: inferNotificationType(raw.title || ''),
+    title: raw.title || '',
+    message: raw.message || '',
+    date: raw.created_at ? String(raw.created_at).slice(0, 10) : created.toISOString().slice(0, 10),
+    time: created.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+    read: raw.is_read ?? false,
+  };
+};
+
 // ─── NOTIFICATION FACTORY ─────────────────────────────────────────────────────
 let notifCounter = 100;
 const mkNotif = (type: CrmNotification['type'], title: string, message: string, linkedId?: string, linkedType?: CrmNotification['linkedType']): CrmNotification => ({
@@ -519,7 +556,9 @@ export const useCrmStore = create<CrmState>()(
           const tasks = tasksRes.status === 'fulfilled'
             ? (tasksRes.value.items || tasksRes.value || []).map((t: Record<string, any>) => mapBackendTask(t, projects))
             : get().tasks;
-          const notifications = notifRes.status === 'fulfilled' ? (notifRes.value.items || notifRes.value || []) : get().notifications;
+          const notifications = notifRes.status === 'fulfilled'
+            ? (notifRes.value.items || notifRes.value || []).map(mapBackendNotification)
+            : get().notifications;
 
           set({ projects, tasks, notifications, isLoading: false, dataLoaded: true });
 
@@ -644,7 +683,8 @@ export const useCrmStore = create<CrmState>()(
       fetchNotifications: async () => {
         try {
           const res = await notificationService.getAll({ page_size: 100 });
-          set({ notifications: res.items || res || [] });
+          const raw = res.items || res || [];
+          set({ notifications: raw.map(mapBackendNotification) });
         } catch { /* keep existing */ }
       },
 
