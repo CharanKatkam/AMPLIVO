@@ -1,4 +1,6 @@
 import re
+import secrets
+import string
 
 from passlib.context import CryptContext
 
@@ -22,6 +24,21 @@ def hash_password(plain_password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def generate_temp_password() -> str:
+    """A random one-time password for a staff-provisioned client-portal
+    account (see app/services/client_account_service.py) - always passes
+    is_strong_password() below by construction, since it's never a value
+    the client themselves chose."""
+    alphabet_upper = string.ascii_uppercase
+    alphabet_lower = string.ascii_lowercase
+    digits = string.digits
+    special = "!@#$%^*"
+    core = [secrets.choice(alphabet_upper), secrets.choice(alphabet_lower), secrets.choice(digits), secrets.choice(special)]
+    core += [secrets.choice(alphabet_upper + alphabet_lower + digits) for _ in range(6)]
+    secrets.SystemRandom().shuffle(core)
+    return "".join(core)
 
 
 def is_strong_password(value: str) -> bool:

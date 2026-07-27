@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.router import api_router
 from app.core.config import settings
-from app.db.session import check_database_connection, engine
+from app.db.session import AsyncSessionLocal, check_database_connection, engine
 from app.dependencies.db import get_db
 from app.middleware.activity import ActivityMiddleware
 from app.middleware.audit import AuditMiddleware
@@ -32,6 +32,19 @@ async def lifespan(app: FastAPI):
     is_healthy, latency_ms = await check_database_connection()
     if is_healthy:
         logger.info("Database connection verified at startup (%.2f ms).", latency_ms)
+        # Best-effort: the demo accounts the frontend's login page offers
+        # (admin/hr/employee/sales/crm + marketing job-title logins) must
+        # always exist. Idempotent, so this is cheap on every restart, and
+        # failure here must never block the app from serving requests.
+        try:
+            from app.scripts.seed_demo_data import seed_demo_data
+
+            async with AsyncSessionLocal() as session:
+                created = await seed_demo_data(session)
+            if any(created.values()):
+                logger.info("Demo data seeded at startup: %s", created)
+        except Exception:
+            logger.exception("Demo data seeding failed at startup - continuing without it.")
     else:
         # Not fatal: liveness (/health) must not depend on the database, and
         # container orchestrators frequently start this process before the

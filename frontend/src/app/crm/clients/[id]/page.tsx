@@ -37,7 +37,11 @@ export default function CrmClientDetailsPage() {
     setShowAssign(false);
   };
 
-  const assignedEmpsFull = employees.filter(e => client.assignedEmployees.includes(e.id));
+  // There's no backend concept of employees assigned directly to a Client
+  // (only to Projects) - the real "account team" is the union of everyone
+  // assigned across this client's actual projects.
+  const assignedEmployeeIds = Array.from(new Set(clientProjects.flatMap(p => p.assignedEmployeeIds)));
+  const assignedEmpsFull = employees.filter(e => assignedEmployeeIds.includes(e.id));
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -93,7 +97,7 @@ export default function CrmClientDetailsPage() {
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <MapPin className="w-4 h-4 text-slate-500" />
-                  <span className="text-slate-300">{client.city}</span>
+                  <span className="text-slate-300">{client.city || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -185,7 +189,7 @@ export default function CrmClientDetailsPage() {
                 <Calendar className="w-4 h-4" />
                 <h3 className="text-sm font-medium">Renewal Date</h3>
               </div>
-              <p className="text-2xl font-bold text-white">{client.renewalDate}</p>
+              <p className="text-2xl font-bold text-white">{client.renewalDate || 'Not set'}</p>
               <p className="text-xs text-slate-500 mt-1">{client.status} Subscription</p>
             </div>
           </div>

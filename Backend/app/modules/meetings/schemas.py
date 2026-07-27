@@ -32,6 +32,15 @@ class MeetingCompleteRequest(BaseModel):
     follow_up_required: bool = False
 
 
+class MeetingRescheduleRequest(BaseModel):
+    scheduled_at: datetime
+    reason: str | None = None
+
+
+class MeetingCancelRequest(BaseModel):
+    reason: str | None = None
+
+
 class MeetingRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID

@@ -31,6 +31,7 @@ from app.modules.messaging.routes import router as messaging_router
 from app.modules.notifications.routes import router as notifications_router
 from app.modules.paidads.routes import router as paidads_router
 from app.modules.portfolio.routes import router as portfolio_router
+from app.modules.public_client_actions.routes import router as public_client_actions_router
 from app.modules.seo.routes import router as seo_router
 from app.modules.settings.routes import router as settings_router
 from app.modules.social.routes import router as social_router
@@ -73,6 +74,7 @@ api_router.include_router(messaging_router)
 api_router.include_router(notifications_router)
 api_router.include_router(paidads_router)
 api_router.include_router(portfolio_router)
+api_router.include_router(public_client_actions_router)
 api_router.include_router(seo_router)
 api_router.include_router(settings_router)
 api_router.include_router(social_router)

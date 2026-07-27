@@ -24,6 +24,7 @@ async def list_projects(
     project_status: str | None = Query(None, alias="status"),
     manager_id: uuid.UUID | None = Query(None),
     svc: ProjectService = Depends(get_project_service),
+    member_svc: ProjectMemberService = Depends(get_project_member_service),
     _: User = Depends(get_current_user),
     scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
 ):
@@ -33,7 +34,12 @@ async def list_projects(
         manager_id=manager_id, sort_by=params.sort_by, sort_order=params.sort_order,
         offset=params.offset, limit=params.page_size,
     )
-    return PaginatedResponse[ProjectRead].create(items=[ProjectRead.model_validate(x) for x in items], total=total, page=params.page, page_size=params.page_size)
+    member_map = await member_svc.list_member_ids_map([x.id for x in items])
+    out_items = [
+        ProjectRead.model_validate(x).model_copy(update={"member_ids": member_map.get(x.id, [])})
+        for x in items
+    ]
+    return PaginatedResponse[ProjectRead].create(items=out_items, total=total, page=params.page, page_size=params.page_size)
 
 @router.post("/projects", response_model=ProjectRead, status_code=status.HTTP_201_CREATED, summary="Create project")
 async def create_project(payload: ProjectCreate, db: AsyncSession = Depends(get_db), svc: ProjectService = Depends(get_project_service), _: User = Depends(get_current_user)):
@@ -41,17 +47,25 @@ async def create_project(payload: ProjectCreate, db: AsyncSession = Depends(get_
     return ProjectRead.model_validate(p)
 
 @router.get("/projects/{project_id}", response_model=ProjectRead, summary="Get project")
-async def get_project(project_id: uuid.UUID, svc: ProjectService = Depends(get_project_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
-    return ProjectRead.model_validate(await svc.get_project(project_id, scoped_client_id=scoped_client_id))
+async def get_project(project_id: uuid.UUID, svc: ProjectService = Depends(get_project_service), member_svc: ProjectMemberService = Depends(get_project_member_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
+    p = await svc.get_project(project_id, scoped_client_id=scoped_client_id)
+    members = await member_svc.list_members(project_id)
+    return ProjectRead.model_validate(p).model_copy(update={"member_ids": [m.user_id for m in members]})
 
 @router.put("/projects/{project_id}", response_model=ProjectRead, summary="Update project")
-async def update_project(project_id: uuid.UUID, payload: ProjectUpdate, db: AsyncSession = Depends(get_db), svc: ProjectService = Depends(get_project_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
+async def update_project(project_id: uuid.UUID, payload: ProjectUpdate, db: AsyncSession = Depends(get_db), svc: ProjectService = Depends(get_project_service), member_svc: ProjectMemberService = Depends(get_project_member_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
     p = await svc.update_project(project_id, payload.model_dump(exclude_unset=True), scoped_client_id=scoped_client_id); await db.commit()
-    return ProjectRead.model_validate(p)
+    members = await member_svc.list_members(project_id)
+    return ProjectRead.model_validate(p).model_copy(update={"member_ids": [m.user_id for m in members]})
 
 @router.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete project")
 async def delete_project(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: ProjectService = Depends(get_project_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
     await svc.delete_project(project_id, scoped_client_id=scoped_client_id); await db.commit()
+
+@router.post("/projects/{project_id}/complete", response_model=ProjectRead, summary="Mark project completed (final workflow step)")
+async def complete_project(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: ProjectService = Depends(get_project_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("admin", "crm"))):
+    p = await svc.complete_project(project_id, actor_id=current_user.id); await db.commit()
+    return ProjectRead.model_validate(p)
 
 # ── Project Members ──
 @router.get("/projects/{project_id}/members", response_model=list[ProjectMemberRead], summary="List project team members")
@@ -228,7 +242,7 @@ async def review_task_submission(
     submission_id: uuid.UUID, payload: TaskSubmissionReview, db: AsyncSession = Depends(get_db),
     svc: TaskSubmissionService = Depends(get_task_submission_service),
     current_user: User = Depends(get_current_user),
-    _: str = Depends(require_roles("admin")),
+    _: str = Depends(require_roles("admin", "crm")),
 ):
     s = await svc.review(submission_id, approve=payload.approve, reviewer_feedback=payload.reviewer_feedback, reviewer_id=current_user.id)
     await db.commit()

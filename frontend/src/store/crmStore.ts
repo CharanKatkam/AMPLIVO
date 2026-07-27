@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
-  CrmLead, CrmLeadStatus, CrmClient, CrmProject, CrmEmployee,
+  CrmLead, CrmLeadStatus, CrmClient, ClientStatus, CrmProject, CrmEmployee,
   CrmInvoice, CrmInvoiceStatus, CrmPayment, CrmNotification,
-  CrmCredentials, CrmTask, CrmSubmission, CrmSubmissionVersion, CrmActivityLog, TaskStatus, SubmissionStatus
+  CrmCredentials, CrmTask, CrmSubmission, CrmSubmissionVersion, CrmActivityLog, TaskStatus, SubmissionStatus,
+  ProjectStatus, ProjectPriority,
 } from '@/types/crm';
 import { leadService } from '@/services/leadService';
-import { clientService, projectService, taskService, notificationService, financeService } from '@/services/crmService';
+import { clientService, projectService, taskService, taskSubmissionService, notificationService, financeService } from '@/services/crmService';
 import { userManagementService } from '@/services/crmService';
 import { SalesLeadStatus } from '@/types';
 import { MOCK_LEADS, MOCK_CLIENTS, MOCK_PROJECTS, MOCK_TASKS, MOCK_EMPLOYEES } from './mockCrmData';
@@ -94,8 +95,8 @@ interface CrmState {
   sendInvoiceReminder: (invoiceId: string) => void;
 
   // ─── PAYMENT ACTIONS ───────────────────────────────────────────────────────
-  // BACKEND: PATCH /api/crm/payments/:id/verify
-  verifyPayment: (paymentId: string, verifiedBy: string) => void;
+  // BACKEND: POST /finance/payments/:id/verify-finance then /verify-crm
+  verifyPayment: (paymentId: string) => Promise<void>;
 
   // ─── NOTIFICATION ACTIONS ─────────────────────────────────────────────────
   // BACKEND: PATCH /api/crm/notifications/:id/read
@@ -124,10 +125,10 @@ interface CrmState {
 
   // ─── SUBMISSION ACTIONS ───────────────────────────────────────────────────
   saveSubmissionDraft: (submissionData: Partial<CrmSubmission>) => void;
-  submitToCRM: (submissionData: Partial<CrmSubmission>) => void;
+  submitToCRM: (submissionData: Partial<CrmSubmission>) => Promise<void>;
   acknowledgeCRMFeedback: (submissionId: string) => void;
   createRevision: (submissionId: string, notes: string) => void;
-  resubmitToCRM: (submissionId: string, versionData: Partial<CrmSubmissionVersion>) => void;
+  resubmitToCRM: (submissionId: string, versionData: Partial<CrmSubmissionVersion>) => Promise<void>;
   
   // CRM Review Actions
   reviewSubmission: (submissionId: string) => void;
@@ -152,6 +153,348 @@ const generateCreds = (lead: CrmLead): CrmCredentials => {
     expiryDate: expiry.toISOString().split('T')[0],
     emailSent: true,
     generatedAt: new Date().toISOString(),
+  };
+};
+
+// ─── PROJECT MAPPER ───────────────────────────────────────────────────────────
+// The backend `Project` model only stores id/name/client_id/description/status/
+// start_date/end_date/manager_id/member_ids — the CRM UI's richer CrmProject
+// shape (services, milestones, budgetINR, assignedEmployeeIds, ...) is not all
+// present on the wire, so it must be filled in here with real defaults instead
+// of being assumed to exist on the raw API payload.
+const mapBackendProject = (raw: Record<string, any>, clients: CrmClient[]): CrmProject => {
+  const client = clients.find(c => c.id === raw.client_id);
+  return {
+    id: raw.id || '',
+    name: raw.name || '',
+    clientId: raw.client_id || '',
+    clientName: client ? `${client.firstName} ${client.lastName}`.trim() : '',
+    company: client?.company || '',
+    services: client?.services || [],
+    description: raw.description || '',
+    priority: (raw.priority as ProjectPriority) || 'Medium',
+    startDate: raw.start_date || '',
+    endDate: raw.end_date || '',
+    durationMonths: raw.duration_months || 0,
+    status: (raw.status as ProjectStatus) || 'Waiting Assignment',
+    progress: raw.progress ?? 0,
+    milestones: raw.milestones || [],
+    assignedEmployeeIds: raw.member_ids || raw.assignedEmployeeIds || [],
+    crmExec: raw.crm_exec || client?.assignedCrmExec || '',
+    budgetINR: raw.budget_inr ?? raw.budget ?? 0,
+    notes: raw.notes || '',
+    createdAt: raw.created_at || new Date().toISOString(),
+    lastUpdated: raw.updated_at || raw.created_at || new Date().toISOString(),
+  };
+};
+
+// ─── TASK MAPPER ──────────────────────────────────────────────────────────────
+// Same gap as projects: the backend `Task` model only stores id/title/
+// description/project_id/status/priority/progress/due_date/assigned_to —
+// the CRM/Employee UI's richer CrmTask shape (projectName, service,
+// assignedEmployeeId, comments, workingFiles, ...) is not on the wire and
+// must be filled in here instead of assumed present on the raw payload.
+const mapBackendTask = (raw: Record<string, any>, projects: CrmProject[]): CrmTask => {
+  const project = projects.find(p => p.id === raw.project_id);
+  return {
+    id: raw.id || '',
+    taskNumber: raw.task_number || raw.taskNumber || '',
+    projectId: raw.project_id || '',
+    projectName: project?.name || '',
+    clientId: project?.clientId || '',
+    service: raw.service || project?.services?.[0] || '',
+    assignedEmployeeId: raw.assigned_employee_id || raw.assigned_to || raw.assignedEmployeeId || '',
+    assignedRole: raw.assigned_role || '',
+    title: raw.title || '',
+    description: raw.description || '',
+    priority: (raw.priority as ProjectPriority) || 'Medium',
+    dueDate: raw.due_date || '',
+    status: (String(raw.status || 'TODO').toUpperCase() as TaskStatus),
+    progress: raw.progress ?? 0,
+    comments: raw.comments || [],
+    workingFiles: raw.working_files || [],
+    createdAt: raw.created_at || new Date().toISOString(),
+    lastUpdated: raw.updated_at || raw.created_at || new Date().toISOString(),
+  };
+};
+
+// ─── LEAD STATUS MAPPER ───────────────────────────────────────────────────────
+// The real backend Lead.status now uses app/core/lead_pipeline.py's values
+// (NEW_LEAD, CRM_PENDING, ADVANCE_PAID, ...) - this used to be hardcoded to
+// always return 'Pending Review' regardless of the real status, so the CRM
+// dashboard could never distinguish a new lead from an already-closed one.
+const mapBackendLeadStatusToCrmStatus = (status: string | null | undefined): CrmLeadStatus => {
+  const upper = (status || '').toUpperCase();
+  if (upper === 'CRM_PENDING') return 'Pending Review';
+  if (upper === 'CRM_APPROVED' || upper === 'EMAIL_SENT') return 'Approved';
+  if (upper === 'REJECTED' || upper === 'LOST') return 'Rejected';
+  if (upper === 'ADVANCE_PAID') return 'Payment Verified';
+  if (['CLIENT_ACCOUNT_CREATED', 'PROJECT_CREATED', 'PROJECT_COMPLETED'].includes(upper)) return 'Client Created';
+  // NEW_LEAD / MEETING_SCHEDULED / MEETING_COMPLETED / PROPOSAL_CREATED /
+  // ADVANCE_INVOICE_CREATED - still with Sales, nothing for CRM to act on yet.
+  return 'Pending Review';
+};
+
+// ─── PAYMENT STATUS MAPPER ────────────────────────────────────────────────────
+// Backend Payment.status: pending (placeholder, no proof yet) | submitted |
+// finance_verified | crm_verified | rejected (two-step flow) -or- completed |
+// failed (legacy staff-entered path) - see app/modules/finance/constants.py.
+const mapBackendPaymentStatus = (status: string | null | undefined): CrmPayment['status'] => {
+  const s = (status || '').toLowerCase();
+  if (s === 'crm_verified' || s === 'completed') return 'Paid';
+  if (s === 'submitted' || s === 'finance_verified') return 'Processing';
+  if (s === 'rejected' || s === 'failed') return 'Failed';
+  return 'Pending';
+};
+
+// ─── LEAD MAPPER ──────────────────────────────────────────────────────────────
+// Extracted from fetchLeads so fetchAllData can build the leads list once and
+// reuse it (as *already-mapped* CrmLead[]) when mapping clients/invoices,
+// instead of every consumer re-deriving contact name/email/services from
+// raw Lead fields independently.
+const mapBackendLead = (l: Record<string, any>): CrmLead => ({
+  id: l.id || '',
+  salesLead: {
+    id: l.id || '',
+    firstName: (l.contact_name || '').split(' ')[0] || '',
+    lastName: (l.contact_name || '').split(' ').slice(1).join(' ') || '',
+    email: l.email || '',
+    phone: l.phone || '',
+    designation: '',
+    company: l.company_name || '',
+    // The real Lead table has no industry/company_size/website/city columns
+    // at all (see Backend/app/modules/leads/models.py) - these were mock-only
+    // concepts that were never captured anywhere upstream (intake forms,
+    // Sales lead-creation UI). Left blank rather than fabricated; surfacing
+    // this gap is more honest than inventing plausible-looking values.
+    industry: '',
+    companySize: '',
+    website: '',
+    city: '',
+    status: 'New' as SalesLeadStatus,
+    source: 'Organic' as const,
+    assignedTo: l.assigned_to || '',
+    priority: (l.priority as 'Low' | 'Medium' | 'High' | 'Critical') || 'Medium',
+    budget: l.estimated_value || 0,
+    expectedCloseDate: '',
+    probability: 50,
+    interestedServices: l.interested_services || [],
+    notes: l.notes || '',
+    meetings: [],
+    timeline: [],
+    invoiceGenerated: false,
+    createdAt: l.created_at || new Date().toISOString(),
+    lastUpdated: l.updated_at || new Date().toISOString(),
+    followUpDate: '',
+  },
+  salesInvoice: null,
+  crmStatus: mapBackendLeadStatusToCrmStatus(l.status),
+  crmAssignedTo: l.assigned_to || '',
+  reviewNotes: l.notes || '',
+  invoiceEmailSent: false,
+  welcomeEmailSent: false,
+  convertedToClientId: l.converted_client_id || undefined,
+  receivedAt: l.created_at || new Date().toISOString(),
+});
+
+// ─── CLIENT MAPPER ────────────────────────────────────────────────────────────
+// fetchClients used to do `set({ clients: res.items || res || [] })` with NO
+// mapping at all - the real backend Client (company_name, email, phone,
+// industry, website, status, onboarding_date, contacts[]) shares almost no
+// field names with the CrmClient shape every CRM page renders (company,
+// firstName/lastName, monthlyRetainer, clientId, assignedEmployees, ...).
+// That is the exact root cause of "Cannot read properties of undefined
+// (reading 'charAt'/'toLocaleString')" crashes on /crm/clients and
+// /crm/clients/[id] - client.company, client.firstName, client.monthlyRetainer
+// etc were always undefined for any real (non-mock) client.
+const CLIENT_STATUS_MAP: Record<string, ClientStatus> = {
+  active: 'Active', onboarding: 'Onboarding', churned: 'Churned',
+  inactive: 'Churned', on_hold: 'On Hold', renewal_due: 'Renewal Due',
+};
+const mapBackendClientStatus = (raw: Record<string, any>): ClientStatus => {
+  const mapped = CLIENT_STATUS_MAP[String(raw.status || '').toLowerCase()];
+  if (mapped) return mapped;
+  return raw.is_active === false ? 'Churned' : 'Active';
+};
+
+const mapBackendClient = (raw: Record<string, any>, leads: CrmLead[], invoices: CrmInvoice[]): CrmClient => {
+  // The lead this client was converted from (if any) - the real source of
+  // the original contact person's name/services, since Client itself only
+  // stores a company-level email/phone, not a named individual.
+  const lead = leads.find(l => l.convertedToClientId === raw.id);
+  const rawContacts: Array<Record<string, any>> = raw.contacts || [];
+  const primaryContact = rawContacts.find(c => c.is_primary) || rawContacts[0];
+  const contactFullName: string = primaryContact?.name
+    || (lead ? `${lead.salesLead.firstName} ${lead.salesLead.lastName}`.trim() : '');
+  const nameParts = contactFullName.trim() ? contactFullName.trim().split(' ') : [];
+
+  const clientInvoices = invoices.filter(i => i.clientId === raw.id || (lead && i.leadId === lead.id));
+  // No "monthly retainer" / "total contract value" concept is tracked on the
+  // backend at all (only per-invoice totals) - derive a real total from the
+  // client's actual invoices instead of showing a fabricated mock number.
+  const totalContractValue = clientInvoices.reduce((sum, i) => sum + (i.grandTotal || 0), 0);
+  const hasFinalPaid = clientInvoices.some(i => i.crmStatus === 'Fully Paid');
+  const hasAdvancePaid = clientInvoices.some(i => i.crmStatus === 'Advance Paid');
+
+  return {
+    id: raw.id || '',
+    leadId: lead?.id || '',
+    invoiceId: clientInvoices[0]?.id || '',
+    // Real Client rows have no short display code - format one from the
+    // real UUID (like invoice numbers do) instead of inventing a sequence.
+    clientId: raw.id ? `CLT-${String(raw.id).slice(0, 8).toUpperCase()}` : '',
+    firstName: nameParts[0] || '',
+    lastName: nameParts.slice(1).join(' '),
+    email: raw.email || primaryContact?.email || lead?.salesLead.email || '',
+    phone: raw.phone || primaryContact?.phone || lead?.salesLead.phone || '',
+    designation: primaryContact?.designation || '',
+    company: raw.company_name || raw.display_name || '',
+    industry: raw.industry || '',
+    companySize: '',
+    website: raw.website || '',
+    city: '',
+    services: lead?.salesLead.interestedServices || [],
+    monthlyRetainer: totalContractValue,
+    totalContractValue,
+    assignedCrmExec: '',
+    // No backend concept of employees assigned directly to a Client (only to
+    // Projects) - left empty; pages should derive the real team from this
+    // client's projects' assignedEmployeeIds instead of this field.
+    assignedEmployees: [],
+    status: mapBackendClientStatus(raw),
+    paymentStatus: hasFinalPaid ? 'Fully Paid' : hasAdvancePaid ? 'Advance Paid' : 'Pending',
+    startDate: String(raw.onboarding_date || raw.created_at || '').slice(0, 10),
+    renewalDate: '',
+    createdAt: raw.created_at || new Date().toISOString(),
+    lastUpdated: raw.updated_at || raw.created_at || new Date().toISOString(),
+    notes: raw.notes || '',
+  };
+};
+
+// ─── INVOICE MAPPER ───────────────────────────────────────────────────────────
+// Same bug class as clients: fetchInvoices did `set({ invoices: res.items ||
+// res || [] })` with no mapping. Real InvoiceRead has invoice_number/
+// total_amount/issue_date/status - the CRM invoices page reads
+// invoiceNumber/grandTotal/issueDate/crmStatus, which were always undefined,
+// crashing on `invoice.grandTotal.toLocaleString()` for every real invoice.
+const mapBackendInvoiceStatus = (raw: Record<string, any>): CrmInvoiceStatus => {
+  const status = String(raw.status || '').toUpperCase();
+  const dueDate = raw.due_date ? new Date(raw.due_date) : null;
+  const isSettled = status === 'ADVANCE_PAID' || status === 'FINAL_PAID' || status === 'PAID';
+  const isPastDue = dueDate ? dueDate.getTime() < Date.now() : false;
+  if (isPastDue && !isSettled && status !== 'CRM_PENDING' && status !== 'CANCELLED') return 'Overdue';
+  if (status === 'ADVANCE_PAID') return 'Advance Paid';
+  if (status === 'FINAL_PAID' || status === 'PAID') return 'Fully Paid';
+  if (status === 'CANCELLED') return 'Cancelled';
+  if (status === 'CRM_PENDING' || status === 'DRAFT') return 'Draft';
+  return 'Sent'; // CRM_APPROVED, EMAIL_SENT, SENT, or any other in-flight state
+};
+
+const mapBackendInvoice = (raw: Record<string, any>, clients: CrmClient[], leads: CrmLead[]): CrmInvoice => {
+  const client = clients.find(c => c.id === raw.client_id);
+  const lead = leads.find(l => l.id === raw.lead_id);
+  const clientName = client
+    ? (`${client.firstName} ${client.lastName}`.trim() || client.company)
+    : lead ? `${lead.salesLead.firstName} ${lead.salesLead.lastName}`.trim() : '';
+  const subtotal = raw.subtotal ?? 0;
+  const taxTotal = raw.tax_total ?? 0;
+  const crmStatus = mapBackendInvoiceStatus(raw);
+
+  return {
+    id: raw.id || '',
+    invoiceNumber: raw.invoice_number || '',
+    leadId: raw.lead_id || '',
+    clientId: raw.client_id || undefined,
+    clientName,
+    clientEmail: client?.email || lead?.salesLead.email || '',
+    clientPhone: client?.phone || lead?.salesLead.phone || '',
+    company: client?.company || lead?.salesLead.company || '',
+    issueDate: raw.issue_date || '',
+    dueDate: raw.due_date || '',
+    lineItems: [],
+    subtotal,
+    taxRate: subtotal > 0 ? Math.round((taxTotal / subtotal) * 100) : 0,
+    taxAmount: taxTotal,
+    grandTotal: raw.total_amount ?? 0,
+    advancePercent: raw.invoice_type === 'advance' ? 25 : raw.invoice_type === 'final' ? 75 : 100,
+    advanceDue: raw.total_amount ?? 0,
+    status: crmStatus === 'Advance Paid' ? 'Advance Paid' : crmStatus === 'Fully Paid' ? 'Fully Paid' : crmStatus === 'Draft' ? 'Draft' : 'Sent',
+    notes: raw.notes || '',
+    crmStatus,
+    reminderSent: false,
+    reminderCount: 0,
+  };
+};
+
+// ─── EMPLOYEE MAPPER ──────────────────────────────────────────────────────────
+// fetchEmployees mapped `name`/`role` from fields (first_name/last_name/role)
+// that don't exist on the real User payload (which only has full_name plus a
+// role_id UUID) - name/role rendered blank everywhere (Employee Workload
+// widget, /crm/employees, Account Team panels) even once real users loaded.
+// workloadPercent/availability had no backend equivalent at all and were
+// pure mock fabrications - derived here from real assigned-task counts instead.
+const mapBackendEmployee = (
+  u: Record<string, any>, rolesById: Map<string, string>, projects: CrmProject[], tasks: CrmTask[],
+): CrmEmployee => {
+  const fullName: string = u.full_name || '';
+  const nameParts = fullName.trim() ? fullName.trim().split(' ') : [];
+  const currentProjectIds = projects.filter(p => p.assignedEmployeeIds.includes(u.id)).map(p => p.id);
+  const activeTaskCount = tasks.filter(t => t.assignedEmployeeId === u.id && t.status !== 'DONE').length;
+  const workloadPercent = Math.min(100, activeTaskCount * 20);
+
+  return {
+    id: u.id || '',
+    name: fullName,
+    firstName: nameParts[0] || '',
+    lastName: nameParts.slice(1).join(' '),
+    role: (u.role_id && rolesById.get(u.role_id)) || '',
+    designation: u.designation || '',
+    department: '',
+    email: u.email || '',
+    phone: u.phone || '',
+    skills: [],
+    currentProjectIds,
+    availability: workloadPercent >= 80 ? 'Busy' : 'Available',
+    workloadPercent,
+    joinDate: String(u.created_at || '').slice(0, 10),
+    avatar: '',
+  };
+};
+
+// ─── NOTIFICATION MAPPER ──────────────────────────────────────────────────────
+// fetchAllData/fetchNotifications used to set raw backend Notification rows
+// directly into state. The real model has `is_read`/`created_at` and no
+// `type`/`linkedId`/`linkedType` at all (see
+// Backend/app/modules/notifications/models.py) - so `n.read` was always
+// undefined (every notification showed as unread forever, badge counts were
+// always wrong, "mark as read" only appeared to work until the next refetch)
+// and `n.linkedId` was always undefined (the "View Details" link never
+// rendered for any real notification). `type` is inferred from the title
+// since the backend doesn't persist a category - a real gap: notify_role()/
+// notify_users() call sites know the entity they're about but currently
+// discard it, so true deep-linking needs an entity_type/entity_id column
+// added to the Notification model (not done here - flagged as a follow-up).
+const inferNotificationType = (title: string): CrmNotification['type'] => {
+  const t = title.toLowerCase();
+  if (t.includes('invoice')) return 'invoice_sent';
+  if (t.includes('payment')) return 'payment_received';
+  if (t.includes('credential')) return 'credentials_generated';
+  if (t.includes('client')) return 'client_created';
+  if (t.includes('project') || t.includes('assign')) return 'project_assigned';
+  if (t.includes('lead')) return 'lead_approved';
+  return 'reminder';
+};
+
+const mapBackendNotification = (raw: Record<string, any>): CrmNotification => {
+  const created = raw.created_at ? new Date(raw.created_at) : new Date();
+  return {
+    id: raw.id || '',
+    type: inferNotificationType(raw.title || ''),
+    title: raw.title || '',
+    message: raw.message || '',
+    date: raw.created_at ? String(raw.created_at).slice(0, 10) : created.toISOString().slice(0, 10),
+    time: created.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+    read: raw.is_read ?? false,
   };
 };
 
@@ -193,17 +536,43 @@ export const useCrmStore = create<CrmState>()(
       fetchAllData: async () => {
         set({ isLoading: true });
         try {
+          // Leads then clients (clients needs mapped leads for contact-name/
+          // services fallback) - both used to never be fetched here at all,
+          // so the CRM Leads/Clients pages ran on MOCK_LEADS/MOCK_CLIENTS
+          // forever, and clients was never mapped from real fields at all
+          // (see mapBackendClient's doc comment for the crash this caused).
+          await get().fetchLeads();
+          await get().fetchClients();
+
           const [projectsRes, tasksRes, notifRes] = await Promise.allSettled([
             projectService.getAll({ page_size: 100 }),
             taskService.getAll({ page_size: 100 }),
             notificationService.getAll({ page_size: 100 }),
           ]);
 
-          const projects = projectsRes.status === 'fulfilled' ? (projectsRes.value.items || projectsRes.value || []) : get().projects;
-          const tasks = tasksRes.status === 'fulfilled' ? (tasksRes.value.items || tasksRes.value || []) : get().tasks;
-          const notifications = notifRes.status === 'fulfilled' ? (notifRes.value.items || notifRes.value || []) : get().notifications;
+          const projects = projectsRes.status === 'fulfilled'
+            ? (projectsRes.value.items || projectsRes.value || []).map((p: Record<string, any>) => mapBackendProject(p, get().clients))
+            : get().projects;
+          const tasks = tasksRes.status === 'fulfilled'
+            ? (tasksRes.value.items || tasksRes.value || []).map((t: Record<string, any>) => mapBackendTask(t, projects))
+            : get().tasks;
+          const notifications = notifRes.status === 'fulfilled'
+            ? (notifRes.value.items || notifRes.value || []).map(mapBackendNotification)
+            : get().notifications;
 
           set({ projects, tasks, notifications, isLoading: false, dataLoaded: true });
+
+          // Employees were never fetched from the CRM layout at all - the
+          // Employee Workload widget, /crm/employees, Account Team panels,
+          // and project team avatars ran on MOCK_EMPLOYEES forever.
+          await get().fetchEmployees();
+
+          // Invoices need mapped clients/leads for name resolution; clients
+          // is re-fetched once more afterward so totalContractValue reflects
+          // the now-loaded invoices instead of always reading as 0.
+          await get().fetchInvoices();
+          await get().fetchClients();
+          await get().fetchPayments();
         } catch {
           set({ isLoading: false });
         }
@@ -213,108 +582,109 @@ export const useCrmStore = create<CrmState>()(
         try {
           const res = await leadService.getAll({ page_size: 100 });
           const backendLeads = res.items || res || [];
-          const crmLeads: CrmLead[] = backendLeads.map((l) => ({
-            id: l.id || '',
-            salesLead: {
-              id: l.id || '',
-              firstName: (l.contact_name || '').split(' ')[0] || '',
-              lastName: (l.contact_name || '').split(' ').slice(1).join(' ') || '',
-              email: l.email || '',
-              phone: l.phone || '',
-              designation: '',
-              company: l.company_name || '',
-              industry: '',
-              companySize: '',
-              website: '',
-              city: '',
-              status: 'New' as SalesLeadStatus,
-              source: 'Organic' as const,
-              assignedTo: l.assigned_to || '',
-              priority: (l.priority as 'Low' | 'Medium' | 'High' | 'Critical') || 'Medium',
-              budget: l.estimated_value || 0,
-              expectedCloseDate: '',
-              probability: 50,
-              interestedServices: [],
-              notes: l.notes || '',
-              meetings: [],
-              timeline: [],
-              invoiceGenerated: false,
-              createdAt: l.created_at || new Date().toISOString(),
-              lastUpdated: l.updated_at || new Date().toISOString(),
-              followUpDate: '',
-            },
-            salesInvoice: null,
-            crmStatus: 'Pending Review' as CrmLeadStatus,
-            crmAssignedTo: l.assigned_to || '',
-            reviewNotes: l.notes || '',
-            invoiceEmailSent: false,
-            welcomeEmailSent: false,
-            receivedAt: l.created_at || new Date().toISOString(),
-          }));
-          set({ leads: crmLeads });
+          set({ leads: backendLeads.map(mapBackendLead) });
         } catch { /* keep existing */ }
       },
 
       fetchClients: async () => {
         try {
           const res = await clientService.getAll({ page_size: 100 });
-          set({ clients: res.items || res || [] });
+          const rawClients = res.items || res || [];
+          const leads = get().leads;
+          const invoices = get().invoices;
+          set({ clients: rawClients.map((raw: Record<string, any>) => mapBackendClient(raw, leads, invoices)) });
         } catch { /* keep existing */ }
       },
 
       fetchProjects: async () => {
         try {
           const res = await projectService.getAll({ page_size: 100 });
-          set({ projects: res.items || res || [] });
+          const raw = res.items || res || [];
+          set({ projects: raw.map((p: Record<string, any>) => mapBackendProject(p, get().clients)) });
         } catch { /* keep existing */ }
       },
 
       fetchEmployees: async () => {
         try {
-          const res = await userManagementService.getUsers({ page_size: 100 });
-          const users = res.items || res || [];
-          const crmEmployees: CrmEmployee[] = users.map((u: Record<string, any>) => ({
-            id: u.id || '',
-            firstName: u.first_name || u.firstName || '',
-            lastName: u.last_name || u.lastName || '',
-            email: u.email || '',
-            designation: u.designation || u.role || '',
-            department: u.department || '',
-            skills: u.skills || [],
-            currentProjectIds: u.current_project_ids || u.currentProjectIds || [],
-            workloadPercent: u.workload_percent || u.workloadPercent || 0,
-            availability: u.availability || 'Available',
-            joinDate: u.join_date || u.joinDate || '',
-            avatar: u.avatar || '',
-          }));
-          set({ employees: crmEmployees });
+          const [usersRes, rolesRes] = await Promise.allSettled([
+            userManagementService.getUsers({ page_size: 100 }),
+            userManagementService.getRoles({ page_size: 100 }),
+          ]);
+          const users = usersRes.status === 'fulfilled' ? (usersRes.value.items || usersRes.value || []) : [];
+          const roles = rolesRes.status === 'fulfilled' ? (rolesRes.value.items || rolesRes.value || []) : [];
+          const rolesById = new Map<string, string>(roles.map((r: Record<string, any>) => [r.id, r.name || r.slug || '']));
+          const projects = get().projects;
+          const tasks = get().tasks;
+          set({ employees: users.map((u: Record<string, any>) => mapBackendEmployee(u, rolesById, projects, tasks)) });
         } catch { /* keep existing */ }
       },
 
       fetchTasks: async () => {
         try {
           const res = await taskService.getAll({ page_size: 100 });
-          set({ tasks: res.items || res || [] });
+          const raw = res.items || res || [];
+          set({ tasks: raw.map((t: Record<string, any>) => mapBackendTask(t, get().projects)) });
         } catch { /* keep existing */ }
       },
 
       fetchInvoices: async () => {
         try {
-          const res = await financeService.getInvoices({ page_size: 100 });
-          set({ invoices: res.items || res || [] });
+          const res = await financeService.getInvoices({ page_size: 200 });
+          const raw = res.items || res || [];
+          const clients = get().clients;
+          const leads = get().leads;
+          set({ invoices: raw.map((i: Record<string, any>) => mapBackendInvoice(i, clients, leads)) });
         } catch { /* keep existing */ }
       },
 
       fetchPayments: async () => {
-        // Payments are fetched per-invoice via financeService.getPayments(invoiceId)
-        // No standalone payments list endpoint exists on the backend
-        set({ payments: [] });
+        // No standalone "list all payments" endpoint exists on the backend -
+        // payments are fetched per-invoice, so every invoice's payments are
+        // pulled and merged here. Needs invoices already loaded/mapped.
+        try {
+          let invoices = get().invoices;
+          if (invoices.length === 0) {
+            await get().fetchInvoices();
+            invoices = get().invoices;
+          }
+
+          const results = await Promise.allSettled(
+            invoices.map(async (inv) => ({
+              inv, pays: await financeService.getPayments(inv.id) as Record<string, any>[],
+            }))
+          );
+
+          const merged: CrmPayment[] = [];
+          for (const r of results) {
+            if (r.status !== 'fulfilled') continue;
+            const { inv, pays } = r.value;
+            for (const p of pays) {
+              merged.push({
+                id: p.id,
+                invoiceId: inv.id,
+                invoiceNumber: inv.invoiceNumber,
+                leadId: inv.leadId,
+                clientName: inv.clientName,
+                company: inv.company,
+                amount: p.amount ?? 0,
+                method: (p.payment_method || 'Bank Transfer') as CrmPayment['method'],
+                status: mapBackendPaymentStatus(p.status),
+                transactionId: p.reference_number || '',
+                date: p.payment_date || p.created_at || '',
+                verifiedAt: p.crm_verified_at || undefined,
+                notes: '',
+              });
+            }
+          }
+          set({ payments: merged });
+        } catch { /* keep existing */ }
       },
 
       fetchNotifications: async () => {
         try {
           const res = await notificationService.getAll({ page_size: 100 });
-          set({ notifications: res.items || res || [] });
+          const raw = res.items || res || [];
+          set({ notifications: raw.map(mapBackendNotification) });
         } catch { /* keep existing */ }
       },
 
@@ -540,8 +910,10 @@ export const useCrmStore = create<CrmState>()(
             ...s.notifications,
           ],
         }));
-        // API call
-        projectService.update(projectId, { assignedEmployeeIds: employeeIds }).catch(() => {});
+        // API call — membership is a separate join resource on the backend,
+        // not a field on the project itself.
+        added.forEach(id => projectService.addMember(projectId, id).catch(() => {}));
+        removed.forEach(id => projectService.removeMember(projectId, id).catch(() => {}));
       },
 
       updateProjectProgress: (projectId, progress) => {
@@ -641,28 +1013,29 @@ export const useCrmStore = create<CrmState>()(
       },
 
       // ─── PAYMENT ACTIONS ──────────────────────────────────────────────────
-      verifyPayment: (paymentId, verifiedBy) => {
+      verifyPayment: async (paymentId) => {
         const payment = get().payments.find(p => p.id === paymentId);
         if (!payment) return;
-        const now = new Date().toISOString();
-        // Optimistic local update
+
+        // Real two-step verification (Finance, then CRM) - there is no
+        // separate Finance UI in this app, so CRM's single "Verify Payment"
+        // click drives both backend steps. finance-verify is safe to call
+        // even if a payment was already finance-verified (re-stamps the
+        // same state); crm-verify is the step that actually flips the
+        // invoice to ADVANCE_PAID/FINAL_PAID and triggers client-account
+        // creation once the verified total covers the invoice.
+        await financeService.verifyPaymentFinance(paymentId).catch(() => {});
+        await financeService.verifyPaymentCrm(paymentId);
+
+        await get().fetchInvoices();
+        await Promise.allSettled([get().fetchPayments(), get().fetchLeads()]);
+
         set(s => ({
-          payments: s.payments.map(p => p.id === paymentId ? {
-            ...p, status: 'Paid', verifiedAt: now, verifiedBy,
-          } : p),
-          invoices: s.invoices.map(inv => inv.id === payment.invoiceId ? {
-            ...inv, crmStatus: 'Advance Paid', paidAt: now, verifiedBy,
-          } : inv),
-          leads: s.leads.map(l => l.id === payment.leadId ? {
-            ...l, crmStatus: 'Payment Verified',
-          } : l),
           notifications: [
             mkNotif('payment_received', 'Payment Verified', `₹${payment.amount.toLocaleString('en-IN')} payment verified for ${payment.clientName}.`, paymentId, 'payment'),
             ...s.notifications,
           ],
         }));
-        // API call
-        financeService.addPayment(payment.invoiceId, { amount: payment.amount, status: 'Paid', verifiedAt: now, verifiedBy }).catch(() => {});
       },
 
       // ─── NOTIFICATION ACTIONS ─────────────────────────────────────────────
@@ -756,84 +1129,110 @@ export const useCrmStore = create<CrmState>()(
       saveSubmissionDraft: (data) => set(s => {
         return {}; 
       }),
-      submitToCRM: (data) => set(s => {
-        const submissionNum = String(s.submissions.length + 1).padStart(3, '0');
-        const newSubId = `SUB-${submissionNum}`;
-        const newSub: CrmSubmission = {
-          id: newSubId,
-          employeeId: data.employeeId!,
-          projectId: data.projectId!,
-          taskId: data.taskId!,
-          clientId: data.clientId!,
-          service: data.service!,
-          assignmentId: `${data.projectId}_${data.taskId}`,
-          assignedRole: data.assignedRole!,
-          title: data.title!,
-          workSummary: data.workSummary!,
-          deliverableType: data.deliverableType!,
-          currentStatus: 'PENDING_CRM_REVIEW',
-          createdAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString(),
-          versions: [
-            {
-              versionId: `VER-${Date.now()}`,
-              versionNumber: 1,
-              submissionDate: new Date().toISOString(),
-              files: data.versions?.[0]?.files || [],
-              externalUrl: data.versions?.[0]?.externalUrl,
-              completionPercentage: data.versions?.[0]?.completionPercentage || 100,
-              employeeComment: data.versions?.[0]?.employeeComment || '',
-              status: 'PENDING_CRM_REVIEW'
-            }
-          ]
-        };
+      submitToCRM: async (data) => {
+        if (!data.taskId) throw new Error('No task selected.');
 
-        return {
-          submissions: [newSub, ...s.submissions],
-          tasks: s.tasks.map(t => t.id === data.taskId ? { ...t, status: 'SUBMITTED' } : t),
-          projects: s.projects.map(p => p.id === data.projectId ? { ...p, status: 'SUBMITTED_BY_EMPLOYEE' } : p),
-          activityLogs: [{ id: `ACT-${Date.now()}`, type: 'submission_created', description: `Submitted work for task ${data.taskId}`, timestamp: new Date().toISOString(), employeeId: data.employeeId, projectId: data.projectId, taskId: data.taskId }, ...s.activityLogs],
-          notifications: [
-            mkNotif('submission_created', 'New Submission Received', `Work submitted by ${data.employeeId} for project ${data.projectId}`, newSubId, 'submission'),
-            ...s.notifications
-          ]
-        };
-      }),
+        // API call first — the submission only exists locally once the
+        // backend has actually accepted and persisted it. A validation
+        // failure here (missing title, out-of-range completion %, task not
+        // assigned to this employee, ...) throws and must reach the caller
+        // instead of being masked by an optimistic local update.
+        const created = await taskSubmissionService.create(data.taskId, {
+          title: data.title!,
+          work_summary: data.workSummary,
+          deliverable_type: data.deliverableType,
+          external_url: data.versions?.[0]?.externalUrl || undefined,
+          completion_percentage: data.versions?.[0]?.completionPercentage ?? 100,
+        });
+
+        set(s => {
+          const newSubId: string = created.id;
+          const newSub: CrmSubmission = {
+            id: newSubId,
+            employeeId: data.employeeId!,
+            projectId: data.projectId!,
+            taskId: data.taskId!,
+            clientId: data.clientId!,
+            service: data.service!,
+            assignmentId: `${data.projectId}_${data.taskId}`,
+            assignedRole: data.assignedRole!,
+            title: data.title!,
+            workSummary: data.workSummary!,
+            deliverableType: data.deliverableType!,
+            currentStatus: 'PENDING_CRM_REVIEW',
+            createdAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString(),
+            versions: [
+              {
+                versionId: `VER-${Date.now()}`,
+                versionNumber: 1,
+                submissionDate: new Date().toISOString(),
+                files: data.versions?.[0]?.files || [],
+                externalUrl: data.versions?.[0]?.externalUrl,
+                completionPercentage: data.versions?.[0]?.completionPercentage || 100,
+                employeeComment: data.versions?.[0]?.employeeComment || '',
+                status: 'PENDING_CRM_REVIEW'
+              }
+            ]
+          };
+
+          return {
+            submissions: [newSub, ...s.submissions],
+            tasks: s.tasks.map(t => t.id === data.taskId ? { ...t, status: 'SUBMITTED' } : t),
+            projects: s.projects.map(p => p.id === data.projectId ? { ...p, status: 'SUBMITTED_BY_EMPLOYEE' } : p),
+            activityLogs: [{ id: `ACT-${Date.now()}`, type: 'submission_created', description: `Submitted work for task ${data.taskId}`, timestamp: new Date().toISOString(), employeeId: data.employeeId, projectId: data.projectId, taskId: data.taskId }, ...s.activityLogs],
+            notifications: [
+              mkNotif('submission_created', 'New Submission Received', `Work submitted by ${data.employeeId} for project ${data.projectId}`, newSubId, 'submission'),
+              ...s.notifications
+            ]
+          };
+        });
+      },
       acknowledgeCRMFeedback: (submissionId) => set(s => ({
         activityLogs: [{ id: `ACT-${Date.now()}`, type: 'feedback_acknowledged', description: `Acknowledged CRM feedback for submission ${submissionId}`, timestamp: new Date().toISOString() }, ...s.activityLogs]
       })),
       createRevision: (submissionId, notes) => set(s => ({
         activityLogs: [{ id: `ACT-${Date.now()}`, type: 'revision_started', description: `Started revision for submission ${submissionId}: ${notes}`, timestamp: new Date().toISOString() }, ...s.activityLogs]
       })),
-      resubmitToCRM: (submissionId, versionData) => set(s => {
-        const sub = s.submissions.find(sub => sub.id === submissionId);
-        if (!sub) return {};
-        const newVersionNum = sub.versions.length + 1;
-        const newVersion: CrmSubmissionVersion = {
-          versionId: `VER-${Date.now()}`,
-          versionNumber: newVersionNum,
-          submissionDate: new Date().toISOString(),
-          files: versionData.files || [],
-          externalUrl: versionData.externalUrl,
-          completionPercentage: versionData.completionPercentage || 100,
-          employeeComment: versionData.employeeComment || '',
-          status: 'PENDING_CRM_REVIEW',
-          revisionNotes: versionData.revisionNotes
-        };
-        
-        return {
-          submissions: s.submissions.map(sItem => sItem.id === submissionId ? {
-            ...sItem,
-            currentStatus: 'PENDING_CRM_REVIEW',
-            lastUpdated: new Date().toISOString(),
-            versions: [newVersion, ...sItem.versions]
-          } : sItem),
-          notifications: [
-            mkNotif('submission_created', 'Revision Submitted', `Revision ${newVersionNum} submitted for ${sub.title}`, submissionId, 'submission'),
-            ...s.notifications
-          ]
-        };
-      }),
+      resubmitToCRM: async (submissionId, versionData) => {
+        // API call first, for the same reason as submitToCRM — a rejected
+        // resubmission must not be recorded locally as if it succeeded.
+        await taskSubmissionService.resubmit(submissionId, {
+          work_summary: versionData.employeeComment,
+          external_url: versionData.externalUrl || undefined,
+          completion_percentage: versionData.completionPercentage ?? 100,
+        });
+
+        set(s => {
+          const sub = s.submissions.find(sub => sub.id === submissionId);
+          if (!sub) return {};
+          const newVersionNum = sub.versions.length + 1;
+          const newVersion: CrmSubmissionVersion = {
+            versionId: `VER-${Date.now()}`,
+            versionNumber: newVersionNum,
+            submissionDate: new Date().toISOString(),
+            files: versionData.files || [],
+            externalUrl: versionData.externalUrl,
+            completionPercentage: versionData.completionPercentage || 100,
+            employeeComment: versionData.employeeComment || '',
+            status: 'PENDING_CRM_REVIEW',
+            revisionNotes: versionData.revisionNotes
+          };
+
+          return {
+            submissions: s.submissions.map(sItem => sItem.id === submissionId ? {
+              ...sItem,
+              currentStatus: 'PENDING_CRM_REVIEW',
+              lastUpdated: new Date().toISOString(),
+              versions: [newVersion, ...sItem.versions]
+            } : sItem),
+            notifications: [
+              mkNotif('submission_created', 'Revision Submitted', `Revision ${newVersionNum} submitted for ${sub.title}`, submissionId, 'submission'),
+              ...s.notifications
+            ]
+          };
+        });
+      },
       reviewSubmission: (submissionId) => set(s => {
         return {};
       }),

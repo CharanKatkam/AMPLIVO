@@ -9,6 +9,7 @@ from app.modules.consultation_requests.models import ConsultationRequest
 from app.modules.consultation_requests.repository import ConsultationRequestRepository
 from app.modules.consultation_requests.schemas import ConsultationRequestCreate, ConsultationRequestUpdate
 from app.modules.leads.repository import LeadRepository
+from app.core import lead_pipeline
 from app.core.exceptions import NotFoundException
 
 
@@ -45,7 +46,7 @@ class ConsultationRequestService:
             "company_name": data.company,
             "email": data.email,
             "phone": data.phone,
-            "status": "New",
+            "status": lead_pipeline.NEW_LEAD,
             "priority": "Medium",
             "notes": notes.strip(),
             "interested_services": interested_services,

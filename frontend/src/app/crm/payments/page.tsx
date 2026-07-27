@@ -140,9 +140,11 @@ export default function CrmPaymentsPage() {
                       </div>
                     ) : payment.status === 'Failed' ? (
                       <span className="text-xs text-red-400 flex items-center justify-end gap-1"><AlertCircle className="w-3 h-3" /> Failed</span>
+                    ) : payment.status === 'Pending' ? (
+                      <span className="text-xs text-amber-400 flex items-center justify-end gap-1"><Clock className="w-3 h-3" /> Awaiting payment</span>
                     ) : (
-                      <button 
-                        onClick={() => verifyPayment(payment.id, 'Admin')}
+                      <button
+                        onClick={() => verifyPayment(payment.id)}
                         className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
                       >
                         Verify Payment <CheckCircle className="w-3 h-3" />

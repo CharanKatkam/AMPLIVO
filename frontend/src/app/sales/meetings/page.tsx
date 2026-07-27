@@ -152,7 +152,7 @@ export default function MeetingsPage() {
                     View Lead
                   </Link>
                   {meeting.status === 'Scheduled' && (
-                    <button 
+                    <button
                       onClick={() => completeMeeting(meeting.id, meeting.notes || '')}
                       className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-colors"
                     >

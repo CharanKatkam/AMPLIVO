@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Any, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core import lead_pipeline
 from app.core.exceptions import BadRequestException, DuplicateException, NotFoundException
 from app.core.tenant_scope import enforce_client_scope
 from app.modules.leads.models import Lead, LeadActivity, LeadFollowup, LeadSource, SalesPipeline
@@ -103,29 +104,95 @@ class LeadService:
     async def delete_lead(self, lead_id: uuid.UUID, *, scoped_client_id: uuid.UUID | None = None) -> None:
         await self.get_lead(lead_id, scoped_client_id=scoped_client_id)
         if not await self._repo.delete(lead_id): raise NotFoundException("Lead")
-    async def convert_lead(self, lead_id: uuid.UUID, client_id: uuid.UUID | None, actor_id: uuid.UUID | None = None) -> Lead:
-        # Deferred imports: crm/tasks modules don't otherwise depend on leads, avoid a module-load cycle.
-        from app.modules.crm.repository import ClientRepository
-        from app.modules.tasks.repository import ProjectRepository
 
+    async def set_status(self, lead_id: uuid.UUID, status: str, *, actor_id: uuid.UUID | None = None) -> Lead:
+        """Advance a lead's pipeline status (app/core/lead_pipeline.py values).
+        Shared by every cross-module caller (meetings/finance/tasks) instead of
+        each one poking Lead.status directly, so the notification+audit-log
+        side effect is never forgotten."""
         lead = await self.get_lead(lead_id)
-        if lead.status == "converted": raise BadRequestException("Lead is already converted.")
+        old_status = lead.status
+        if old_status == status:
+            return lead
+        lead.status = status
+        await self._db.flush()
+        await self._db.refresh(lead)
+        await log_activity(
+            self._db, user_id=actor_id, entity_type="lead", entity_id=lead_id,
+            action="status_changed", description=f"Status changed from '{old_status}' to '{status}'.",
+        )
+        return lead
 
-        if client_id is None:
-            client = await ClientRepository(self._db).create_from_dict({
-                "company_name": lead.company_name or lead.title,
+    async def mark_lost(self, lead_id: uuid.UUID, *, reason: str | None, terminal_status: str = lead_pipeline.LOST, actor_id: uuid.UUID | None = None) -> Lead:
+        """Terminal path: a rejected meeting/proposal ends the deal here - no
+        Client, no Project, no User account is ever created for this lead."""
+        if terminal_status not in (lead_pipeline.LOST, lead_pipeline.REJECTED):
+            raise BadRequestException("terminal_status must be LOST or REJECTED.")
+        lead = await self.get_lead(lead_id)
+        lead.status = terminal_status
+        if reason:
+            lead.notes = f"{lead.notes}\n\n[{terminal_status}] {reason}" if lead.notes else f"[{terminal_status}] {reason}"
+        await self._db.flush()
+        await self._db.refresh(lead)
+        await log_activity(
+            self._db, user_id=actor_id, entity_type="lead", entity_id=lead_id,
+            action="lead_lost", description=f"Lead '{lead.title}' marked {terminal_status}" + (f": {reason}" if reason else "."),
+        )
+        if lead.assigned_to:
+            await notify_users(
+                self._db, [lead.assigned_to],
+                title="Lead closed",
+                message=f"'{lead.title}' was marked {terminal_status.lower()}.",
+            )
+        return lead
+
+    async def ensure_client_for_lead(self, lead: Lead, actor_id: uuid.UUID | None) -> uuid.UUID:
+        """Return lead.converted_client_id, creating the Client company row
+        first if this lead hasn't been converted yet. Shared by the manual
+        /leads/{id}/convert path and the automatic payment-triggered path
+        (ClientAccountService) so both create a Client the exact same way."""
+        from app.modules.crm.repository import ClientContactRepository, ClientRepository
+
+        if lead.converted_client_id is not None:
+            return lead.converted_client_id
+
+        client = await ClientRepository(self._db).create_from_dict({
+            "company_name": lead.company_name or lead.title,
+            "email": lead.email,
+            "phone": lead.phone,
+            "assigned_to": lead.assigned_to,
+            "onboarding_date": utc_now(),
+            "created_by": actor_id,
+        })
+
+        # The lead's contact person (name/email/phone) was captured at
+        # intake but previously never carried over - the Client record only
+        # has a company-level email/phone, so the CRM client page had no
+        # named point-of-contact to display for any real (non-mock) client.
+        if lead.contact_name:
+            await ClientContactRepository(self._db).create_from_dict({
+                "client_id": client.id,
+                "name": lead.contact_name,
                 "email": lead.email,
                 "phone": lead.phone,
-                "assigned_to": lead.assigned_to,
-                "created_by": actor_id,
+                "is_primary": True,
             })
-            client_id = client.id
 
-        lead.status = "converted"
-        lead.converted_client_id = client_id
+        lead.converted_client_id = client.id
         lead.converted_at = utc_now()
         await self._db.flush()
         await self._db.refresh(lead)
+        return client.id
+
+    async def create_onboarding_project(self, lead: Lead, client_id: uuid.UUID):
+        """Create (or return the existing) onboarding Project for a lead's
+        client. Shared the same way as `ensure_client_for_lead`."""
+        from app.modules.tasks.repository import ProjectRepository
+
+        if lead.converted_project_id is not None:
+            existing = await ProjectRepository(self._db).get_by_id(lead.converted_project_id)
+            if existing is not None:
+                return existing
 
         project = await ProjectRepository(self._db).create_from_dict({
             "name": f"{lead.company_name or lead.title} - Onboarding",
@@ -133,6 +200,31 @@ class LeadService:
             "status": "active",
             "manager_id": lead.assigned_to,
         })
+        lead.converted_project_id = project.id
+        await self._db.flush()
+        await self._db.refresh(lead)
+        return project
+
+    async def convert_lead(self, lead_id: uuid.UUID, client_id: uuid.UUID | None, actor_id: uuid.UUID | None = None) -> Lead:
+        """Manual/admin override: Sales can still convert a lead to a client +
+        onboarding project directly, without going through the advance-payment
+        pipeline. Kept as-is for that purpose; now shares its two building
+        blocks with the automatic path instead of duplicating them."""
+        lead = await self.get_lead(lead_id)
+        if lead.status == "converted": raise BadRequestException("Lead is already converted.")
+
+        if client_id is not None:
+            lead.converted_client_id = client_id
+            await self._db.flush()
+            await self._db.refresh(lead)
+        else:
+            client_id = await self.ensure_client_for_lead(lead, actor_id)
+
+        lead.status = "converted"
+        await self._db.flush()
+        await self._db.refresh(lead)
+
+        project = await self.create_onboarding_project(lead, client_id)
 
         await log_activity(
             self._db, user_id=actor_id, entity_type="lead", entity_id=lead_id,

@@ -46,12 +46,27 @@ class UserRepository:
     async def exists_by_username(self, username: str) -> bool:
         return await self.get_by_username(username) is not None
 
-    async def create(self, *, email: str, username: str, full_name: str, hashed_password: str) -> User:
+    async def get_by_client_id(self, client_id: uuid.UUID) -> User | None:
+        result = await self._db.execute(
+            select(User).where(User.client_id == client_id, User.is_deleted.is_(False))
+        )
+        return result.scalars().first()
+
+    async def create(
+        self, *, email: str, username: str, full_name: str, hashed_password: str,
+        role_id: uuid.UUID | None = None, client_id: uuid.UUID | None = None,
+        user_type: str = "internal", is_verified: bool = False,
+    ) -> User:
         user = User(
             email=email.lower(),
             username=username.lower(),
             full_name=full_name,
             hashed_password=hashed_password,
+            role_id=role_id,
+            client_id=client_id,
+            user_type=user_type,
+            is_verified=is_verified,
+            status="active",
         )
         self._db.add(user)
         await self._db.flush()

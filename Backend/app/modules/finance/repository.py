@@ -15,6 +15,12 @@ class InvoiceRepository(BaseRepository[Invoice]):
         stmt = select(Invoice).options(selectinload(Invoice.items), selectinload(Invoice.payments)).where(Invoice.id == invoice_id)
         result = await self._db.execute(stmt)
         return result.scalar_one_or_none()
+    async def get_advance_for_lead(self, lead_id: uuid.UUID) -> Invoice | None:
+        stmt = select(Invoice).where(Invoice.lead_id == lead_id, Invoice.invoice_type == "advance").order_by(Invoice.created_at.desc())
+        return (await self._db.execute(stmt)).scalars().first()
+    async def exists_final_for_project(self, project_id: uuid.UUID) -> bool:
+        stmt = select(func.count()).select_from(Invoice).where(Invoice.project_id == project_id, Invoice.invoice_type == "final")
+        return (await self._db.execute(stmt)).scalar_one() > 0
     async def get_all_filtered(self, *, search=None, client_id=None, status=None, sort_by=None, sort_order="desc", offset=0, limit=20) -> Sequence[Invoice]:
         stmt = select(Invoice)
         if client_id: stmt = stmt.where(Invoice.client_id == client_id)

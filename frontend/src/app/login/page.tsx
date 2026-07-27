@@ -84,7 +84,7 @@ export default function LoginPage() {
       sales: 'Sales@123',
       hr: 'Hr@12345',
       employee: 'Employee@123',
-      crm: 'Crm@123',
+      crm: 'Crm@1234',
     };
     setValue('password', passwords[role]);
   };

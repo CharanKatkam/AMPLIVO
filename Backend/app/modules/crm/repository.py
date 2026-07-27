@@ -112,6 +112,12 @@ class ProposalRepository(BaseRepository[Proposal]):
         )
         return result.scalars().all()
 
+    async def list_by_lead(self, lead_id: uuid.UUID) -> Sequence[Proposal]:
+        result = await self._db.execute(
+            select(Proposal).where(Proposal.lead_id == lead_id).order_by(Proposal.created_at.desc())
+        )
+        return result.scalars().all()
+
     async def get_all_filtered(self, *, search=None, status=None, client_id=None, sort_by=None, sort_order="desc", offset=0, limit=20) -> Sequence[Proposal]:
         stmt = select(Proposal)
         if status: stmt = stmt.where(Proposal.status == status)

@@ -12,6 +12,7 @@ export interface LeadCreatePayload {
   estimated_value?: number;
   assigned_to?: string;
   notes?: string;
+  interested_services?: string[];
 }
 
 export type LeadUpdatePayload = Partial<LeadCreatePayload>;
@@ -37,6 +38,7 @@ export interface LeadRead {
   estimated_value: number | null;
   assigned_to: string | null;
   converted_client_id: string | null;
+  converted_project_id: string | null;
   converted_at: string | null;
   notes: string | null;
   interested_services?: string[] | null;
@@ -92,6 +94,11 @@ export const leadService = {
 
   convert: async (id: string, clientId: string): Promise<LeadRead> => {
     const { data } = await api.post(`/leads/${id}/convert`, { client_id: clientId });
+    return data;
+  },
+
+  markLost: async (id: string, reason?: string, terminalStatus: 'LOST' | 'REJECTED' = 'LOST'): Promise<LeadRead> => {
+    const { data } = await api.post(`/leads/${id}/mark-lost`, { reason, terminal_status: terminalStatus });
     return data;
   },
 

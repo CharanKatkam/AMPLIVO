@@ -2,6 +2,7 @@
 from __future__ import annotations
 import uuid
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import BadRequestException
 from app.core.pagination import PaginatedResponse, PaginationParams
@@ -58,15 +59,15 @@ async def create_client(
     await db.commit()
     return ClientRead.model_validate(client)
 
-@router.get("/me", response_model=ClientRead, summary="Get my own company (client-portal user)")
+@router.get("/me", response_model=ClientDetailRead, summary="Get my own company (client-portal user)")
 async def get_my_client(svc: ClientService = Depends(get_client_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
     if scoped_client_id is None:
         raise BadRequestException("This account is not a client-portal user.")
-    return ClientRead.model_validate(await svc.get_client(scoped_client_id))
+    return ClientDetailRead.model_validate(await svc.get_client(scoped_client_id))
 
-@router.get("/{client_id}", response_model=ClientRead, summary="Get client")
+@router.get("/{client_id}", response_model=ClientDetailRead, summary="Get client")
 async def get_client(client_id: uuid.UUID, svc: ClientService = Depends(get_client_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
-    return ClientRead.model_validate(await svc.get_client(client_id, scoped_client_id=scoped_client_id))
+    return ClientDetailRead.model_validate(await svc.get_client(client_id, scoped_client_id=scoped_client_id))
 
 @router.put("/{client_id}", response_model=ClientRead, summary="Update client")
 async def update_client(client_id: uuid.UUID, payload: ClientUpdate, db: AsyncSession = Depends(get_db),
@@ -229,3 +230,13 @@ async def delete_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(get
                           scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
                           _admin: str = Depends(require_roles("sales"))):
     await svc.delete_proposal(proposal_id, scoped_client_id=scoped_client_id); await db.commit()
+
+@router.get("/proposals/{proposal_id}/pdf", summary="Download proposal as PDF")
+async def get_proposal_pdf(proposal_id: uuid.UUID, svc: ProposalService = Depends(get_proposal_service), _: User = Depends(get_current_user),
+                          scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
+    from app.services.pdf_service import render_proposal_pdf
+    proposal = await svc.get_proposal(proposal_id, scoped_client_id=scoped_client_id)
+    pdf_bytes = render_proposal_pdf(proposal)
+    return Response(content=pdf_bytes, media_type="application/pdf", headers={
+        "Content-Disposition": f'inline; filename="proposal-{proposal_id}.pdf"'
+    })

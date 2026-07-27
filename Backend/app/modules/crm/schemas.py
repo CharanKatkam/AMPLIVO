@@ -94,6 +94,14 @@ class ClientContactRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+class ClientDetailRead(ClientRead):
+    """Adds the client's named contacts (eager-loaded by
+    ClientRepository.get_detail) - only used on the single-client GET routes.
+    The list route uses plain ClientRead since get_all_filtered doesn't
+    eager-load contacts and accessing them there would trigger an
+    unsupported lazy-load in the async ORM session."""
+    contacts: list[ClientContactRead] = []
+
 # ── Client Address ──────────────────────────────────────────────────────
 class ClientAddressBase(BaseModel):
     address_type: str = "billing"
@@ -180,11 +188,13 @@ class ProposalUpdate(BaseModel):
 class ProposalRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    client_id: uuid.UUID
+    client_id: uuid.UUID | None
+    lead_id: uuid.UUID | None
     title: str
     description: str | None
     amount: float | None
     status: str
+    decision_notes: str | None
     sent_at: datetime | None
     decided_at: datetime | None
     created_by: uuid.UUID | None

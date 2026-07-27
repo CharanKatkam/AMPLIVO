@@ -79,7 +79,7 @@ export interface CrmClient {
   renewalDate: string;
   createdAt: string;
   lastUpdated: string;
-  credentials: CrmCredentials;
+  credentials?: CrmCredentials;
   notes: string;
 }
 
@@ -164,7 +164,7 @@ export interface CrmEmployee {
 
 // ─── CRM INVOICE ──────────────────────────────────────────────────────────────
 
-export type CrmInvoiceStatus = 'Sent' | 'Viewed' | 'Payment Pending' | 'Advance Paid' | 'Fully Paid' | 'Overdue' | 'Cancelled';
+export type CrmInvoiceStatus = 'Draft' | 'Sent' | 'Viewed' | 'Payment Pending' | 'Advance Paid' | 'Fully Paid' | 'Overdue' | 'Cancelled';
 
 export interface CrmInvoice extends SalesInvoice {
   crmStatus: CrmInvoiceStatus;
@@ -235,6 +235,7 @@ export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'SUBMITTED' | 'DON
 
 export interface CrmTask {
   id: string;
+  taskNumber: string;
   projectId: string;
   projectName: string;
   clientId: string;

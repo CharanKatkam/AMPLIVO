@@ -16,3 +16,10 @@ passlib==1.7.4
 bcrypt==4.0.1
 
 python-dotenv==1.0.1
+
+# Brevo transactional email HTTP API (app/services/email_service.py)
+httpx==0.27.2
+# Proposal/invoice PDF generation (app/services/pdf_service.py) - pure
+# Python, no system binary/library dependency, safe for the existing
+# Render deployment.
+fpdf2==2.7.9

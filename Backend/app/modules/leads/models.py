@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.core import lead_pipeline
 from app.db.base import Base
 
 
@@ -31,12 +32,13 @@ class Lead(Base):
     # Which client this lead was generated FOR (e.g. via that client's ad campaigns) —
     # distinct from converted_client_id (the client this lead became AFTER conversion).
     client_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), ForeignKey("clients.id", ondelete="SET NULL"), nullable=True, index=True)
-    status: Mapped[str] = mapped_column(Text, nullable=False, default="new")
+    status: Mapped[str] = mapped_column(Text, nullable=False, default=lead_pipeline.NEW_LEAD)
     pipeline_stage_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), ForeignKey("sales_pipeline.id", ondelete="SET NULL"), nullable=True)
     priority: Mapped[str] = mapped_column(Text, nullable=False, default="medium")
     estimated_value: Mapped[float | None] = mapped_column(Float, nullable=True)
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     converted_client_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), ForeignKey("clients.id", ondelete="SET NULL"), nullable=True)
+    converted_project_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True)
     converted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     interested_services: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)

@@ -6,15 +6,22 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ── Invoice ──
 class InvoiceBase(BaseModel):
-    client_id: uuid.UUID
+    # One of client_id/lead_id must be set (DB check constraint) - an advance
+    # invoice is created against a Lead, before any Client exists.
+    client_id: uuid.UUID | None = None
+    lead_id: uuid.UUID | None = None
+    proposal_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
+    task_submission_id: uuid.UUID | None = None
     invoice_number: str = Field(min_length=1, max_length=100)
+    invoice_type: str = "standard"  # standard | advance | final
     status: str = "draft"
     issue_date: date
     due_date: date
     subtotal: float = 0.0
     tax_total: float = 0.0
     total_amount: float = 0.0
-    currency: str = "USD"
+    currency: str = "INR"
     notes: str | None = None
 
 class InvoiceCreate(InvoiceBase): pass
@@ -33,8 +40,13 @@ class InvoiceUpdate(BaseModel):
 class InvoiceRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    client_id: uuid.UUID
+    client_id: uuid.UUID | None
+    lead_id: uuid.UUID | None
+    proposal_id: uuid.UUID | None
+    project_id: uuid.UUID | None
+    task_submission_id: uuid.UUID | None
     invoice_number: str
+    invoice_type: str
     status: str
     issue_date: date
     due_date: date
@@ -45,6 +57,27 @@ class InvoiceRead(BaseModel):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+
+class AdvanceInvoiceCreateRequest(BaseModel):
+    """Generates the 25% advance invoice for a lead's accepted proposal -
+    the server computes the split and invoice number; the client only
+    supplies the deal total and due date."""
+    lead_id: uuid.UUID
+    proposal_id: uuid.UUID | None = None
+    total_deal_amount: float = Field(gt=0)
+    tax_rate: float = Field(0.0, ge=0, le=100)
+    due_date: date
+    currency: str = "INR"
+    notes: str | None = None
+
+class FinalInvoiceCreateRequest(BaseModel):
+    project_id: uuid.UUID
+    task_submission_id: uuid.UUID | None = None
+    total_deal_amount: float = Field(gt=0)
+    tax_rate: float = Field(0.0, ge=0, le=100)
+    due_date: date
+    currency: str = "INR"
+    notes: str | None = None
 
 # ── InvoiceItem ──
 class InvoiceItemBase(BaseModel):
@@ -98,7 +131,21 @@ class PaymentRead(BaseModel):
     payment_method: str
     reference_number: str | None
     status: str
+    submitted_by_client: bool
+    finance_verified_by: uuid.UUID | None
+    finance_verified_at: datetime | None
+    crm_verified_by: uuid.UUID | None
+    crm_verified_at: datetime | None
     created_at: datetime
+
+class ClientPaymentSubmitRequest(BaseModel):
+    amount: float = Field(gt=0)
+    payment_method: str = Field(min_length=1, max_length=100)
+    reference_number: str | None = None
+    payment_date: date | None = None
+
+class PaymentRejectRequest(BaseModel):
+    reason: str | None = None
 
 # ── Expense ──
 class ExpenseBase(BaseModel):

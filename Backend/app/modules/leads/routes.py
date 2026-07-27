@@ -19,6 +19,9 @@ from app.modules.leads.service import (
     LeadActivityService, LeadFollowupService, LeadService,
     LeadSourceService, SalesPipelineService,
 )
+from app.modules.crm.dependencies import get_proposal_service
+from app.modules.crm.schemas import ProposalCreate, ProposalRead
+from app.modules.crm.service import ProposalService
 
 router = APIRouter(tags=["CRM — Leads"])
 
@@ -112,6 +115,21 @@ async def delete_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db), sv
 async def convert_lead(lead_id: uuid.UUID, payload: LeadConvertRequest, db: AsyncSession = Depends(get_db), svc: LeadService = Depends(get_lead_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("sales"))):
     lead = await svc.convert_lead(lead_id, payload.client_id, actor_id=current_user.id); await db.commit()
     return LeadRead.model_validate(lead)
+
+@router.post("/leads/{lead_id}/mark-lost", response_model=LeadRead, summary="Mark a lead LOST/REJECTED (terminal - no client/project/account is ever created)")
+async def mark_lead_lost(lead_id: uuid.UUID, payload: LeadMarkLostRequest, db: AsyncSession = Depends(get_db), svc: LeadService = Depends(get_lead_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("sales"))):
+    lead = await svc.mark_lost(lead_id, reason=payload.reason, terminal_status=payload.terminal_status, actor_id=current_user.id); await db.commit()
+    return LeadRead.model_validate(lead)
+
+# ── Proposals on a Lead (pre-conversion - see migration 0020) ──
+@router.get("/leads/{lead_id}/proposals", response_model=list[ProposalRead], summary="List proposals for a lead")
+async def list_lead_proposals(lead_id: uuid.UUID, svc: ProposalService = Depends(get_proposal_service), _: User = Depends(get_current_user)):
+    return [ProposalRead.model_validate(p) for p in await svc.list_proposals_for_lead(lead_id)]
+
+@router.post("/leads/{lead_id}/proposals", response_model=ProposalRead, status_code=status.HTTP_201_CREATED, summary="Create proposal for a lead")
+async def create_lead_proposal(lead_id: uuid.UUID, payload: ProposalCreate, db: AsyncSession = Depends(get_db), svc: ProposalService = Depends(get_proposal_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("sales"))):
+    p = await svc.create_proposal_for_lead(lead_id, payload.model_dump(), created_by=current_user.id); await db.commit()
+    return ProposalRead.model_validate(p)
 
 # ── Lead Activities ──
 @router.get("/leads/{lead_id}/activities", response_model=list[LeadActivityRead], summary="List lead activities")

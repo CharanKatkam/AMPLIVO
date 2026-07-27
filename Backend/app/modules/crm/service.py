@@ -4,14 +4,15 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.exceptions import NotFoundException
+from app.core import lead_pipeline
+from app.core.exceptions import BadRequestException, NotFoundException
 from app.core.tenant_scope import enforce_client_scope
 from app.modules.crm.models import Client, ClientAddress, ClientContact, ClientDocument, ClientNote, Proposal
 from app.modules.crm.repository import (
     ClientAddressRepository, ClientContactRepository, ClientDocumentRepository,
     ClientNoteRepository, ClientRepository, ProposalRepository,
 )
-from app.utils.sales_events import log_activity, notify_users
+from app.utils.sales_events import log_activity, notify_role, notify_users
 
 
 class ClientService:
@@ -215,6 +216,84 @@ class ProposalService:
         await log_activity(
             self._db, user_id=created_by, entity_type="proposal", entity_id=proposal.id,
             action="proposal_created", description=f"Proposal '{proposal.title}' created.",
+        )
+        return proposal
+
+    async def list_proposals_for_lead(self, lead_id: uuid.UUID) -> Sequence[Proposal]:
+        return await self._repo.list_by_lead(lead_id)
+
+    async def create_proposal_for_lead(self, lead_id: uuid.UUID, data: dict, *, created_by: uuid.UUID | None = None) -> Proposal:
+        """A proposal (and its eventual advance invoice) happens at the Lead
+        stage, before any Client/User account exists - see migration 0020's
+        docstring. Deferred-imports LeadRepository the same way
+        LeadService.convert_lead does, to avoid a leads<->crm module cycle."""
+        from app.modules.leads.repository import LeadRepository
+
+        lead_repo = LeadRepository(self._db)
+        lead = await lead_repo.get_by_id(lead_id)
+        if lead is None:
+            raise NotFoundException("Lead")
+
+        data["lead_id"] = lead_id
+        data["client_id"] = None
+        data["created_by"] = created_by
+        proposal = await self._repo.create_from_dict(data)
+
+        lead.status = lead_pipeline.PROPOSAL_CREATED
+        await self._db.flush()
+        await self._db.refresh(lead)
+
+        await log_activity(
+            self._db, user_id=created_by, entity_type="proposal", entity_id=proposal.id,
+            action="proposal_created", description=f"Proposal '{proposal.title}' created for lead '{lead.title}'.",
+        )
+        if lead.assigned_to:
+            await notify_users(
+                self._db, [lead.assigned_to],
+                title="Proposal created", message=f"Proposal '{proposal.title}' created for '{lead.title}'.",
+            )
+        return proposal
+
+    async def record_client_decision(self, proposal_id: uuid.UUID, *, decision: str, notes: str | None) -> Proposal:
+        """Client's response to a proposal via the public magic-link (no
+        login) - see app/modules/public_client_actions. `decision` is one of
+        'accept' | 'reject' | 'revise'."""
+        from app.modules.leads.repository import LeadRepository
+
+        proposal = await self._repo.get_by_id(proposal_id)
+        if proposal is None:
+            raise NotFoundException("Proposal")
+
+        now = datetime.now(timezone.utc)
+        if decision == "accept":
+            proposal.status = "accepted"
+            proposal.decided_at = now
+        elif decision == "reject":
+            proposal.status = "rejected"
+            proposal.decided_at = now
+        elif decision == "revise":
+            proposal.status = "revision_requested"
+        else:
+            raise BadRequestException("decision must be one of: accept, reject, revise")
+        proposal.decision_notes = notes
+        await self._db.flush()
+        await self._db.refresh(proposal)
+
+        lead = await LeadRepository(self._db).get_by_id(proposal.lead_id) if proposal.lead_id else None
+
+        if decision == "accept":
+            await notify_role(self._db, "sales", title="Proposal accepted", message=f"Client accepted proposal '{proposal.title}'. Create the advance invoice.")
+        elif decision == "reject":
+            if lead is not None:
+                lead.status = lead_pipeline.REJECTED
+                await self._db.flush()
+            await notify_role(self._db, "sales", title="Proposal rejected", message=f"Client rejected proposal '{proposal.title}'.")
+        else:
+            await notify_role(self._db, "sales", title="Proposal revision requested", message=f"Client requested changes to proposal '{proposal.title}'." + (f" Notes: {notes}" if notes else ""))
+
+        await log_activity(
+            self._db, user_id=None, entity_type="proposal", entity_id=proposal.id,
+            action="client_decision", description=f"Client responded to proposal '{proposal.title}': {decision}.",
         )
         return proposal
 

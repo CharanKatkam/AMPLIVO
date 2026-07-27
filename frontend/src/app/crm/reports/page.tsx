@@ -36,15 +36,27 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
 export default function CrmReportsPage() {
   const { leads, clients, payments, projects } = useCrmStore();
 
-  // Revenue Data (mocking past 6 months based on payments)
-  const revenueData = [
-    { name: 'Feb', actual: 850000, projected: 900000 },
-    { name: 'Mar', actual: 1120000, projected: 1000000 },
-    { name: 'Apr', actual: 1450000, projected: 1200000 },
-    { name: 'May', actual: 1380000, projected: 1400000 },
-    { name: 'Jun', actual: 1890000, projected: 1600000 },
-    { name: 'Jul', actual: payments.filter(p => p.status === 'Paid').reduce((s, p) => s + p.amount, 0), projected: 2000000 },
-  ];
+  // Real last-6-months revenue, aggregated from actually-verified payments
+  // (status === 'Paid') by month - this used to be 5 hardcoded fake numbers
+  // with only the current month backed by real data.
+  const verifiedPayments = payments.filter(p => p.status === 'Paid');
+  const revenueData = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - (5 - i));
+    const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+    const actual = verifiedPayments
+      .filter(p => {
+        const pd = new Date(p.date);
+        return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
+      })
+      .reduce((s, p) => s + p.amount, 0);
+    return { name: d.toLocaleDateString('en-IN', { month: 'short' }), actual, projected: actual };
+  });
+  const lastMonthRevenue = revenueData[5].actual;
+  const prevMonthRevenue = revenueData[4].actual;
+  const revenueDeltaPct = prevMonthRevenue > 0
+    ? Math.round(((lastMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100)
+    : (lastMonthRevenue > 0 ? 100 : 0);
 
   // Lead Conversion Funnel
   const funnelData = [
@@ -74,23 +86,23 @@ export default function CrmReportsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#12141f] p-5 rounded-xl border border-white/5">
           <div className="flex justify-between items-start mb-2">
-            <p className="text-slate-500 text-sm">Total Revenue (Jul)</p>
+            <p className="text-slate-500 text-sm">Total Revenue ({revenueData[5].name})</p>
             <IndianRupee className="w-4 h-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold text-white">₹{(revenueData[5].actual / 100000).toFixed(2)}L</p>
-          <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> +36.9% vs Jun
+          <p className="text-2xl font-bold text-white">₹{(lastMonthRevenue / 100000).toFixed(2)}L</p>
+          <p className={`text-xs mt-1 flex items-center gap-1 ${revenueDeltaPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <TrendingUp className="w-3 h-3" /> {revenueDeltaPct >= 0 ? '+' : ''}{revenueDeltaPct}% vs {revenueData[4].name}
           </p>
         </div>
-        
+
         <div className="bg-[#12141f] p-5 rounded-xl border border-white/5">
           <div className="flex justify-between items-start mb-2">
             <p className="text-slate-500 text-sm">Active Clients</p>
             <Building2 className="w-4 h-4 text-blue-500" />
           </div>
           <p className="text-2xl font-bold text-white">{clients.length}</p>
-          <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> +12 this month
+          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+            <Calendar className="w-3 h-3" /> {clients.filter(c => c.status === 'Active').length} active, {clients.filter(c => c.status === 'Onboarding').length} onboarding
           </p>
         </div>
 
@@ -110,9 +122,9 @@ export default function CrmReportsPage() {
             <p className="text-slate-500 text-sm">Lead Conversion</p>
             <Users className="w-4 h-4 text-orange-500" />
           </div>
-          <p className="text-2xl font-bold text-white">{Math.round((clients.length / leads.length) * 100)}%</p>
-          <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> +2.4% vs Jun
+          <p className="text-2xl font-bold text-white">{leads.length > 0 ? Math.round((clients.length / leads.length) * 100) : 0}%</p>
+          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+            <Users className="w-3 h-3" /> {clients.length} of {leads.length} leads converted
           </p>
         </div>
       </div>
@@ -148,7 +160,7 @@ export default function CrmReportsPage() {
           <div className="space-y-4">
             {funnelData.map((item, idx) => {
               const max = funnelData[0].value;
-              const pct = Math.round((item.value / max) * 100);
+              const pct = max > 0 ? Math.round((item.value / max) * 100) : 0;
               return (
                 <div key={item.stage} className="relative">
                   <div className="flex justify-between text-sm mb-1">

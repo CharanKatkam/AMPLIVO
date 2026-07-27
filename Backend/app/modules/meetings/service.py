@@ -1,13 +1,15 @@
 """Service layer for Sales Meetings."""
 from __future__ import annotations
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core import lead_pipeline
 from app.core.exceptions import NotFoundException
 from app.modules.leads.models import Lead
 from app.modules.meetings.models import Meeting
 from app.modules.meetings.repository import MeetingRepository
+from app.services.email_service import EmailService
 from app.utils.sales_events import log_activity, notify_users
 
 
@@ -48,12 +50,60 @@ class MeetingService:
             action="meeting_scheduled",
             description=f"Meeting '{meeting.title}' scheduled for {meeting.scheduled_at:%Y-%m-%d %H:%M}",
         )
+        if lead is not None:
+            if lead.status == lead_pipeline.NEW_LEAD:
+                lead.status = lead_pipeline.MEETING_SCHEDULED
+                await self._db.flush()
+            if lead.email:
+                await EmailService().send_meeting_invite_email(
+                    to_email=lead.email, contact_name=lead.contact_name or lead.title,
+                    meeting_title=meeting.title, scheduled_at=f"{meeting.scheduled_at:%Y-%m-%d %H:%M}",
+                )
         return meeting
 
     async def update_meeting(self, meeting_id: uuid.UUID, data: dict[str, Any]) -> Meeting:
         updated = await self._repo.update(meeting_id, data)
         if updated is None:
             raise NotFoundException("Meeting")
+        return updated
+
+    async def reschedule_meeting(self, meeting_id: uuid.UUID, *, new_time: datetime, reason: str | None, actor_id: uuid.UUID | None) -> Meeting:
+        meeting = await self.get_meeting(meeting_id)
+        updated = await self._repo.update(meeting_id, {"scheduled_at": new_time, "status": "scheduled"})
+        if updated is None:
+            raise NotFoundException("Meeting")
+        await log_activity(
+            self._db, user_id=actor_id, entity_type="lead", entity_id=meeting.lead_id,
+            action="meeting_rescheduled",
+            description=f"Meeting '{meeting.title}' rescheduled to {new_time:%Y-%m-%d %H:%M}" + (f": {reason}" if reason else ""),
+        )
+        lead = await self._db.get(Lead, meeting.lead_id)
+        if lead is not None and lead.email:
+            await EmailService().send_meeting_rescheduled_email(
+                to_email=lead.email, contact_name=lead.contact_name or lead.title,
+                meeting_title=meeting.title, scheduled_at=f"{new_time:%Y-%m-%d %H:%M}", reason=reason,
+            )
+        return updated
+
+    async def cancel_meeting(self, meeting_id: uuid.UUID, *, reason: str | None, actor_id: uuid.UUID | None) -> Meeting:
+        """Soft cancel (status='cancelled') - the affordance a Sales user
+        should use, as opposed to the hard DELETE endpoint which stays for
+        admin data cleanup only."""
+        meeting = await self.get_meeting(meeting_id)
+        updated = await self._repo.update(meeting_id, {"status": "cancelled", "notes": reason})
+        if updated is None:
+            raise NotFoundException("Meeting")
+        await log_activity(
+            self._db, user_id=actor_id, entity_type="lead", entity_id=meeting.lead_id,
+            action="meeting_cancelled",
+            description=f"Meeting '{meeting.title}' cancelled" + (f": {reason}" if reason else ""),
+        )
+        lead = await self._db.get(Lead, meeting.lead_id)
+        if lead is not None and lead.email:
+            await EmailService().send_meeting_cancelled_email(
+                to_email=lead.email, contact_name=lead.contact_name or lead.title,
+                meeting_title=meeting.title, reason=reason,
+            )
         return updated
 
     async def complete_meeting(self, meeting_id: uuid.UUID, *, notes: str | None, follow_up_required: bool, actor_id: uuid.UUID | None) -> Meeting:
@@ -68,6 +118,10 @@ class MeetingService:
             action="meeting_completed",
             description=f"Meeting '{meeting.title}' marked completed" + (" - follow-up required" if follow_up_required else ""),
         )
+        lead = await self._db.get(Lead, meeting.lead_id)
+        if lead is not None and lead.status == lead_pipeline.MEETING_SCHEDULED:
+            lead.status = lead_pipeline.MEETING_COMPLETED
+            await self._db.flush()
         return updated
 
     async def delete_meeting(self, meeting_id: uuid.UUID) -> None:

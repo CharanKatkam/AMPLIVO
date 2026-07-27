@@ -74,6 +74,22 @@ class Settings(BaseSettings):
 
     REDIS_URL: str | None = None
 
+    # Brevo transactional email (app/services/email_service.py). When unset,
+    # email sending falls back to a log+in-memory-outbox stub - see that
+    # module's docstring. Set BREVO_API_KEY directly in .env to go live.
+    BREVO_API_KEY: str | None = None
+    BREVO_SENDER_EMAIL: str = "no-reply@amplivo.in"
+    BREVO_SENDER_NAME: str = "Amplivo"
+
+    # Magic-link token lifetimes for unauthenticated client actions
+    # (app/modules/portal_access) - mirrors EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS's pattern.
+    PROPOSAL_TOKEN_EXPIRE_HOURS: int = 168
+    PAYMENT_LINK_TOKEN_EXPIRE_HOURS: int = 720
+
+    # Base URL of the deployed frontend, used to build magic-link URLs
+    # embedded in proposal/invoice emails (frontend/src/app/portal-public/...).
+    FRONTEND_URL: str = "http://localhost:3000"
+
 
 @lru_cache
 def get_settings() -> Settings:

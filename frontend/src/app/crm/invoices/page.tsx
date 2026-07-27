@@ -72,7 +72,7 @@ export default function CrmInvoicesPage() {
       {/* Filters */}
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="flex gap-2 bg-[#12141f] p-1 rounded-lg border border-white/5 overflow-x-auto scrollbar-hide">
-          {['All', 'Sent', 'Payment Pending', 'Advance Paid', 'Fully Paid', 'Overdue'].map(status => (
+          {['All', 'Draft', 'Sent', 'Payment Pending', 'Advance Paid', 'Fully Paid', 'Overdue'].map(status => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
