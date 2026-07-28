@@ -55,6 +55,10 @@ export default function ContactPage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       errs.email = 'Please enter a valid email address';
     }
+    if (!form.phone.trim()) errs.phone = 'Phone number is required';
+    if (!form.service_interest.trim()) errs.service_interest = 'Please select a service';
+    if (!form.budget_range.trim()) errs.budget_range = 'Please select a budget range';
+    if (!form.message.trim()) errs.message = 'Message is required';
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -111,7 +115,7 @@ export default function ContactPage() {
   };
 
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       <PageHero config={contactHero} />
@@ -196,20 +200,25 @@ export default function ContactPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone Number</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone Number <span className="text-red-500">*</span></label>
                       <PhoneInput
                         value={form.phone}
-                        onChange={(val) => setForm(prev => ({ ...prev, phone: val || '' }))}
+                        onChange={(val) => {
+                          setForm(prev => ({ ...prev, phone: val || '' }));
+                          if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: undefined }));
+                        }}
+                        error={!!fieldErrors.phone}
                       />
+                      {fieldErrors.phone && <p className="text-red-500 text-xs mt-1">{fieldErrors.phone}</p>}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Service Required</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Service Required <span className="text-red-500">*</span></label>
                       <select
                         name="service_interest"
                         value={form.service_interest}
                         onChange={handleChange}
-                        className="w-full bg-white/50 backdrop-blur-sm border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#4C1D95]/10 focus:border-[#4C1D95] transition-all bg-white"
+                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95] bg-white ${fieldErrors.service_interest ? 'border-red-300' : 'border-slate-200'}`}
                       >
                         <option value="">Select a service...</option>
                         <option>Social Media Marketing</option>
@@ -224,15 +233,16 @@ export default function ContactPage() {
                         <option>Video Marketing</option>
                         <option>Full-Service Package</option>
                       </select>
+                      {fieldErrors.service_interest && <p className="text-red-500 text-xs mt-1">{fieldErrors.service_interest}</p>}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Monthly Budget Range</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Monthly Budget Range <span className="text-red-500">*</span></label>
                       <select
                         name="budget_range"
                         value={form.budget_range}
                         onChange={handleChange}
-                        className="w-full bg-white/50 backdrop-blur-sm border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#4C1D95]/10 focus:border-[#4C1D95] transition-all bg-white"
+                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95] bg-white ${fieldErrors.budget_range ? 'border-red-300' : 'border-slate-200'}`}
                       >
                         <option value="">Select budget...</option>
                         <option>₹25,000 – ₹50,000</option>
@@ -241,18 +251,20 @@ export default function ContactPage() {
                         <option>₹2,50,000 – ₹5,00,000</option>
                         <option>₹5,00,000+</option>
                       </select>
+                      {fieldErrors.budget_range && <p className="text-red-500 text-xs mt-1">{fieldErrors.budget_range}</p>}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Message</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Message <span className="text-red-500">*</span></label>
                       <textarea
                         name="message"
                         value={form.message}
                         onChange={handleChange}
                         rows={4}
                         placeholder="Tell us about your business and marketing goals..."
-                        className="w-full bg-white/50 backdrop-blur-sm border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#4C1D95]/10 focus:border-[#4C1D95] transition-all resize-none"
+                        className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95] resize-none ${fieldErrors.message ? 'border-red-300' : 'border-slate-200'}`}
                       />
+                      {fieldErrors.message && <p className="text-red-500 text-xs mt-1">{fieldErrors.message}</p>}
                     </div>
 
                     <button

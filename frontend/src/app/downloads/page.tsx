@@ -44,7 +44,7 @@ const resources = [
 
 export default function DownloadsPage() {
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       {/* Hero */}

@@ -21,7 +21,7 @@ export default function BlogPage() {
     : blogPosts.filter((post) => post.category === selectedCategory);
 
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       <PageHero config={insightsHero} />
