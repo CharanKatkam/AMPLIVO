@@ -69,20 +69,20 @@ export default function SupportTicketsPage() {
             </div>
           ) : (
             tickets.map((t) => (
-              <button key={t.id} onClick={() => setSelected(t)} className="w-full text-left flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors">
+              <button key={t.id} onClick={() => setSelected(t)} className="w-full text-left flex items-center justify-between gap-4 p-4.5 hover:bg-slate-50 transition-colors">
                 <div className="flex-1 min-w-0">
-                  {/* BUG-014: subject and status badge are clearly separated as flex items */}
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-semibold text-slate-900 text-sm truncate">{t.subject}</span>
-                    {/* StatusBadge is a standalone styled element, not mixed into text */}
-                    <StatusBadge status={t.status} />
-                  </div>
-                  <p className="text-xs text-slate-500 truncate">{t.description}</p>
-                  <div className="flex gap-3 text-xs text-slate-400 mt-1">
-                    <span className="capitalize">{t.category}</span>
-                    <span className="capitalize">Priority: {t.priority}</span>
+                  <div className="font-semibold text-slate-900 text-sm truncate mb-1">{t.subject}</div>
+                  <p className="text-xs text-slate-500 truncate mb-1.5">{t.description}</p>
+                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                    <span className="capitalize font-medium text-slate-600">{t.category}</span>
+                    <span>•</span>
+                    <span className="capitalize font-medium text-slate-600">Priority: {t.priority}</span>
+                    <span>•</span>
                     <span>{new Date(t.created_at).toLocaleDateString()}</span>
                   </div>
+                </div>
+                <div className="shrink-0 self-start mt-0.5">
+                  <StatusBadge status={t.status} />
                 </div>
               </button>
             ))

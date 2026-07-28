@@ -8,6 +8,7 @@ import { leadService, LeadRead } from '@/services/leadService';
 import { notificationService, taskService, financeService, userManagementService } from '@/services/crmService';
 import { companyService } from '@/services/portalServices';
 import { contentCalendarService, creativeService, seoService } from '@/services/moduleServices';
+import { useAuthStore } from '@/store/authStore';
 import { Megaphone, DollarSign, CheckCircle, Users, Bell, CalendarDays, FileText, Image, Search, ClipboardList, Receipt, Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -20,6 +21,7 @@ interface NotificationItem {
 }
 
 export default function PortalDashboard() {
+  const { user } = useAuthStore();
   const [campaigns, setCampaigns] = useState<CampaignRead[]>([]);
   const [leads, setLeads] = useState<LeadRead[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -72,7 +74,11 @@ export default function PortalDashboard() {
         const company = await companyService.getMine();
         if (company.assigned_to) {
           const manager = await userManagementService.getUser(company.assigned_to);
-          setAccountManager({ name: manager.full_name ?? manager.name ?? 'Account Manager', title: 'Account Manager' });
+          let managerName = manager.full_name ?? manager.name ?? 'Account Manager';
+          if (managerName === 'Admin User' || manager.email === 'admin@amplivo.in') {
+            managerName = 'Account Manager';
+          }
+          setAccountManager({ name: managerName, title: 'Account Manager' });
         }
       } catch {
         // no account manager assigned
@@ -89,10 +95,12 @@ export default function PortalDashboard() {
     .filter((inv) => inv.status === 'sent' || inv.status === 'overdue' || inv.status === 'pending')
     .reduce((sum, inv) => sum + (inv.total_amount || inv.amount || 0), 0);
 
+  const headerTitle = user?.name ?? 'Client Dashboard';
+
   if (loading) {
     return (
       <div>
-        <PortalHeader title="Client User" subtitle="Welcome back to your portal" />
+        <PortalHeader title={headerTitle} subtitle="Welcome back to your portal" />
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 size={32} className="animate-spin text-[#4C1D95]" />
         </div>
@@ -102,7 +110,7 @@ export default function PortalDashboard() {
 
   return (
     <div>
-      <PortalHeader title="Client User" subtitle="Welcome back to your portal" />
+      <PortalHeader title={headerTitle} subtitle="Welcome back to your portal" />
 
       <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {error && (
