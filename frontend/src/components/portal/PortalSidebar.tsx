@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';import { Logo } from '@/components/ui/Logo';
 import { LayoutDashboard, Megaphone, TrendingUp, BarChart2, Image as ImageIcon,
   Files, Calendar, MessageSquare, FileText, LifeBuoy, Settings, LogOut, Zap, Bell,
   FolderKanban, Receipt, Folder, Menu, CheckCheck
@@ -143,14 +143,7 @@ export function PortalSidebar() {
       `}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[#1F2937]">
-        <Image
-          src="/images/Logo.png"
-          alt="Amplivo"
-          width={120}
-          height={32}
-          className="object-contain"
-          style={{ height: '32px', width: 'auto' }}
-        />
+        <Logo size="sidebar" variant="white" href="/portal" />
       </div>
 
       {/* User Info — BUG-018: use user?.image so sidebar updates when avatar changes */}

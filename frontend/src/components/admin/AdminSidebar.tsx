@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { Logo } from '@/components/ui/Logo';
 import {
   LayoutDashboard, Users, Target, UserCheck, Megaphone, FolderKanban,
   CheckSquare, DollarSign, BarChart2, Shield, Settings, LogOut, Zap,
@@ -66,14 +66,7 @@ export function AdminSidebar() {
       `}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[#1F2937]">
-        <Image
-          src="/images/Logo.png"
-          alt="Amplivo"
-          width={120}
-          height={32}
-          className="object-contain"
-          style={{ height: '32px', width: 'auto' }}
-        />
+        <Logo size="sidebar" variant="white" href="/admin" />
       </div>
 
       {/* User Info */}
