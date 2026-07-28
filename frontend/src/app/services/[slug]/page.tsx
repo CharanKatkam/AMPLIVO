@@ -7,7 +7,6 @@ import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
 import { BackButton } from '@/components/ui/BackButton';
 import { services } from '@/data/services';
-import { serviceHeroImages } from '@/data/serviceHeroImages';
 import { ArrowRight, ChevronRight, CheckCircle2, Zap, Share2, Target, Search, Palette, FileText, Users, Globe, Star, Video } from 'lucide-react';
 
 const iconMap: Record<string, React.ElementType> = {
@@ -172,16 +171,14 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         className="pt-32 pb-20 relative overflow-hidden bg-slate-950"
       >
         {/* Optimized Background Image */}
-        {serviceHeroImages[service.slug] && (
-          <Image
-            src={serviceHeroImages[service.slug]}
-            alt={service.title}
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover opacity-35"
-          />
-        )}
+        <Image
+          src={heroImageMap[service.slug] || '/images/services/services-hero.jpg'}
+          alt={service.title}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-35"
+        />
 
         {/* Consistent Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-[#1a0540]/80 to-[#4C1D95]/75" />
