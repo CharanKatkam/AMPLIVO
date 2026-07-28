@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Navbar } from '@/components/marketing/Navbar';
@@ -10,6 +11,19 @@ import { ArrowRight, ChevronRight, CheckCircle2, Zap, Share2, Target, Search, Pa
 
 const iconMap: Record<string, React.ElementType> = {
   Share2, Target, Search, Palette, FileText, Users, Globe, Zap, Star, Video,
+};
+
+const heroImageMap: Record<string, string> = {
+  'social-media-marketing': '/images/services/social-media-marketing.jpg',
+  'performance-marketing': '/images/services/performance-marketing.jpg',
+  'search-engine-optimisation': '/images/services/search-engine-optimisation.jpg',
+  'branding-and-creative-design': '/images/services/branding-and-creative-design.jpg',
+  'content-marketing': '/images/services/content-marketing.jpg',
+  'lead-generation': '/images/services/lead-generation.jpg',
+  'website-development': '/images/services/website-development.jpg',
+  'marketing-automation': '/images/services/marketing-automation.jpg',
+  'influencer-marketing': '/images/services/influencer-marketing.jpg',
+  'video-marketing': '/images/services/video-marketing.jpg',
 };
 
 function ServiceHeroBackground({ slug }: { slug: string }) {
@@ -153,10 +167,20 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       <Navbar />
 
       {/* Hero */}
-      <section
-        className="pt-32 pb-20 relative overflow-hidden"
-        style={{ background: 'linear-gradient(140deg, #111827 0%, #4C1D95 45%, #7C3AED 75%, #06B6D4 100%)' }}
-      >
+      <section className="pt-32 pb-20 relative overflow-hidden">
+        {/* Hero Background Image */}
+        <Image
+          src={heroImageMap[service.slug] || '/images/services/services-hero.jpg'}
+          alt=""
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+
+        {/* Readability Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/45 via-slate-950/20 to-slate-950/45" />
+
         {/* Service-Specific Background Overlay */}
         <ServiceHeroBackground slug={service.slug} />
 
