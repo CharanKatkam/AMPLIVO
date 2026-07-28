@@ -1,10 +1,23 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminHeader } from '@/components/admin/AdminSidebar';
 import { leadService, LeadRead, LeadCreatePayload } from '@/services/leadService';
-import { Search, Plus, Filter, MoreHorizontal, Mail, Phone, X, Trash2, Pencil, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { userManagementService } from '@/services/crmService';
+import { useToastStore } from '@/store/toastStore';
+import { PhoneInput } from '@/components/ui/PhoneInput';
+import {
+  Search, Plus, Filter, MoreHorizontal, Mail, Phone, X, Trash2, Pencil,
+  ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, UserCheck
+} from 'lucide-react';
 
-const STATUS_TABS = ['All', 'New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Lost'];
+interface UserRead {
+  id: string;
+  full_name?: string;
+  name?: string;
+  email?: string;
+}
+
+const ALL_STATUSES = ['All', 'New', 'Meeting Scheduled', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Lost'];
 const PRIORITY_OPTIONS = ['All', 'Low', 'Medium', 'High', 'Urgent'];
 const SORT_OPTIONS = [
   { value: 'created_at', label: 'Date Created' },
@@ -16,6 +29,7 @@ function statusColor(status: string) {
   const normalized = status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : '';
   switch (normalized) {
     case 'New': return 'bg-blue-50 text-blue-700 border-blue-200';
+    case 'Meeting Scheduled': return 'bg-purple-50 text-purple-700 border-purple-200';
     case 'Contacted': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
     case 'Qualified': return 'bg-violet-50 text-violet-700 border-violet-200';
     case 'Proposal': return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -36,6 +50,11 @@ function priorityColor(priority: string) {
   }
 }
 
+function formatCurrency(val?: number | null) {
+  if (val == null) return '—';
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+}
+
 const EMPTY_FORM: LeadCreatePayload = {
   title: '',
   company_name: '',
@@ -51,23 +70,28 @@ const EMPTY_FORM: LeadCreatePayload = {
 
 export default function AdminLeads() {
   const [leads, setLeads] = useState<LeadRead[]>([]);
+  const [teamMembers, setTeamMembers] = useState<UserRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusTab, setStatusTab] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [pageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 10;
 
   const [showModal, setShowModal] = useState(false);
   const [editingLead, setEditingLead] = useState<LeadRead | null>(null);
   const [form, setForm] = useState<LeadCreatePayload>(EMPTY_FORM);
+  const [initialForm, setInitialForm] = useState<LeadCreatePayload>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+
+  const showToast = useToastStore((s) => s.showToast);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -79,26 +103,41 @@ export default function AdminLeads() {
         sort_order: sortOrder,
       };
       if (search.trim()) params.search = search.trim();
-      if (statusTab !== 'All') params.status = statusTab;
+      if (statusFilter !== 'All') params.status = statusFilter;
       if (priorityFilter !== 'All') params.priority = priorityFilter;
       const res = await leadService.getAll(params as any);
-      setLeads(res.items);
-      setTotalPages(res.total_pages);
-      setTotal(res.total);
+      setLeads(res.items ?? []);
+      setTotalCount(res.total ?? (res.items ?? []).length);
     } catch (err) {
       console.error('Failed to fetch leads', err);
+      setLeads([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusTab, priorityFilter, sortBy, sortOrder]);
+  }, [page, pageSize, search, statusFilter, priorityFilter, sortBy, sortOrder]);
+
+  const fetchTeamMembers = useCallback(async () => {
+    try {
+      const data = await userManagementService.getUsers({ page_size: 100 });
+      const items = data.items ?? data ?? [];
+      setTeamMembers(Array.isArray(items) ? items : []);
+    } catch {
+      setTeamMembers([]);
+    }
+  }, []);
 
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
 
   useEffect(() => {
+    fetchTeamMembers();
+  }, [fetchTeamMembers]);
+
+  useEffect(() => {
     setPage(1);
-  }, [search, statusTab, priorityFilter]);
+  }, [search, statusFilter, priorityFilter]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -110,15 +149,23 @@ export default function AdminLeads() {
     return () => document.removeEventListener('mousedown', handler);
   }, [actionMenuId]);
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  const isDirty = useMemo(() => {
+    return JSON.stringify(form) !== JSON.stringify(initialForm);
+  }, [form, initialForm]);
+
   const openCreateModal = () => {
     setEditingLead(null);
     setForm(EMPTY_FORM);
+    setInitialForm(EMPTY_FORM);
+    setValidationErrors({});
     setShowModal(true);
   };
 
   const openEditModal = (lead: LeadRead) => {
     setEditingLead(lead);
-    setForm({
+    const loadedForm: LeadCreatePayload = {
       title: lead.title,
       company_name: lead.company_name ?? '',
       contact_name: lead.contact_name ?? '',
@@ -129,37 +176,70 @@ export default function AdminLeads() {
       estimated_value: lead.estimated_value ?? undefined,
       assigned_to: lead.assigned_to ?? '',
       notes: lead.notes ?? '',
-    });
+    };
+    setForm(loadedForm);
+    setInitialForm(loadedForm);
+    setValidationErrors({});
     setShowModal(true);
     setActionMenuId(null);
   };
 
+  const attemptCloseModal = () => {
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      setShowModal(false);
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!form.title.trim()) errors.title = 'Title is required.';
+    if (!form.contact_name?.trim()) errors.contact_name = 'Contact name is required.';
+    if (!form.email?.trim()) {
+      errors.email = 'Email address is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errors.email = 'Invalid email address format.';
+    }
+    if (!form.phone?.trim()) {
+      errors.phone = 'Phone number is required.';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSave = async () => {
-    if (!form.title.trim()) return;
+    if (!validateForm()) return;
     setSaving(true);
     try {
       if (editingLead) {
         await leadService.update(editingLead.id, form);
+        showToast(`Lead "${form.title}" updated successfully!`, 'success');
       } else {
         await leadService.create(form);
+        showToast(`Lead "${form.title}" created successfully!`, 'success');
       }
       setShowModal(false);
       fetchLeads();
-    } catch (err) {
-      console.error('Failed to save lead', err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to save lead.';
+      showToast(msg, 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, leadTitle: string) => {
     setActionMenuId(null);
-    if (!confirm('Are you sure you want to delete this lead?')) return;
+    if (!confirm(`Are you sure you want to delete lead "${leadTitle}"?`)) return;
     try {
       await leadService.delete(id);
+      showToast(`Lead "${leadTitle}" deleted successfully.`, 'success');
       fetchLeads();
-    } catch (err) {
-      console.error('Failed to delete lead', err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete lead.';
+      showToast(msg, 'error');
     }
   };
 
@@ -171,9 +251,9 @@ export default function AdminLeads() {
     <div>
       <AdminHeader title="Lead Management" subtitle="Track and convert inbound leads across all client campaigns." />
 
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative w-full sm:w-80">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -181,10 +261,20 @@ export default function AdminLeads() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, company, email..."
-              className="w-full pl-9 pr-4 py-2 bg-white text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
             />
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap">
+            {/* Status Dropdown (FEATURE-02) */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold focus:outline-none focus:border-[#4C1D95]"
+            >
+              {ALL_STATUSES.map((s) => (
+                <option key={s} value={s}>{s === 'All' ? 'All Statuses' : s}</option>
+              ))}
+            </select>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
@@ -219,14 +309,14 @@ export default function AdminLeads() {
           </div>
         </div>
 
-        {/* Status Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-          {STATUS_TABS.map((tab) => (
+        {/* Status Pills Bar */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {ALL_STATUSES.map((tab) => (
             <button
               key={tab}
-              onClick={() => setStatusTab(tab)}
+              onClick={() => setStatusFilter(tab)}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors whitespace-nowrap ${
-                statusTab === tab
+                statusFilter === tab
                   ? 'bg-[#4C1D95] text-white border-[#4C1D95]'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
@@ -245,7 +335,7 @@ export default function AdminLeads() {
                   <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Lead Info</th>
                   <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
                   <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status & Priority</th>
-                  <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Value</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Estimated Value</th>
                   <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned</th>
                   <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                 </tr>
@@ -274,7 +364,7 @@ export default function AdminLeads() {
                         <div className="text-xs text-slate-500">{lead.company_name || 'N/A'}</div>
                       </td>
                       <td className="py-4 px-6">
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-1">
                           {lead.contact_name && (
                             <span className="text-xs text-slate-700 font-medium">{lead.contact_name}</span>
                           )}
@@ -301,14 +391,14 @@ export default function AdminLeads() {
                         </div>
                       </td>
                       <td className="py-4 px-6 font-semibold text-slate-900 text-sm">
-                        {lead.estimated_value != null ? `$${lead.estimated_value.toLocaleString()}` : '—'}
+                        {formatCurrency(lead.estimated_value)}
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
                           {lead.assigned_to ? (
                             <>
-                              <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 border border-white shadow-sm">
-                                {lead.assigned_to.charAt(0)}
+                              <div className="w-6 h-6 rounded-full bg-[#4C1D95]/10 flex items-center justify-center text-[10px] font-bold text-[#4C1D95] border border-[#4C1D95]/20">
+                                {lead.assigned_to.charAt(0).toUpperCase()}
                               </div>
                               <span className="text-xs font-medium text-slate-700">{lead.assigned_to}</span>
                             </>
@@ -334,7 +424,7 @@ export default function AdminLeads() {
                                 <Pencil size={13} className="text-slate-400" /> Edit
                               </button>
                               <button
-                                onClick={() => handleDelete(lead.id)}
+                                onClick={() => handleDelete(lead.id, lead.title)}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
                               >
                                 <Trash2 size={13} /> Delete
@@ -350,8 +440,9 @@ export default function AdminLeads() {
             </table>
           </div>
 
+          {/* Pagination Footer */}
           <div className="p-4 border-t border-slate-200 flex items-center justify-between text-sm text-slate-500 bg-slate-50">
-            <div>Showing {leads.length} of {total} leads</div>
+            <div>Showing {leads.length} of {totalCount} leads</div>
             <div className="flex gap-2 items-center">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -360,7 +451,7 @@ export default function AdminLeads() {
               >
                 <ChevronLeft size={14} /> Previous
               </button>
-              <span className="text-xs text-slate-500">Page {page} of {totalPages}</span>
+              <span className="text-xs text-slate-500 font-medium">Page {page} of {totalPages}</span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
@@ -375,34 +466,41 @@ export default function AdminLeads() {
 
       {/* Create / Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-200">
               <h2 className="text-lg font-bold text-slate-900">{editingLead ? 'Edit Lead' : 'Add Lead'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+              <button onClick={attemptCloseModal} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
                 <X size={20} />
               </button>
             </div>
+
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Title *</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Title <span className="text-red-500">*</span></label>
                 <input
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
+                  className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:border-[#4C1D95] ${
+                    validationErrors.title ? 'border-red-500 bg-red-50/50' : 'border-slate-200'
+                  }`}
                   placeholder="e.g. Website Redesign Inquiry"
                 />
+                {validationErrors.title && <p className="text-red-500 text-[11px] mt-1">{validationErrors.title}</p>}
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Contact Name</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Contact Name <span className="text-red-500">*</span></label>
                   <input
                     value={form.contact_name ?? ''}
                     onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
+                    className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:border-[#4C1D95] ${
+                      validationErrors.contact_name ? 'border-red-500 bg-red-50/50' : 'border-slate-200'
+                    }`}
                     placeholder="John Doe"
                   />
+                  {validationErrors.contact_name && <p className="text-red-500 text-[11px] mt-1">{validationErrors.contact_name}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Company</label>
@@ -414,28 +512,32 @@ export default function AdminLeads() {
                   />
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Email <span className="text-red-500">*</span></label>
                   <input
                     type="email"
                     value={form.email ?? ''}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
+                    className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:border-[#4C1D95] ${
+                      validationErrors.email ? 'border-red-500 bg-red-50/50' : 'border-slate-200'
+                    }`}
                     placeholder="john@example.com"
                   />
+                  {validationErrors.email && <p className="text-red-500 text-[11px] mt-1">{validationErrors.email}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Phone</label>
-                  <input
-                    type="tel"
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Phone <span className="text-red-500">*</span></label>
+                  <PhoneInput
                     value={form.phone ?? ''}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
-                    placeholder="+1 234 567 890"
+                    onChange={(val) => setForm({ ...form, phone: val || '' })}
+                    placeholder="+91 9876543210"
                   />
+                  {validationErrors.phone && <p className="text-red-500 text-[11px] mt-1">{validationErrors.phone}</p>}
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Status</label>
@@ -444,7 +546,7 @@ export default function AdminLeads() {
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
                   >
-                    {STATUS_TABS.filter((s) => s !== 'All').map((s) => (
+                    {ALL_STATUSES.filter((s) => s !== 'All').map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
@@ -462,9 +564,10 @@ export default function AdminLeads() {
                   </select>
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Estimated Value ($)</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Estimated Value (₹)</label>
                   <input
                     type="number"
                     value={form.estimated_value ?? ''}
@@ -475,39 +578,73 @@ export default function AdminLeads() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Assigned To</label>
-                  <input
+                  <select
                     value={form.assigned_to ?? ''}
                     onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
-                    placeholder="Team member"
-                  />
+                  >
+                    <option value="">Select Team Member...</option>
+                    {teamMembers.map((m) => {
+                      const name = m.full_name || m.name || m.email || m.id;
+                      return <option key={m.id} value={name}>{name}</option>;
+                    })}
+                  </select>
                 </div>
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Notes</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Activity Log & Notes</label>
                 <textarea
                   value={form.notes ?? ''}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   rows={3}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95] resize-none"
-                  placeholder="Additional notes..."
+                  placeholder="Enter formatted lead activity logs or follow-up notes..."
                 />
               </div>
             </div>
+
             <div className="flex items-center justify-end gap-3 p-6 pt-4 border-t border-slate-200">
               <button
-                onClick={() => setShowModal(false)}
+                onClick={attemptCloseModal}
                 className="px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || !form.title.trim()}
+                disabled={saving || !isDirty}
                 className="px-5 py-2 text-sm font-semibold text-white bg-[#4C1D95] rounded-xl hover:bg-[#3b1574] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {saving && <Loader2 size={14} className="animate-spin" />}
                 {editingLead ? 'Save Changes' : 'Create Lead'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discard Changes Guard Modal */}
+      {showDiscardConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 border border-slate-200 shadow-2xl">
+            <div className="flex items-center gap-3 text-amber-600">
+              <AlertCircle size={24} />
+              <h3 className="font-bold text-slate-900 text-base">Unsaved Changes</h3>
+            </div>
+            <p className="text-xs text-slate-600">You have unsaved changes on this lead. Are you sure you want to leave without saving?</p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setShowDiscardConfirm(false)}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200"
+              >
+                Keep Editing
+              </button>
+              <button
+                onClick={() => { setShowDiscardConfirm(false); setShowModal(false); }}
+                className="px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 rounded-xl hover:bg-rose-700"
+              >
+                Discard Changes
               </button>
             </div>
           </div>
