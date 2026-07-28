@@ -55,6 +55,14 @@ engine = create_async_engine(
     echo=settings.DB_ECHO,
     future=True,
     connect_args=_connect_args,
+    # Optimisation: pool connections are not returned to the pool on
+    # __del__/gc — they are explicitly returned by ``await session.close()``
+    # which ``get_session()`` already guarantees via its async context
+    # manager.  Pool size is small enough (5+10=15) that this is never a
+    # bottleneck, and the asyncpg connection itself handles
+    # idle-in-transaction timeouts at the database side.
+    pool_use_lifo=True,  # use most-recently-freed connections (better cache locality)
+    hide_parameters=not settings.DB_ECHO,  # hide bind params in logs unless explicitly debugging
 )
 
 AsyncSessionLocal = async_sessionmaker(

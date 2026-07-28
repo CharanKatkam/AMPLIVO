@@ -4,23 +4,26 @@ import uuid
 from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.field_types import HttpUrlStr, NameStr
+from app.core.sanitizers import SanitizedModel
+
 # ── CreativeProject ──
-class CreativeProjectBase(BaseModel):
-    name: str = Field(min_length=1, max_length=200)
+class CreativeProjectBase(SanitizedModel):
+    name: NameStr = Field(min_length=1, max_length=200)
     client_id: uuid.UUID | None = None
     campaign_id: uuid.UUID | None = None
-    description: str | None = None
-    status: str = "briefing"
+    description: str | None = Field(None, min_length=1, max_length=5000)
+    status: str = Field(min_length=1, max_length=50)
     due_date: date | None = None
     manager_id: uuid.UUID | None = None
 
 class CreativeProjectCreate(CreativeProjectBase): pass
-class CreativeProjectUpdate(BaseModel):
-    name: str | None = Field(None, min_length=1, max_length=200)
+class CreativeProjectUpdate(SanitizedModel):
+    name: NameStr | None = Field(None, min_length=1, max_length=200)
     client_id: uuid.UUID | None = None
     campaign_id: uuid.UUID | None = None
-    description: str | None = None
-    status: str | None = None
+    description: str | None = Field(None, min_length=1, max_length=5000)
+    status: str | None = Field(None, min_length=1, max_length=50)
     due_date: date | None = None
     manager_id: uuid.UUID | None = None
 
@@ -38,21 +41,21 @@ class CreativeProjectRead(BaseModel):
     updated_at: datetime
 
 # ── CreativeAsset ──
-class CreativeAssetBase(BaseModel):
-    name: str = Field(min_length=1, max_length=300)
+class CreativeAssetBase(SanitizedModel):
+    name: NameStr = Field(min_length=1, max_length=300)
     asset_type: str = Field(min_length=1, max_length=100)
-    file_url: str | None = None
-    version: str = "v1"
-    status: str = "draft"
+    file_url: HttpUrlStr = None
+    version: str = Field(min_length=1, max_length=50)
+    status: str = Field(min_length=1, max_length=50)
     designer_id: uuid.UUID | None = None
 
 class CreativeAssetCreate(CreativeAssetBase): pass
-class CreativeAssetUpdate(BaseModel):
-    name: str | None = Field(None, min_length=1, max_length=300)
+class CreativeAssetUpdate(SanitizedModel):
+    name: NameStr | None = Field(None, min_length=1, max_length=300)
     asset_type: str | None = Field(None, min_length=1, max_length=100)
-    file_url: str | None = None
-    version: str | None = None
-    status: str | None = None
+    file_url: HttpUrlStr = None
+    version: str | None = Field(None, min_length=1, max_length=50)
+    status: str | None = Field(None, min_length=1, max_length=50)
     designer_id: uuid.UUID | None = None
 
 class CreativeAssetRead(BaseModel):
@@ -69,13 +72,13 @@ class CreativeAssetRead(BaseModel):
     updated_at: datetime
 
 # ── CreativeFeedback ──
-class CreativeFeedbackBase(BaseModel):
-    content: str = Field(min_length=1)
+class CreativeFeedbackBase(SanitizedModel):
+    content: str = Field(min_length=1, max_length=5000)
     is_resolved: bool = False
 
 class CreativeFeedbackCreate(CreativeFeedbackBase): pass
-class CreativeFeedbackUpdate(BaseModel):
-    content: str | None = Field(None, min_length=1)
+class CreativeFeedbackUpdate(SanitizedModel):
+    content: str | None = Field(None, min_length=1, max_length=5000)
     is_resolved: bool | None = None
 
 class CreativeFeedbackRead(BaseModel):

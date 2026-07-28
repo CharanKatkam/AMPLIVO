@@ -4,16 +4,19 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
-# ── ContentCategory ──
-class ContentCategoryBase(BaseModel):
-    name: str = Field(min_length=1, max_length=100)
-    slug: str = Field(min_length=1, max_length=100)
+from app.core.field_types import NameStr, SlugStr
+from app.core.sanitizers import SanitizedModel
+
+# ContentCategory
+class ContentCategoryBase(SanitizedModel):
+    name: NameStr
+    slug: SlugStr
     description: str | None = None
 
 class ContentCategoryCreate(ContentCategoryBase): pass
-class ContentCategoryUpdate(BaseModel):
-    name: str | None = Field(None, min_length=1, max_length=100)
-    slug: str | None = Field(None, min_length=1, max_length=100)
+class ContentCategoryUpdate(SanitizedModel):
+    name: NameStr | None = None
+    slug: SlugStr | None = None
     description: str | None = None
 
 class ContentCategoryRead(BaseModel):
@@ -24,21 +27,21 @@ class ContentCategoryRead(BaseModel):
     description: str | None
     created_at: datetime
 
-# ── ContentItem ──
-class ContentItemBase(BaseModel):
-    title: str = Field(min_length=1, max_length=200)
-    slug: str = Field(min_length=1, max_length=200)
-    body: str = Field(min_length=1)
+# ContentItem
+class ContentItemBase(SanitizedModel):
+    title: NameStr
+    slug: SlugStr
+    body: str = Field(min_length=1, max_length=100000)
     excerpt: str | None = None
-    status: str = "draft"
-    content_type: str = "post"
+    status: str = Field(default="draft", min_length=1, max_length=50)
+    content_type: str = Field(default="post", min_length=1, max_length=100)
     category_id: uuid.UUID | None = None
 
 class ContentItemCreate(ContentItemBase): pass
-class ContentItemUpdate(BaseModel):
-    title: str | None = Field(None, min_length=1, max_length=200)
-    slug: str | None = Field(None, min_length=1, max_length=200)
-    body: str | None = Field(None, min_length=1)
+class ContentItemUpdate(SanitizedModel):
+    title: NameStr | None = None
+    slug: SlugStr | None = None
+    body: str | None = Field(None, min_length=1, max_length=100000)
     excerpt: str | None = None
     status: str | None = None
     content_type: str | None = None

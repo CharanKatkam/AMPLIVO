@@ -11,14 +11,17 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.core.field_types import HttpUrlStr, NameStr, PhoneNumber
+from app.core.sanitizers import SanitizedModel
+
 
 # ── Roles ───────────────────────────────────────────────────────────────
 
 
-class RoleBase(BaseModel):
-    name: str = Field(min_length=2, max_length=100)
+class RoleBase(SanitizedModel):
+    name: NameStr = Field(min_length=2, max_length=100)
     slug: str = Field(min_length=2, max_length=100, pattern=r"^[a-z0-9_]+$")
-    description: str | None = None
+    description: str | None = Field(None, min_length=1, max_length=1000)
     is_system: bool = False
 
 
@@ -26,10 +29,10 @@ class RoleCreate(RoleBase):
     pass
 
 
-class RoleUpdate(BaseModel):
-    name: str | None = Field(None, min_length=2, max_length=100)
+class RoleUpdate(SanitizedModel):
+    name: NameStr | None = Field(None, min_length=2, max_length=100)
     slug: str | None = Field(None, min_length=2, max_length=100, pattern=r"^[a-z0-9_]+$")
-    description: str | None = None
+    description: str | None = Field(None, min_length=1, max_length=1000)
 
 
 class RoleRead(BaseModel):
@@ -58,11 +61,11 @@ class PermissionRead(BaseModel):
     created_at: datetime
 
 
-class PermissionCreate(BaseModel):
+class PermissionCreate(SanitizedModel):
     module: str = Field(min_length=1, max_length=100)
     action: str = Field(min_length=1, max_length=100)
     slug: str = Field(min_length=1, max_length=200)
-    description: str | None = None
+    description: str | None = Field(None, min_length=1, max_length=1000)
 
 
 class RoleWithPermissions(RoleRead):
@@ -72,18 +75,18 @@ class RoleWithPermissions(RoleRead):
 # ── Branches ────────────────────────────────────────────────────────────
 
 
-class BranchBase(BaseModel):
-    name: str = Field(min_length=2, max_length=200)
+class BranchBase(SanitizedModel):
+    name: NameStr = Field(min_length=2, max_length=200)
     code: str = Field(min_length=2, max_length=20)
     city: str = Field(min_length=1, max_length=100)
-    state: str | None = None
+    state: str | None = Field(None, min_length=1, max_length=100)
     country: str = Field(min_length=2, max_length=100)
-    address: str | None = None
-    phone: str | None = None
+    address: str | None = Field(None, min_length=1, max_length=500)
+    phone: PhoneNumber = None
     email: EmailStr | None = None
     is_headquarters: bool = False
     is_sales_office: bool = False
-    timezone: str = "Asia/Kolkata"
+    timezone: str = Field(min_length=1, max_length=100)
     is_active: bool = True
 
 
@@ -91,18 +94,18 @@ class BranchCreate(BranchBase):
     pass
 
 
-class BranchUpdate(BaseModel):
-    name: str | None = Field(None, min_length=2, max_length=200)
+class BranchUpdate(SanitizedModel):
+    name: NameStr | None = Field(None, min_length=2, max_length=200)
     code: str | None = Field(None, min_length=2, max_length=20)
     city: str | None = Field(None, min_length=1, max_length=100)
-    state: str | None = None
+    state: str | None = Field(None, min_length=1, max_length=100)
     country: str | None = Field(None, min_length=2, max_length=100)
-    address: str | None = None
-    phone: str | None = None
+    address: str | None = Field(None, min_length=1, max_length=500)
+    phone: PhoneNumber = None
     email: EmailStr | None = None
     is_headquarters: bool | None = None
     is_sales_office: bool | None = None
-    timezone: str | None = None
+    timezone: str | None = Field(None, min_length=1, max_length=100)
     is_active: bool | None = None
 
 
@@ -129,10 +132,10 @@ class BranchRead(BaseModel):
 # ── Departments ─────────────────────────────────────────────────────────
 
 
-class DepartmentBase(BaseModel):
-    name: str = Field(min_length=2, max_length=200)
+class DepartmentBase(SanitizedModel):
+    name: NameStr = Field(min_length=2, max_length=200)
     slug: str = Field(min_length=2, max_length=200, pattern=r"^[a-z0-9_-]+$")
-    description: str | None = None
+    description: str | None = Field(None, min_length=1, max_length=1000)
     head_user_id: uuid.UUID | None = None
 
 
@@ -140,10 +143,10 @@ class DepartmentCreate(DepartmentBase):
     pass
 
 
-class DepartmentUpdate(BaseModel):
-    name: str | None = Field(None, min_length=2, max_length=200)
+class DepartmentUpdate(SanitizedModel):
+    name: NameStr | None = Field(None, min_length=2, max_length=200)
     slug: str | None = Field(None, min_length=2, max_length=200, pattern=r"^[a-z0-9_-]+$")
-    description: str | None = None
+    description: str | None = Field(None, min_length=1, max_length=1000)
     head_user_id: uuid.UUID | None = None
 
 
@@ -162,10 +165,10 @@ class DepartmentRead(BaseModel):
 # ── Teams ───────────────────────────────────────────────────────────────
 
 
-class TeamBase(BaseModel):
-    name: str = Field(min_length=2, max_length=200)
+class TeamBase(SanitizedModel):
+    name: NameStr = Field(min_length=2, max_length=200)
     slug: str = Field(min_length=2, max_length=200, pattern=r"^[a-z0-9_-]+$")
-    description: str | None = None
+    description: str | None = Field(None, min_length=1, max_length=1000)
     department_id: uuid.UUID | None = None
     lead_user_id: uuid.UUID | None = None
     is_active: bool = True
@@ -175,10 +178,10 @@ class TeamCreate(TeamBase):
     pass
 
 
-class TeamUpdate(BaseModel):
-    name: str | None = Field(None, min_length=2, max_length=200)
+class TeamUpdate(SanitizedModel):
+    name: NameStr | None = Field(None, min_length=2, max_length=200)
     slug: str | None = Field(None, min_length=2, max_length=200, pattern=r"^[a-z0-9_-]+$")
-    description: str | None = None
+    description: str | None = Field(None, min_length=1, max_length=1000)
     department_id: uuid.UUID | None = None
     lead_user_id: uuid.UUID | None = None
     is_active: bool | None = None
@@ -201,9 +204,9 @@ class TeamRead(BaseModel):
 # ── Designations ────────────────────────────────────────────────────────
 
 
-class DesignationBase(BaseModel):
-    title: str = Field(min_length=2, max_length=200)
-    description: str | None = None
+class DesignationBase(SanitizedModel):
+    title: NameStr = Field(min_length=2, max_length=200)
+    description: str | None = Field(None, min_length=1, max_length=1000)
     is_active: bool = True
 
 
@@ -211,9 +214,9 @@ class DesignationCreate(DesignationBase):
     pass
 
 
-class DesignationUpdate(BaseModel):
-    title: str | None = Field(None, min_length=2, max_length=200)
-    description: str | None = None
+class DesignationUpdate(SanitizedModel):
+    title: NameStr | None = Field(None, min_length=2, max_length=200)
+    description: str | None = Field(None, min_length=1, max_length=1000)
     is_active: bool | None = None
 
 
@@ -231,38 +234,38 @@ class DesignationRead(BaseModel):
 # ── User Profiles ───────────────────────────────────────────────────────
 
 
-class UserProfileBase(BaseModel):
-    full_name: str = Field(min_length=2, max_length=200)
-    avatar_url: str | None = None
-    designation: str | None = None
-    bio: str | None = None
-    gender: str | None = None
+class UserProfileBase(SanitizedModel):
+    full_name: NameStr = Field(min_length=2, max_length=200)
+    avatar_url: HttpUrlStr = None
+    designation: NameStr | None = None
+    bio: str | None = Field(None, min_length=1, max_length=2000)
+    gender: str | None = Field(None, min_length=1, max_length=50)
     date_of_birth: date | None = None
     date_of_joining: date | None = None
-    timezone: str = "Asia/Kolkata"
-    linkedin_url: str | None = None
-    emergency_contact_name: str | None = None
-    emergency_contact_phone: str | None = None
-    address: str | None = None
+    timezone: str = Field(min_length=1, max_length=100)
+    linkedin_url: HttpUrlStr = None
+    emergency_contact_name: NameStr | None = None
+    emergency_contact_phone: PhoneNumber = None
+    address: str | None = Field(None, min_length=1, max_length=500)
 
 
 class UserProfileCreate(UserProfileBase):
     pass
 
 
-class UserProfileUpdate(BaseModel):
-    full_name: str | None = Field(None, min_length=2, max_length=200)
-    avatar_url: str | None = None
-    designation: str | None = None
-    bio: str | None = None
-    gender: str | None = None
+class UserProfileUpdate(SanitizedModel):
+    full_name: NameStr | None = Field(None, min_length=2, max_length=200)
+    avatar_url: HttpUrlStr = None
+    designation: NameStr | None = None
+    bio: str | None = Field(None, min_length=1, max_length=2000)
+    gender: str | None = Field(None, min_length=1, max_length=50)
     date_of_birth: date | None = None
     date_of_joining: date | None = None
-    timezone: str | None = None
-    linkedin_url: str | None = None
-    emergency_contact_name: str | None = None
-    emergency_contact_phone: str | None = None
-    address: str | None = None
+    timezone: str | None = Field(None, min_length=1, max_length=100)
+    linkedin_url: HttpUrlStr = None
+    emergency_contact_name: NameStr | None = None
+    emergency_contact_phone: PhoneNumber = None
+    address: str | None = Field(None, min_length=1, max_length=500)
 
 
 class UserProfileRead(BaseModel):
@@ -335,13 +338,13 @@ class UserDetail(BaseModel):
     profile: UserProfileRead | None = None
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(SanitizedModel):
     """Fields an admin can update on a user."""
 
-    full_name: str | None = Field(None, min_length=2, max_length=150)
-    phone: str | None = Field(None, max_length=20)
-    user_type: str | None = None
-    status: str | None = None
+    full_name: NameStr | None = Field(None, min_length=2, max_length=150)
+    phone: PhoneNumber = None
+    user_type: str | None = Field(None, min_length=1, max_length=50)
+    status: str | None = Field(None, min_length=1, max_length=50)
     role_id: uuid.UUID | None = None
     department_id: uuid.UUID | None = None
     branch_id: uuid.UUID | None = None

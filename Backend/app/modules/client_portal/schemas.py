@@ -4,19 +4,22 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
-# ── PortalSetting ──
-class PortalSettingBase(BaseModel):
+from app.core.field_types import HttpUrlStr
+from app.core.sanitizers import SanitizedModel
+
+# PortalSetting
+class PortalSettingBase(SanitizedModel):
     client_id: uuid.UUID
     custom_domain: str | None = None
     theme_color: str | None = None
-    logo_url: str | None = None
+    logo_url: HttpUrlStr = None
     features_enabled: str | None = None
 
 class PortalSettingCreate(PortalSettingBase): pass
-class PortalSettingUpdate(BaseModel):
+class PortalSettingUpdate(SanitizedModel):
     custom_domain: str | None = None
     theme_color: str | None = None
-    logo_url: str | None = None
+    logo_url: HttpUrlStr = None
     features_enabled: str | None = None
 
 class PortalSettingRead(BaseModel):
@@ -30,17 +33,17 @@ class PortalSettingRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-# ── PortalAnnouncement ──
-class PortalAnnouncementBase(BaseModel):
+# PortalAnnouncement
+class PortalAnnouncementBase(SanitizedModel):
     title: str = Field(min_length=1, max_length=200)
-    content: str = Field(min_length=1)
+    content: str = Field(min_length=1, max_length=50000)
     client_id: uuid.UUID | None = None
     is_active: bool = True
 
 class PortalAnnouncementCreate(PortalAnnouncementBase): pass
-class PortalAnnouncementUpdate(BaseModel):
+class PortalAnnouncementUpdate(SanitizedModel):
     title: str | None = Field(None, min_length=1, max_length=200)
-    content: str | None = Field(None, min_length=1)
+    content: str | None = Field(None, min_length=1, max_length=50000)
     client_id: uuid.UUID | None = None
     is_active: bool | None = None
 
@@ -55,8 +58,8 @@ class PortalAnnouncementRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-# ── PortalResource ──
-class PortalResourceBase(BaseModel):
+# PortalResource
+class PortalResourceBase(SanitizedModel):
     client_id: uuid.UUID
     title: str = Field(min_length=1, max_length=200)
     description: str | None = None
@@ -64,7 +67,7 @@ class PortalResourceBase(BaseModel):
     resource_type: str = Field(min_length=1, max_length=100)
 
 class PortalResourceCreate(PortalResourceBase): pass
-class PortalResourceUpdate(BaseModel):
+class PortalResourceUpdate(SanitizedModel):
     title: str | None = Field(None, min_length=1, max_length=200)
     description: str | None = None
     file_url: str | None = Field(None, min_length=1, max_length=500)

@@ -1,14 +1,20 @@
 """API routes for the CRM module."""
 from __future__ import annotations
 import uuid
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import Response
+from pydantic import BaseModel
+from sqlalchemy import func as sa_func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import BadRequestException
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
-from app.dependencies.rbac import require_roles
+from app.dependencies.rbac import STAFF_ROLE_SLUGS, require_roles
 from app.dependencies.tenant import get_current_client_id
 from app.models.user import User
 from app.modules.crm.dependencies import (
@@ -240,3 +246,126 @@ async def get_proposal_pdf(proposal_id: uuid.UUID, svc: ProposalService = Depend
     return Response(content=pdf_bytes, media_type="application/pdf", headers={
         "Content-Disposition": f'inline; filename="proposal-{proposal_id}.pdf"'
     })
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# CRM Payments Dashboard
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class CrmPaymentRow(BaseModel):
+    payment_id: uuid.UUID
+    invoice_id: uuid.UUID
+    invoice_number: str
+    invoice_type: str
+    invoice_status: str
+    amount: float
+    payment_date: date
+    payment_method: str
+    reference_number: str | None
+    status: str
+    submitted_by_client: bool
+    created_at: datetime
+    client_id: uuid.UUID | None
+    client_name: str | None
+    lead_id: uuid.UUID | None
+    lead_title: str | None
+
+
+class CrmPaymentStats(BaseModel):
+    total_pending: float
+    total_submitted: float
+    total_finance_verified: float
+    total_crm_verified: float
+    total_rejected: float
+    total_completed: float
+    grand_total: float
+
+
+class CrmPaymentsDashboardResponse(BaseModel):
+    payments: list[CrmPaymentRow]
+    stats: CrmPaymentStats
+
+
+@router.get("/payments/dashboard", response_model=CrmPaymentsDashboardResponse, summary="CRM Payments dashboard — list payments with stats")
+async def crm_payments_dashboard(
+    status_filter: str | None = Query(None, alias="status"),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("crm", "sales", "admin")),
+):
+    from app.modules.crm.models import Client
+    from app.modules.finance.models import Invoice, Payment
+    from app.modules.leads.models import Lead
+
+    # Build the join query
+    stmt = (
+        select(
+            Payment.id.label("payment_id"),
+            Payment.invoice_id,
+            Payment.amount,
+            Payment.payment_date,
+            Payment.payment_method,
+            Payment.reference_number,
+            Payment.status,
+            Payment.submitted_by_client,
+            Payment.created_at,
+            Invoice.id.label("invoice_id_"),
+            Invoice.invoice_number,
+            Invoice.invoice_type,
+            Invoice.status.label("invoice_status"),
+            Invoice.client_id,
+            Invoice.lead_id,
+            Client.company_name,
+            Lead.title.label("lead_title"),
+        )
+        .join(Invoice, Payment.invoice_id == Invoice.id)
+        .outerjoin(Client, Invoice.client_id == Client.id)
+        .outerjoin(Lead, Invoice.lead_id == Lead.id)
+    )
+    if status_filter:
+        stmt = stmt.where(Payment.status == status_filter)
+    stmt = stmt.order_by(Payment.created_at.desc())
+
+    rows = (await db.execute(stmt)).all()
+    payments = [
+        CrmPaymentRow(
+            payment_id=r.payment_id,
+            invoice_id=r.invoice_id,
+            invoice_number=r.invoice_number,
+            invoice_type=r.invoice_type,
+            invoice_status=r.invoice_status,
+            amount=float(r.amount),
+            payment_date=r.payment_date,
+            payment_method=r.payment_method,
+            reference_number=r.reference_number,
+            status=r.status,
+            submitted_by_client=r.submitted_by_client,
+            created_at=r.created_at,
+            client_id=r.client_id,
+            client_name=r.company_name,
+            lead_id=r.lead_id,
+            lead_title=r.lead_title,
+        )
+        for r in rows
+    ]
+
+    # Compute stats
+    stats_stmt = select(
+        Payment.status,
+        sa_func.coalesce(sa_func.sum(Payment.amount), 0).label("total"),
+    ).group_by(Payment.status)
+    stats_rows = (await db.execute(stats_stmt)).all()
+    stats_map: dict[str, float] = {r.status: float(r.total) for r in stats_rows}
+
+    stats = CrmPaymentStats(
+        total_pending=stats_map.get("pending", 0.0),
+        total_submitted=stats_map.get("submitted", 0.0),
+        total_finance_verified=stats_map.get("finance_verified", 0.0),
+        total_crm_verified=stats_map.get("crm_verified", 0.0),
+        total_rejected=stats_map.get("rejected", 0.0),
+        total_completed=stats_map.get("completed", 0.0),
+        grand_total=sum(stats_map.values()),
+    )
+
+    return CrmPaymentsDashboardResponse(payments=payments, stats=stats)

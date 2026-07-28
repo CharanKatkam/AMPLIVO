@@ -4,12 +4,15 @@ import uuid
 from datetime import datetime, date as datetime_date
 from pydantic import BaseModel, ConfigDict, Field
 
-# ── Campaign ──
-class CampaignBase(BaseModel):
+from app.core.field_types import HttpUrlStr
+from app.core.sanitizers import SanitizedModel
+
+# Campaign
+class CampaignBase(SanitizedModel):
     name: str = Field(min_length=2, max_length=300)
     client_id: uuid.UUID
     type: str = Field(min_length=2, max_length=100)
-    status: str = "draft"
+    status: str = Field(default="draft", min_length=1, max_length=50)
     start_date: datetime_date | None = None
     end_date: datetime_date | None = None
     budget: float | None = None
@@ -20,7 +23,7 @@ class CampaignBase(BaseModel):
 
 class CampaignCreate(CampaignBase): pass
 
-class CampaignUpdate(BaseModel):
+class CampaignUpdate(SanitizedModel):
     name: str | None = Field(None, min_length=2, max_length=300)
     client_id: uuid.UUID | None = None
     type: str | None = Field(None, min_length=2, max_length=100)
@@ -50,15 +53,15 @@ class CampaignRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-# ── CampaignPlatform ──
-class CampaignPlatformBase(BaseModel):
+# CampaignPlatform
+class CampaignPlatformBase(SanitizedModel):
     platform_name: str = Field(min_length=1, max_length=100)
     account_id: str | None = None
-    status: str = "active"
+    status: str = Field(default="active", min_length=1, max_length=50)
     budget_allocation: float | None = None
 
 class CampaignPlatformCreate(CampaignPlatformBase): pass
-class CampaignPlatformUpdate(BaseModel):
+class CampaignPlatformUpdate(SanitizedModel):
     platform_name: str | None = Field(None, min_length=1, max_length=100)
     account_id: str | None = None
     status: str | None = None
@@ -74,18 +77,18 @@ class CampaignPlatformRead(BaseModel):
     budget_allocation: float | None
     created_at: datetime
 
-# ── CampaignAsset ──
-class CampaignAssetBase(BaseModel):
+# CampaignAsset
+class CampaignAssetBase(SanitizedModel):
     name: str = Field(min_length=1, max_length=200)
     asset_type: str = Field(min_length=1, max_length=100)
-    file_url: str | None = None
-    status: str = "pending"
+    file_url: HttpUrlStr = None
+    status: str = Field(default="pending", min_length=1, max_length=50)
 
 class CampaignAssetCreate(CampaignAssetBase): pass
-class CampaignAssetUpdate(BaseModel):
+class CampaignAssetUpdate(SanitizedModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     asset_type: str | None = Field(None, min_length=1, max_length=100)
-    file_url: str | None = None
+    file_url: HttpUrlStr = None
     status: str | None = None
 
 class CampaignAssetRead(BaseModel):
@@ -99,8 +102,8 @@ class CampaignAssetRead(BaseModel):
     uploaded_by: uuid.UUID | None
     created_at: datetime
 
-# ── CampaignMetric ──
-class CampaignMetricBase(BaseModel):
+# CampaignMetric
+class CampaignMetricBase(SanitizedModel):
     date: datetime_date
     impressions: int = 0
     clicks: int = 0
@@ -108,7 +111,7 @@ class CampaignMetricBase(BaseModel):
     spend: float = 0.0
 
 class CampaignMetricCreate(CampaignMetricBase): pass
-class CampaignMetricUpdate(BaseModel):
+class CampaignMetricUpdate(SanitizedModel):
     date: datetime_date | None = None
     impressions: int | None = None
     clicks: int | None = None

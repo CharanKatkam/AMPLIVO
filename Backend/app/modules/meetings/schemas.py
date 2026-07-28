@@ -4,41 +4,44 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.field_types import NameStr
+from app.core.sanitizers import SanitizedModel
 
-class MeetingCreate(BaseModel):
+
+class MeetingCreate(SanitizedModel):
     lead_id: uuid.UUID
-    title: str = Field(min_length=2, max_length=300)
-    meeting_type: str = "video_call"
+    title: NameStr = Field(min_length=2, max_length=300)
+    meeting_type: str = Field(min_length=1, max_length=100)
     scheduled_at: datetime
     duration_minutes: int = 30
-    agenda: str | None = None
+    agenda: str | None = Field(None, min_length=1, max_length=5000)
     assigned_to: uuid.UUID | None = None
 
 
-class MeetingUpdate(BaseModel):
-    title: str | None = Field(None, min_length=2, max_length=300)
-    meeting_type: str | None = None
+class MeetingUpdate(SanitizedModel):
+    title: NameStr | None = Field(None, min_length=2, max_length=300)
+    meeting_type: str | None = Field(None, min_length=1, max_length=100)
     scheduled_at: datetime | None = None
     duration_minutes: int | None = None
-    status: str | None = None
-    agenda: str | None = None
-    notes: str | None = None
+    status: str | None = Field(None, min_length=1, max_length=50)
+    agenda: str | None = Field(None, min_length=1, max_length=5000)
+    notes: str | None = Field(None, min_length=1, max_length=5000)
     follow_up_required: bool | None = None
     assigned_to: uuid.UUID | None = None
 
 
-class MeetingCompleteRequest(BaseModel):
-    notes: str | None = None
+class MeetingCompleteRequest(SanitizedModel):
+    notes: str | None = Field(None, min_length=1, max_length=5000)
     follow_up_required: bool = False
 
 
-class MeetingRescheduleRequest(BaseModel):
+class MeetingRescheduleRequest(SanitizedModel):
     scheduled_at: datetime
-    reason: str | None = None
+    reason: str | None = Field(None, min_length=1, max_length=2000)
 
 
-class MeetingCancelRequest(BaseModel):
-    reason: str | None = None
+class MeetingCancelRequest(SanitizedModel):
+    reason: str | None = Field(None, min_length=1, max_length=2000)
 
 
 class MeetingRead(BaseModel):

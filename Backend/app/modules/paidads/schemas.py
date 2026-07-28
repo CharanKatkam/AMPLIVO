@@ -4,8 +4,10 @@ import uuid
 from datetime import datetime, date as datetime_date
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.sanitizers import SanitizedModel
+
 # ── AdCampaign ──
-class AdCampaignBase(BaseModel):
+class AdCampaignBase(SanitizedModel):
     client_id: uuid.UUID | None = None
     platform: str = Field(min_length=1, max_length=100)
     name: str = Field(min_length=1, max_length=300)
@@ -17,7 +19,7 @@ class AdCampaignBase(BaseModel):
     manager_id: uuid.UUID | None = None
 
 class AdCampaignCreate(AdCampaignBase): pass
-class AdCampaignUpdate(BaseModel):
+class AdCampaignUpdate(SanitizedModel):
     client_id: uuid.UUID | None = None
     platform: str | None = Field(None, min_length=1, max_length=100)
     name: str | None = Field(None, min_length=1, max_length=300)
@@ -44,14 +46,14 @@ class AdCampaignRead(BaseModel):
     updated_at: datetime
 
 # ── AdGroup ──
-class AdGroupBase(BaseModel):
+class AdGroupBase(SanitizedModel):
     name: str = Field(min_length=1, max_length=300)
     status: str = "active"
     bid_amount: float | None = None
     target_audience: str | None = None
 
 class AdGroupCreate(AdGroupBase): pass
-class AdGroupUpdate(BaseModel):
+class AdGroupUpdate(SanitizedModel):
     name: str | None = Field(None, min_length=1, max_length=300)
     status: str | None = None
     bid_amount: float | None = None
@@ -69,7 +71,7 @@ class AdGroupRead(BaseModel):
     updated_at: datetime
 
 # ── AdMetric ──
-class AdMetricBase(BaseModel):
+class AdMetricBase(SanitizedModel):
     date: datetime_date
     impressions: int = 0
     clicks: int = 0
@@ -79,7 +81,7 @@ class AdMetricBase(BaseModel):
     roas: float | None = None
 
 class AdMetricCreate(AdMetricBase): pass
-class AdMetricUpdate(BaseModel):
+class AdMetricUpdate(SanitizedModel):
     date: datetime_date | None = None
     impressions: int | None = None
     clicks: int | None = None

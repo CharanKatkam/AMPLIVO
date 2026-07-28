@@ -21,6 +21,7 @@ async def list_system_settings(
     is_public: bool | None = Query(None),
     svc: SystemSettingService = Depends(get_system_setting_service),
     _: User = Depends(get_current_user),
+    _admin: str = Depends(require_roles("admin")),
 ):
     items, total = await svc.list_settings(
         search=params.search, is_public=is_public,
@@ -34,11 +35,11 @@ async def create_system_setting(payload: SystemSettingCreate, db: AsyncSession =
     return SystemSettingRead.model_validate(s)
 
 @router.get("/system/{setting_id}", response_model=SystemSettingRead, summary="Get system setting")
-async def get_system_setting(setting_id: uuid.UUID, svc: SystemSettingService = Depends(get_system_setting_service), _: User = Depends(get_current_user)):
+async def get_system_setting(setting_id: uuid.UUID, svc: SystemSettingService = Depends(get_system_setting_service), _: User = Depends(get_current_user), _admin: str = Depends(require_roles("admin"))):
     return SystemSettingRead.model_validate(await svc.get_setting(setting_id))
 
 @router.get("/system/key/{key}", response_model=SystemSettingRead, summary="Get system setting by key")
-async def get_system_setting_by_key(key: str, svc: SystemSettingService = Depends(get_system_setting_service), _: User = Depends(get_current_user)):
+async def get_system_setting_by_key(key: str, svc: SystemSettingService = Depends(get_system_setting_service), _: User = Depends(get_current_user), _admin: str = Depends(require_roles("admin"))):
     return SystemSettingRead.model_validate(await svc.get_by_key(key))
 
 @router.put("/system/{setting_id}", response_model=SystemSettingRead, summary="Update system setting")

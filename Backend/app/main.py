@@ -1,7 +1,7 @@
+import asyncio
 import logging
 import time
 from contextlib import asynccontextmanager
-
 from pathlib import Path
 
 from fastapi import Depends, FastAPI
@@ -12,15 +12,22 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.router import api_router
+from app.core.cache import close_redis
 from app.core.config import settings
+from app.core.logging_config import setup_logging
 from app.db.session import AsyncSessionLocal, check_database_connection, engine
 from app.dependencies.db import get_db
 from app.middleware.activity import ActivityMiddleware
 from app.middleware.audit import AuditMiddleware
 from app.middleware.authentication import AuthenticationMiddleware
+from app.middleware.cache_headers import CacheHeadersMiddleware
+from app.middleware.compression import CompressionMiddleware
+from app.middleware.csrf import CSRFMiddleware
 from app.middleware.error_boundary import UnhandledErrorMiddleware
 from app.middleware.exception_handler import register_exception_handlers
+from app.middleware.performance_logger import PerformanceLoggerMiddleware
 from app.middleware.rate_limiter import RateLimiterMiddleware
+from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.session import SessionMiddleware
 
@@ -29,32 +36,40 @@ logger = logging.getLogger("app.startup")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # ── Structured logging ────────────────────────────────────────────────
+    setup_logging(level=settings.LOG_LEVEL)
+
+    # ── Database connectivity ─────────────────────────────────────────────
     is_healthy, latency_ms = await check_database_connection()
     if is_healthy:
-        logger.info("Database connection verified at startup (%.2f ms).", latency_ms)
-        # Best-effort: the demo accounts the frontend's login page offers
-        # (admin/hr/employee/sales/crm + marketing job-title logins) must
-        # always exist. Idempotent, so this is cheap on every restart, and
-        # failure here must never block the app from serving requests.
-        try:
-            from app.scripts.seed_demo_data import seed_demo_data
-
-            async with AsyncSessionLocal() as session:
-                created = await seed_demo_data(session)
-            if any(created.values()):
-                logger.info("Demo data seeded at startup: %s", created)
-        except Exception:
-            logger.exception("Demo data seeding failed at startup - continuing without it.")
+        logger.info(
+            "Database connection verified at startup",
+            extra={"duration_ms": round(latency_ms, 2)},
+        )
+        # Demo data seeding is deferred to a background task so it never
+        # blocks the application from starting up to serve requests.
+        asyncio.create_task(_seed_demo_background())
     else:
-        # Not fatal: liveness (/health) must not depend on the database, and
-        # container orchestrators frequently start this process before the
-        # database is reachable. /health/database is the readiness signal.
         logger.warning(
-            "Database connection could not be verified at startup - "
+            "Database connection could not be verified at startup — "
             "the app will still boot; check DATABASE_URL and DB_SSL_MODE."
         )
     yield
     await engine.dispose()
+    await close_redis()
+
+
+async def _seed_demo_background() -> None:
+    """Idempotent demo data seeding, run in the background after startup."""
+    try:
+        from app.scripts.seed_demo_data import seed_demo_data
+
+        async with AsyncSessionLocal() as session:
+            created = await seed_demo_data(session)
+        if any(created.values()):
+            logger.info("Demo data seeded", extra={"created": created})
+    except Exception:
+        logger.exception("Demo data seeding failed — continuing without it.")
 
 
 app = FastAPI(
@@ -74,29 +89,39 @@ app = FastAPI(
 
 # Middleware is added innermost-first: Starlette wraps the stack so the LAST
 # middleware added ends up OUTERMOST (sees the request first, the response
-# last). Desired outer-to-inner order: CORS, UnhandledError, SecurityHeaders,
-# RateLimiter, Audit, Session, Activity, Authentication - so SecurityHeaders
-# still stamps headers onto a 429 returned directly by RateLimiter, CORS
-# handles preflight before anything else runs, and SessionMiddleware resolves
-# request.state.session_id before ActivityMiddleware reads it (Session must
-# be added after - i.e. more outer than - Activity for that ordering to hold).
-# UnhandledErrorMiddleware sits just inside CORS so a raw exception (e.g. a
-# DB error not wrapped in AppException) still produces a response that
-# passes back through CORSMiddleware - see error_boundary.py for why that
-# would otherwise strip CORS headers and look like a CORS bug in the browser.
+# last). Desired outer-to-inner order (performance/compression/logging at
+# the outside, then CORS, then security, then auth):
+#   Compression, PerformanceLogger, RequestID, CacheHeaders,
+#   CORSMiddleware, UnhandledError, SecurityHeaders, RateLimiter, CSRF,
+#   Audit, Session, Activity, Authentication
+#
+# Compression sits outermost so the response body is compressed last
+# (after all inner middleware and the route have produced it).
+# PerformanceLogger captures full end-to-end timing.
+# RequestID must run early so every downstream component sees the IDs.
+# CacheHeaders runs after Compression so ETags reflect the compressed body.
+# Everything else follows the existing ordering rationale.
 app.add_middleware(AuthenticationMiddleware)
 app.add_middleware(ActivityMiddleware)
 app.add_middleware(SessionMiddleware)
 app.add_middleware(AuditMiddleware)
-app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(CSRFMiddleware)
 app.add_middleware(RateLimiterMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(UnhandledErrorMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "X-CSRF-Token"],
+)
+app.add_middleware(CacheHeadersMiddleware)
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(PerformanceLoggerMiddleware)
+app.add_middleware(
+    CompressionMiddleware,
+    minimum_size=settings.COMPRESSION_MIN_SIZE,
 )
 
 register_exception_handlers(app)
@@ -113,23 +138,32 @@ async def root():
     return RedirectResponse(url=f"{settings.API_V1_PREFIX}/docs")
 
 
-@app.get("/health", tags=["Health"], summary="Service liveness check")
-async def health_check() -> dict[str, str]:
+@app.get("/health", tags=["Health"], summary="Liveness probe")
+async def liveness() -> dict[str, str]:
+    """Minimal liveness check — never touches the database."""
     return {"status": "ok"}
+
+
+@app.get("/health/ready", tags=["Health"], summary="Readiness probe")
+async def readiness(db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    """Readiness check: verifies the database is reachable.
+
+    Orchestrators should call this endpoint (not /health) to decide
+    whether this instance is ready to receive traffic.
+    """
+    return await _db_health(db)
 
 
 @app.get(
     "/health/database",
     tags=["Health"],
-    summary="Database connectivity readiness check",
-    description=(
-        "Runs a lightweight SELECT 1 through the request-scoped session and "
-        "reports round-trip latency. Returns 503 if the database cannot be "
-        "reached - use this as the readiness probe, not /health, which "
-        "deliberately never touches the database."
-    ),
+    summary="Database connectivity check (legacy alias for /health/ready)",
 )
 async def database_health_check(db: AsyncSession = Depends(get_db)) -> JSONResponse:
+    return await _db_health(db)
+
+
+async def _db_health(db: AsyncSession) -> JSONResponse:
     start = time.perf_counter()
     try:
         await db.execute(text("SELECT 1"))
@@ -137,11 +171,19 @@ async def database_health_check(db: AsyncSession = Depends(get_db)) -> JSONRespo
         latency_ms = (time.perf_counter() - start) * 1000
         return JSONResponse(
             status_code=503,
-            content={"status": "unhealthy", "database": "disconnected", "latency": f"{latency_ms:.2f} ms"},
+            content={
+                "status": "unhealthy",
+                "database": "disconnected",
+                "latency_ms": round(latency_ms, 2),
+            },
         )
 
     latency_ms = (time.perf_counter() - start) * 1000
     return JSONResponse(
         status_code=200,
-        content={"status": "healthy", "database": "connected", "latency": f"{latency_ms:.2f} ms"},
+        content={
+            "status": "healthy",
+            "database": "connected",
+            "latency_ms": round(latency_ms, 2),
+        },
     )
