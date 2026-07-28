@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
-from app.dependencies.rbac import require_roles
+from app.dependencies.rbac import STAFF_ROLE_SLUGS, require_roles
 from app.dependencies.tenant import get_current_client_id
 from app.models.user import User
 from app.modules.finance.dependencies import *
@@ -35,7 +35,7 @@ async def list_invoices(
     return PaginatedResponse[InvoiceRead].create(items=[InvoiceRead.model_validate(x) for x in items], total=total, page=params.page, page_size=params.page_size)
 
 @router.post("/invoices", response_model=InvoiceRead, status_code=status.HTTP_201_CREATED, summary="Create invoice")
-async def create_invoice(payload: InvoiceCreate, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), current_user: User = Depends(get_current_user)):
+async def create_invoice(payload: InvoiceCreate, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     i = await svc.create_invoice(payload.model_dump(), actor_id=current_user.id); await db.commit()
     return InvoiceRead.model_validate(i)
 
@@ -64,8 +64,13 @@ async def crm_approve_invoice(invoice_id: uuid.UUID, db: AsyncSession = Depends(
     i = await svc.crm_approve_advance(invoice_id, actor_id=current_user.id); await db.commit()
     return InvoiceRead.model_validate(i)
 
+@router.post("/invoices/{invoice_id}/resend-email", response_model=InvoiceRead, summary="Resend the payment-link email for an invoice")
+async def resend_invoice_email(invoice_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("crm", "finance"))):
+    i = await svc.crm_approve_advance(invoice_id, actor_id=current_user.id); await db.commit()
+    return InvoiceRead.model_validate(i)
+
 @router.get("/invoices/by-lead/{lead_id}/advance", response_model=InvoiceRead | None, summary="Get the advance invoice for a lead, if one exists")
-async def get_advance_invoice_for_lead(lead_id: uuid.UUID, svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user)):
+async def get_advance_invoice_for_lead(lead_id: uuid.UUID, svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS))):
     invoice = await svc.get_advance_for_lead(lead_id)
     return InvoiceRead.model_validate(invoice) if invoice else None
 
@@ -83,12 +88,12 @@ async def get_invoice(invoice_id: uuid.UUID, svc: InvoiceService = Depends(get_i
     return InvoiceRead.model_validate(await svc.get_invoice(invoice_id, scoped_client_id=scoped_client_id))
 
 @router.put("/invoices/{invoice_id}", response_model=InvoiceRead, summary="Update invoice")
-async def update_invoice(invoice_id: uuid.UUID, payload: InvoiceUpdate, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
+async def update_invoice(invoice_id: uuid.UUID, payload: InvoiceUpdate, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id), _role: str = Depends(require_roles("finance"))):
     i = await svc.update_invoice(invoice_id, payload.model_dump(exclude_unset=True), scoped_client_id=scoped_client_id); await db.commit()
     return InvoiceRead.model_validate(i)
 
 @router.delete("/invoices/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete invoice")
-async def delete_invoice(invoice_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
+async def delete_invoice(invoice_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id), _role: str = Depends(require_roles("finance"))):
     await svc.delete_invoice(invoice_id, scoped_client_id=scoped_client_id); await db.commit()
 
 # ── Invoice Items ──
@@ -98,17 +103,17 @@ async def list_invoice_items(invoice_id: uuid.UUID, svc: InvoiceItemService = De
     return [InvoiceItemRead.model_validate(x) for x in await svc.list_items(invoice_id)]
 
 @router.post("/invoices/{invoice_id}/items", response_model=InvoiceItemRead, status_code=status.HTTP_201_CREATED, summary="Add invoice item")
-async def create_invoice_item(invoice_id: uuid.UUID, payload: InvoiceItemCreate, db: AsyncSession = Depends(get_db), svc: InvoiceItemService = Depends(get_invoice_item_service), _: User = Depends(get_current_user)):
+async def create_invoice_item(invoice_id: uuid.UUID, payload: InvoiceItemCreate, db: AsyncSession = Depends(get_db), svc: InvoiceItemService = Depends(get_invoice_item_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     item = await svc.create_item(invoice_id, payload.model_dump()); await db.commit()
     return InvoiceItemRead.model_validate(item)
 
 @router.put("/invoice-items/{item_id}", response_model=InvoiceItemRead, summary="Update invoice item")
-async def update_invoice_item(item_id: uuid.UUID, payload: InvoiceItemUpdate, db: AsyncSession = Depends(get_db), svc: InvoiceItemService = Depends(get_invoice_item_service), _: User = Depends(get_current_user)):
+async def update_invoice_item(item_id: uuid.UUID, payload: InvoiceItemUpdate, db: AsyncSession = Depends(get_db), svc: InvoiceItemService = Depends(get_invoice_item_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     item = await svc.update_item(item_id, payload.model_dump(exclude_unset=True)); await db.commit()
     return InvoiceItemRead.model_validate(item)
 
 @router.delete("/invoice-items/{item_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete invoice item")
-async def delete_invoice_item(item_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: InvoiceItemService = Depends(get_invoice_item_service), _: User = Depends(get_current_user)):
+async def delete_invoice_item(item_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: InvoiceItemService = Depends(get_invoice_item_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     await svc.delete_item(item_id); await db.commit()
 
 # ── Payments ──
@@ -118,6 +123,7 @@ async def list_all_payments(
     payment_status: str | None = Query(None, alias="status"),
     svc: PaymentService = Depends(get_payment_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("finance")),
 ):
     items, total = await svc.list_all_payments(
         status=payment_status, sort_by=params.sort_by, sort_order=params.sort_order,
@@ -131,17 +137,17 @@ async def list_payments(invoice_id: uuid.UUID, svc: PaymentService = Depends(get
     return [PaymentRead.model_validate(x) for x in await svc.list_payments(invoice_id)]
 
 @router.post("/invoices/{invoice_id}/payments", response_model=PaymentRead, status_code=status.HTTP_201_CREATED, summary="Add payment")
-async def create_payment(invoice_id: uuid.UUID, payload: PaymentCreate, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), _: User = Depends(get_current_user)):
+async def create_payment(invoice_id: uuid.UUID, payload: PaymentCreate, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     p = await svc.create_payment(invoice_id, payload.model_dump()); await db.commit()
     return PaymentRead.model_validate(p)
 
 @router.put("/payments/{payment_id}", response_model=PaymentRead, summary="Update payment")
-async def update_payment(payment_id: uuid.UUID, payload: PaymentUpdate, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), _: User = Depends(get_current_user)):
+async def update_payment(payment_id: uuid.UUID, payload: PaymentUpdate, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     p = await svc.update_payment(payment_id, payload.model_dump(exclude_unset=True)); await db.commit()
     return PaymentRead.model_validate(p)
 
 @router.delete("/payments/{payment_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete payment")
-async def delete_payment(payment_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), _: User = Depends(get_current_user)):
+async def delete_payment(payment_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: PaymentService = Depends(get_payment_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     await svc.delete_payment(payment_id); await db.commit()
 
 # ── Two-step manual payment verification (Finance, then CRM) ──
@@ -167,6 +173,7 @@ async def list_expenses(
     category: str | None = Query(None),
     svc: ExpenseService = Depends(get_expense_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("finance")),
 ):
     items, total = await svc.list_expenses(
         search=params.search, category=category,
@@ -176,19 +183,19 @@ async def list_expenses(
     return PaginatedResponse[ExpenseRead].create(items=[ExpenseRead.model_validate(x) for x in items], total=total, page=params.page, page_size=params.page_size)
 
 @router.post("/expenses", response_model=ExpenseRead, status_code=status.HTTP_201_CREATED, summary="Log expense")
-async def create_expense(payload: ExpenseCreate, db: AsyncSession = Depends(get_db), svc: ExpenseService = Depends(get_expense_service), current_user: User = Depends(get_current_user)):
+async def create_expense(payload: ExpenseCreate, db: AsyncSession = Depends(get_db), svc: ExpenseService = Depends(get_expense_service), current_user: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     e = await svc.create_expense(payload.model_dump(), logged_by=current_user.id); await db.commit()
     return ExpenseRead.model_validate(e)
 
 @router.get("/expenses/{expense_id}", response_model=ExpenseRead, summary="Get expense")
-async def get_expense(expense_id: uuid.UUID, svc: ExpenseService = Depends(get_expense_service), _: User = Depends(get_current_user)):
+async def get_expense(expense_id: uuid.UUID, svc: ExpenseService = Depends(get_expense_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     return ExpenseRead.model_validate(await svc.get_expense(expense_id))
 
 @router.put("/expenses/{expense_id}", response_model=ExpenseRead, summary="Update expense")
-async def update_expense(expense_id: uuid.UUID, payload: ExpenseUpdate, db: AsyncSession = Depends(get_db), svc: ExpenseService = Depends(get_expense_service), _: User = Depends(get_current_user)):
+async def update_expense(expense_id: uuid.UUID, payload: ExpenseUpdate, db: AsyncSession = Depends(get_db), svc: ExpenseService = Depends(get_expense_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     e = await svc.update_expense(expense_id, payload.model_dump(exclude_unset=True)); await db.commit()
     return ExpenseRead.model_validate(e)
 
 @router.delete("/expenses/{expense_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete expense")
-async def delete_expense(expense_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: ExpenseService = Depends(get_expense_service), _: User = Depends(get_current_user)):
+async def delete_expense(expense_id: uuid.UUID, db: AsyncSession = Depends(get_db), svc: ExpenseService = Depends(get_expense_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("finance"))):
     await svc.delete_expense(expense_id); await db.commit()

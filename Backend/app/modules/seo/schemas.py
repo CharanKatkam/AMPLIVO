@@ -4,8 +4,11 @@ import uuid
 from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.sanitizers import SanitizedModel
+from app.core.field_types import HttpUrlStr
+
 # ── SeoProject ──
-class SeoProjectBase(BaseModel):
+class SeoProjectBase(SanitizedModel):
     name: str = Field(min_length=1, max_length=200)
     client_id: uuid.UUID | None = None
     target_url: str = Field(min_length=1, max_length=500)
@@ -14,7 +17,7 @@ class SeoProjectBase(BaseModel):
     manager_id: uuid.UUID | None = None
 
 class SeoProjectCreate(SeoProjectBase): pass
-class SeoProjectUpdate(BaseModel):
+class SeoProjectUpdate(SanitizedModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     client_id: uuid.UUID | None = None
     target_url: str | None = Field(None, min_length=1, max_length=500)
@@ -35,22 +38,22 @@ class SeoProjectRead(BaseModel):
     updated_at: datetime
 
 # ── SeoKeyword ──
-class SeoKeywordBase(BaseModel):
+class SeoKeywordBase(SanitizedModel):
     keyword: str = Field(min_length=1, max_length=200)
     search_volume: int | None = None
     difficulty: float | None = None
     current_rank: int | None = None
     target_rank: int | None = None
-    url: str | None = None
+    url: HttpUrlStr | None = None
 
 class SeoKeywordCreate(SeoKeywordBase): pass
-class SeoKeywordUpdate(BaseModel):
+class SeoKeywordUpdate(SanitizedModel):
     keyword: str | None = Field(None, min_length=1, max_length=200)
     search_volume: int | None = None
     difficulty: float | None = None
     current_rank: int | None = None
     target_rank: int | None = None
-    url: str | None = None
+    url: HttpUrlStr | None = None
 
 class SeoKeywordRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -66,22 +69,22 @@ class SeoKeywordRead(BaseModel):
     updated_at: datetime
 
 # ── SeoAudit ──
-class SeoAuditBase(BaseModel):
+class SeoAuditBase(SanitizedModel):
     audit_date: date
     health_score: float | None = None
     errors_count: int | None = None
     warnings_count: int | None = None
     notices_count: int | None = None
-    report_url: str | None = None
+    report_url: HttpUrlStr | None = None
 
 class SeoAuditCreate(SeoAuditBase): pass
-class SeoAuditUpdate(BaseModel):
+class SeoAuditUpdate(SanitizedModel):
     audit_date: date | None = None
     health_score: float | None = None
     errors_count: int | None = None
     warnings_count: int | None = None
     notices_count: int | None = None
-    report_url: str | None = None
+    report_url: HttpUrlStr | None = None
 
 class SeoAuditRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -97,7 +100,7 @@ class SeoAuditRead(BaseModel):
     created_at: datetime
 
 # ── SeoBacklink ──
-class SeoBacklinkBase(BaseModel):
+class SeoBacklinkBase(SanitizedModel):
     source_url: str = Field(min_length=1, max_length=500)
     target_url: str = Field(min_length=1, max_length=500)
     domain_authority: int | None = None
@@ -106,7 +109,7 @@ class SeoBacklinkBase(BaseModel):
     discovered_at: date | None = None
 
 class SeoBacklinkCreate(SeoBacklinkBase): pass
-class SeoBacklinkUpdate(BaseModel):
+class SeoBacklinkUpdate(SanitizedModel):
     source_url: str | None = Field(None, min_length=1, max_length=500)
     target_url: str | None = Field(None, min_length=1, max_length=500)
     domain_authority: int | None = None

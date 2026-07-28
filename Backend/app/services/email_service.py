@@ -24,6 +24,10 @@ def get_outbox() -> list[SentEmail]:
     return list(_outbox)
 
 
+class EmailDeliveryError(Exception):
+    """Raised when an email cannot be delivered (Brevo reject/error)."""
+
+
 class EmailService:
     """Dispatches transactional email.
 
@@ -115,16 +119,20 @@ class EmailService:
 
     async def _dispatch(self, *, to: str, subject: str, body: str, token: str) -> None:
         if settings.BREVO_API_KEY:
-            await self._send_via_brevo(to=to, subject=subject, body=body)
+            ok = await self._send_via_brevo(to=to, subject=subject, body=body)
+            if not ok:
+                raise EmailDeliveryError(f"Failed to send email to {to}: {subject}")
         else:
             logger.info("Sending email to %s: %s", to, subject)
             _outbox.append(SentEmail(to=to, subject=subject, body=body, token=token))
 
-    async def _send_via_brevo(self, *, to: str, subject: str, body: str) -> None:
-        """Real delivery via Brevo's transactional email HTTP API. Only
-        reached when BREVO_API_KEY is configured (see app/core/config.py) -
-        local/dev/test environments without a key keep using the log+outbox
-        stub above, so nothing here blocks on real credentials existing."""
+    async def _send_via_brevo(self, *, to: str, subject: str, body: str) -> bool:
+        """Real delivery via Brevo's transactional email HTTP API.
+
+        Returns True on success, False on failure. Callers must check the
+        return value or catch EmailDeliveryError — failures are never
+        silently swallowed.
+        """
         import httpx
 
         payload = {
@@ -139,5 +147,7 @@ class EmailService:
                 response = await client.post("https://api.brevo.com/v3/smtp/email", json=payload, headers=headers)
                 response.raise_for_status()
             logger.info("Sent email to %s via Brevo: %s", to, subject)
+            return True
         except httpx.HTTPError:
-            logger.exception("Brevo email send failed for %s: %s", to, subject)
+            logger.exception("Brevo email send failed for %s — subject=%s", to, subject)
+            return False

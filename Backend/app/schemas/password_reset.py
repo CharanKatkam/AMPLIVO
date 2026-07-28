@@ -1,21 +1,12 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import ConfigDict, EmailStr, Field
+
+from app.core.sanitizers import SanitizedModel
 
 
-class ForgotPasswordRequest(BaseModel):
-    model_config = ConfigDict(json_schema_extra={"example": {"email": "jane.doe@amplivo.com"}})
-
+class ForgotPasswordRequest(SanitizedModel):
     email: EmailStr
 
 
-class ResetPasswordRequest(BaseModel):
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "token": "kx3F1v8...redacted...q9Zt",
-                "new_password": "NewSecure!Pass1",
-            }
-        }
-    )
-
+class ResetPasswordRequest(SanitizedModel):
     token: str = Field(..., min_length=20, max_length=512)
     new_password: str = Field(..., min_length=8, max_length=128)

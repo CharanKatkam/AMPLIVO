@@ -6,10 +6,12 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.core.sanitizers import SanitizedModel
 
 
-class ProposalPublicRead(BaseModel):
+class ProposalPublicRead(SanitizedModel):
     id: uuid.UUID
     title: str
     description: str | None
@@ -18,12 +20,12 @@ class ProposalPublicRead(BaseModel):
     decision_notes: str | None
 
 
-class ProposalDecisionRequest(BaseModel):
+class ProposalDecisionRequest(SanitizedModel):
     decision: Literal["accept", "reject", "revise"]
     notes: str | None = None
 
 
-class InvoicePublicRead(BaseModel):
+class InvoicePublicRead(SanitizedModel):
     id: uuid.UUID
     invoice_number: str
     invoice_type: str
@@ -34,13 +36,13 @@ class InvoicePublicRead(BaseModel):
     due_date: datetime | str
 
 
-class ClientPaymentSubmitRequest(BaseModel):
+class ClientPaymentSubmitRequest(SanitizedModel):
     amount: float = Field(gt=0)
     payment_method: str = Field(min_length=1, max_length=100)
     reference_number: str | None = None
 
 
-class ClientPaymentSubmitResponse(BaseModel):
+class ClientPaymentSubmitResponse(SanitizedModel):
     id: uuid.UUID
     amount: float
     payment_method: str

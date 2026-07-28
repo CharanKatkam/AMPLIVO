@@ -1,22 +1,20 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import ConfigDict, EmailStr, Field
+
+from app.core.sanitizers import SanitizedModel
 
 
-class VerifyEmailRequest(BaseModel):
-    model_config = ConfigDict(
-        json_schema_extra={"example": {"token": "kx3F1v8...redacted...q9Zt"}}
-    )
-
+class VerifyEmailRequest(SanitizedModel):
     token: str = Field(..., min_length=20, max_length=512)
 
 
-class ResendVerificationRequest(BaseModel):
-    model_config = ConfigDict(json_schema_extra={"example": {"email": "jane.doe@amplivo.com"}})
-
+class ResendVerificationRequest(SanitizedModel):
     email: EmailStr
 
 
-class VerificationStatusResponse(BaseModel):
+class VerificationStatusResponse(SanitizedModel):
+    model_config = ConfigDict(from_attributes=True)
+
     is_verified: bool
     verified_at: datetime | None

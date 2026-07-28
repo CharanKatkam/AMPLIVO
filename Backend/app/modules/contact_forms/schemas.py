@@ -5,18 +5,21 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
+
+from app.core.field_types import NameStr, PhoneNumber
+from app.core.sanitizers import SanitizedModel
 
 
-class ContactSubmissionBase(BaseModel):
-    name: str
-    email: str
-    phone: Optional[str] = None
-    company: Optional[str] = None
-    subject: Optional[str] = None
-    message: str
-    source: Optional[str] = None
-    status: str = "new"
+class ContactSubmissionBase(SanitizedModel):
+    name: NameStr
+    email: EmailStr
+    phone: PhoneNumber | None = None
+    company: Optional[NameStr] = None
+    subject: Optional[str] = Field(None, min_length=1, max_length=200)
+    message: str = Field(min_length=1, max_length=10000)
+    source: Optional[str] = Field(None, min_length=1, max_length=200)
+    status: str = Field(default="new", min_length=1, max_length=50)
     assigned_to: Optional[uuid.UUID] = None
     notes: Optional[str] = None
 
@@ -25,8 +28,8 @@ class ContactSubmissionCreate(ContactSubmissionBase):
     pass
 
 
-class ContactSubmissionUpdate(BaseModel):
-    status: Optional[str] = None
+class ContactSubmissionUpdate(SanitizedModel):
+    status: Optional[str] = Field(None, min_length=1, max_length=50)
     assigned_to: Optional[uuid.UUID] = None
     notes: Optional[str] = None
     converted_lead_id: Optional[uuid.UUID] = None
@@ -38,4 +41,4 @@ class ContactSubmissionRead(ContactSubmissionBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
