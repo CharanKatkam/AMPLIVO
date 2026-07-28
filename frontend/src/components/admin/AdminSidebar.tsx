@@ -7,24 +7,33 @@ import {
   LayoutDashboard, Users, Target, UserCheck, Megaphone, FolderKanban,
   CheckSquare, DollarSign, BarChart2, Shield, Settings, LogOut, Zap,
   Calendar, Search, Image as ImageIcon, Star, Bell, Search as SearchIcon,
-  TrendingUp, Briefcase, Menu
+  TrendingUp, Briefcase, Menu, CheckCheck
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/authService';
 import { useUiStore } from '@/store/uiStore';
+import { campaignService } from '@/services/campaignService';
+import { creativeService } from '@/services';
 
-const navItems = [
+interface NavItem {
+  icon: typeof LayoutDashboard;
+  label: string;
+  href: string;
+  badge?: string;
+}
+
+const defaultNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
   { icon: Users, label: 'CRM', href: '/admin/crm' },
-  { icon: Target, label: 'Leads', href: '/admin/leads', badge: '47' },
+  { icon: Target, label: 'Leads', href: '/admin/leads' },
   { icon: UserCheck, label: 'Clients', href: '/admin/clients' },
   { icon: Megaphone, label: 'Campaigns', href: '/admin/campaigns' },
   { icon: FolderKanban, label: 'Projects', href: '/admin/projects' },
-  { icon: CheckSquare, label: 'Tasks', href: '/admin/tasks', badge: '23' },
+  { icon: CheckSquare, label: 'Tasks', href: '/admin/tasks' },
   { icon: Calendar, label: 'Social Calendar', href: '/admin/social-calendar' },
   { icon: Search, label: 'SEO Projects', href: '/admin/seo-projects' },
-  { icon: ImageIcon, label: 'Creative Approval', href: '/admin/creatives', badge: '8' },
+  { icon: ImageIcon, label: 'Creative Approval', href: '/admin/creatives' },
   { icon: Star, label: 'Influencers', href: '/admin/influencers' },
   { icon: Users, label: 'Team', href: '/admin/team' },
   { icon: DollarSign, label: 'Finance', href: '/admin/finance' },
@@ -33,11 +42,54 @@ const navItems = [
   { icon: Shield, label: 'Roles & Perms', href: '/admin/roles' },
 ];
 
+// Hook to fetch dynamic sidebar badge counts from backend
+function useAdminSidebarCounts() {
+  const [activeCampaigns, setActiveCampaigns] = useState<number>(0);
+  const [pendingCreatives, setPendingCreatives] = useState<number>(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Fetch active campaigns count
+    campaignService
+      .getAll({ page_size: 100 })
+      .then((res) => {
+        if (!cancelled) {
+          const items = res?.items ?? res ?? [];
+          const active = Array.isArray(items) ? items.filter((c: { status?: string }) => c.status?.toLowerCase() === 'active').length : 0;
+          setActiveCampaigns(active);
+        }
+      })
+      .catch(() => { /* leave at 0 */ });
+
+    // Fetch pending creatives count
+    creativeService
+      .getProjects({ page_size: 20 })
+      .then(async (projectsRes) => {
+        const projects = projectsRes?.items ?? projectsRes ?? [];
+        let pending = 0;
+        for (const p of projects.slice(0, 5)) {
+          try {
+            const assets = await creativeService.getAssets(p.id);
+            pending += (assets ?? []).filter((a: { status?: string }) => (a.status ?? '').toLowerCase() === 'pending').length;
+          } catch { /* skip */ }
+        }
+        if (!cancelled) setPendingCreatives(pending);
+      })
+      .catch(() => { /* leave at 0 */ });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  return { activeCampaigns, pendingCreatives };
+}
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, refreshToken } = useAuthStore();
   const { isSidebarOpen, setSidebarOpen } = useUiStore();
+  const { activeCampaigns, pendingCreatives } = useAdminSidebarCounts();
 
   const handleLogout = async () => {
     try {
@@ -49,6 +101,16 @@ export function AdminSidebar() {
       router.push('/login');
     }
   };
+
+  const navItems = defaultNavItems.map((item) => {
+    if (item.href === '/admin/campaigns' && activeCampaigns > 0) {
+      return { ...item, badge: String(activeCampaigns) };
+    }
+    if (item.href === '/admin/creatives' && pendingCreatives > 0) {
+      return { ...item, badge: String(pendingCreatives) };
+    }
+    return item;
+  });
 
   return (
     <>
@@ -172,11 +234,28 @@ export function AdminHeader({ title, subtitle, badge, actions }: AdminHeaderProp
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  useEffect(() => {
+    if (open && unreadCount === 0 && !loading && notifications.length > 0) {
+      setOpen(false);
+    }
+  }, [unreadCount, open, loading, notifications.length]);
+
   const handleMarkRead = async (id: string) => {
     const { notificationService } = await import('@/services/crmService');
     try {
       await notificationService.markRead(id);
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    const { notificationService } = await import('@/services/crmService');
+    try {
+      await notificationService.markAllRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setOpen(false);
     } catch {
       // ignore
     }
@@ -219,9 +298,21 @@ export function AdminHeader({ title, subtitle, badge, actions }: AdminHeaderProp
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-900">Notifications</span>
-                <Link href="/admin/notifications" className="text-xs text-[#4C1D95] hover:underline" onClick={() => setOpen(false)}>
-                  View all
-                </Link>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllRead}
+                      className="text-xs text-[#4C1D95] hover:underline flex items-center gap-1"
+                      title="Mark all as read"
+                    >
+                      <CheckCheck size={12} />
+                      Mark all read
+                    </button>
+                  )}
+                  <Link href="/admin/notifications" className="text-xs text-slate-400 hover:underline" onClick={() => setOpen(false)}>
+                    View all
+                  </Link>
+                </div>
               </div>
               <div className="max-h-80 overflow-y-auto">
                 {loading ? (
@@ -254,3 +345,4 @@ export function AdminHeader({ title, subtitle, badge, actions }: AdminHeaderProp
     </header>
   );
 }
+

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { AdminHeader } from '@/components/admin/AdminSidebar';
-import { analyticsService } from '@/services/moduleServices';
+import { analyticsService, seoService } from '@/services/moduleServices';
 import { clientService } from '@/services/crmService';
 import { useToastStore } from '@/store/toastStore';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -38,7 +38,7 @@ const TEMPLATES = [
   { name: 'Custom Blank Report', type: 'Custom' },
 ];
 
-const INITIAL_FORM = { title: '', client: '', type: 'Monthly Review', status: 'draft' };
+const INITIAL_FORM = { title: '', client: '', type: 'Monthly Review', status: 'draft', seoProject: '' };
 
 export default function AdminReports() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -54,6 +54,10 @@ export default function AdminReports() {
 
   const [shareReport, setShareReport] = useState<Report | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // AMP-011: SEO project dropdown state
+  const [seoProjects, setSeoProjects] = useState<Array<{ id: string; name: string }>>([]); 
+  const [seoProjectsLoading, setSeoProjectsLoading] = useState(false);
 
   const showToast = useToastStore((s) => s.showToast);
 
@@ -87,11 +91,26 @@ export default function AdminReports() {
     fetchReports();
   }, [fetchClients, fetchReports]);
 
+  // AMP-011: Fetch SEO projects when report type is 'SEO Audit'
+  useEffect(() => {
+    if (form.type === 'SEO Audit' && showModal && seoProjects.length === 0) {
+      setSeoProjectsLoading(true);
+      seoService.getProjects({ page_size: 100 })
+        .then((res) => {
+          const items = res?.items ?? res ?? [];
+          setSeoProjects(items);
+        })
+        .catch(() => setSeoProjects([]))
+        .finally(() => setSeoProjectsLoading(false));
+    }
+  }, [form.type, showModal, seoProjects.length]);
+
   // BUG-47 Fixed: Reset form state on close/cancel
   const closeModal = () => {
     setShowModal(false);
     setForm(INITIAL_FORM);
     setSaveError(null);
+    setSeoProjects([]);
   };
 
   // BUG-49 Fixed: Quick launch template
@@ -101,6 +120,7 @@ export default function AdminReports() {
       client: clients[0]?.company_name || '',
       type: templateType,
       status: 'draft',
+      seoProject: '',
     });
     setSaveError(null);
     setShowModal(true);
@@ -121,6 +141,7 @@ export default function AdminReports() {
         client: form.client || undefined,
         type: form.type,
         status: form.status,
+        ...(form.seoProject ? { seo_project_id: form.seoProject } : {}),
       });
       showToast(`Report "${form.title}" generated successfully!`, 'success');
       closeModal();
@@ -402,6 +423,30 @@ export default function AdminReports() {
                   </select>
                 </div>
               </div>
+              {/* AMP-011: SEO Project dropdown when type is SEO Audit */}
+              {form.type === 'SEO Audit' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">SEO Project</label>
+                  {seoProjectsLoading ? (
+                    <div className="flex items-center gap-2 py-2 text-xs text-slate-400">
+                      <Loader2 size={14} className="animate-spin" /> Loading SEO projects...
+                    </div>
+                  ) : seoProjects.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-2">No SEO projects found</p>
+                  ) : (
+                    <select
+                      value={form.seoProject}
+                      onChange={(e) => setForm({ ...form, seoProject: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95] bg-white cursor-pointer"
+                    >
+                      <option value="">Select SEO project...</option>
+                      {seoProjects.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
               <div className="flex justify-end gap-3 pt-2 pb-1">
                 <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
                   Cancel

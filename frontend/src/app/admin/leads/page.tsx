@@ -7,7 +7,7 @@ import { useToastStore } from '@/store/toastStore';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import {
   Search, Plus, Filter, MoreHorizontal, Mail, Phone, X, Trash2, Pencil,
-  ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, UserCheck
+  ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, UserCheck, Download
 } from 'lucide-react';
 
 interface UserRead {
@@ -55,6 +55,33 @@ function formatCurrency(val?: number | null) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
 }
 
+// AMP-017: CSV export helper
+function exportLeadsToCSV(leads: LeadRead[]) {
+  const headers = ['Title', 'Company', 'Contact Name', 'Email', 'Phone', 'Status', 'Priority', 'Estimated Value', 'Assigned To', 'Created At'];
+  const rows = leads.map((l) => [
+    l.title,
+    l.company_name ?? '',
+    l.contact_name ?? '',
+    l.email ?? '',
+    l.phone ?? '',
+    l.status,
+    l.priority,
+    l.estimated_value != null ? l.estimated_value : '',
+    l.assigned_to ?? '',
+    l.created_at ? new Date(l.created_at).toLocaleDateString('en-IN') : '',
+  ]);
+  const csvContent = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `leads_export_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 const EMPTY_FORM: LeadCreatePayload = {
   title: '',
   company_name: '',
@@ -90,6 +117,8 @@ export default function AdminLeads() {
 
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const showToast = useToastStore((s) => s.showToast);
 
@@ -160,6 +189,7 @@ export default function AdminLeads() {
     setForm(EMPTY_FORM);
     setInitialForm(EMPTY_FORM);
     setValidationErrors({});
+    setFormError(null);
     setShowModal(true);
   };
 
@@ -212,6 +242,7 @@ export default function AdminLeads() {
   const handleSave = async () => {
     if (!validateForm()) return;
     setSaving(true);
+    setFormError(null);
     try {
       if (editingLead) {
         await leadService.update(editingLead.id, form);
@@ -222,9 +253,26 @@ export default function AdminLeads() {
       }
       setShowModal(false);
       fetchLeads();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to save lead.';
-      showToast(msg, 'error');
+    } catch (err: any) {
+      // AMP-015: 422 error handling
+      if (err?.response?.status === 422) {
+        const detail = err.response?.data?.detail;
+        if (Array.isArray(detail)) {
+          const fieldErrors: Record<string, string> = {};
+          detail.forEach((d: { loc?: string[]; msg?: string }) => {
+            const field = d.loc?.[d.loc.length - 1];
+            if (field) fieldErrors[field] = d.msg ?? 'Invalid value.';
+          });
+          setValidationErrors((prev) => ({ ...prev, ...fieldErrors }));
+          setFormError('Please fix the highlighted fields and try again.');
+        } else {
+          setFormError(typeof detail === 'string' ? detail : 'Validation error. Please check the form fields.');
+        }
+      } else {
+        const msg = err instanceof Error ? err.message : 'Failed to save lead.';
+        setFormError(msg);
+        showToast(msg, 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -240,6 +288,29 @@ export default function AdminLeads() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to delete lead.';
       showToast(msg, 'error');
+    }
+  };
+
+  // AMP-017: Export all leads as CSV
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const params: Record<string, string | number> = { page: 1, page_size: 1000, sort_by: sortBy, sort_order: sortOrder };
+      if (search.trim()) params.search = search.trim();
+      if (statusFilter !== 'All') params.status = statusFilter;
+      if (priorityFilter !== 'All') params.priority = priorityFilter;
+      const res = await leadService.getAll(params as any);
+      const allLeads: LeadRead[] = res.items ?? [];
+      if (allLeads.length === 0) {
+        showToast('No leads to export.', 'error');
+        return;
+      }
+      exportLeadsToCSV(allLeads);
+      showToast(`Exported ${allLeads.length} lead(s) to CSV.`, 'success');
+    } catch {
+      showToast('Failed to export leads.', 'error');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -299,6 +370,16 @@ export default function AdminLeads() {
               title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
             >
               {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
+            </button>
+            {/* AMP-017: Export CSV button */}
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
+              title="Export leads to CSV"
+            >
+              {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              Export
             </button>
             <button
               onClick={openCreateModal}
@@ -613,10 +694,11 @@ export default function AdminLeads() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || !isDirty}
+                disabled={saving || (editingLead ? !isDirty : false)}
                 className="px-5 py-2 text-sm font-semibold text-white bg-[#4C1D95] rounded-xl hover:bg-[#3b1574] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {saving && <Loader2 size={14} className="animate-spin" />}
+                {/* AMP-015: Only disable save when editing+pristine; new leads can always submit */}
                 {editingLead ? 'Save Changes' : 'Create Lead'}
               </button>
             </div>

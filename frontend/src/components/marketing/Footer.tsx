@@ -48,8 +48,8 @@ export function Footer() {
   return (
     <footer className="bg-[#0A0F1E] text-white">
       {/* Main Footer */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid lg:grid-cols-6 gap-12 mb-12">
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        <div className="grid lg:grid-cols-6 gap-8 mb-8">
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2.5 mb-6">
@@ -116,7 +116,7 @@ export function Footer() {
         </div>
 
         {/* Office Locations */}
-        <div className="border-t border-[#1F2937] pt-10 mb-8">
+        <div className="border-t border-[#1F2937] pt-6 mb-6">
           <div className="grid lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-2">
               <h4 className="text-white font-semibold mb-5 text-sm uppercase tracking-wider">Our Offices</h4>

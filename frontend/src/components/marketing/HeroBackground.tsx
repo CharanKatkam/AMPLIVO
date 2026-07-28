@@ -78,7 +78,7 @@ function KenBurnSlideshow({ images }: { images: string[] }) {
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(90deg, rgba(26,5,64,0.6) 0%, transparent 30%, transparent 70%, rgba(26,5,64,0.6) 100%)',
+            'linear-gradient(180deg, rgba(15, 23, 42, 0.75) 0%, rgba(15, 23, 42, 0.55) 50%, rgba(15, 23, 42, 0.8) 100%)',
         }}
       />
     </div>

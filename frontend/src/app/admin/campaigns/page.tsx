@@ -43,6 +43,7 @@ export default function AdminCampaigns() {
   const [initialForm, setInitialForm] = useState<CampaignCreatePayload>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
@@ -120,6 +121,7 @@ export default function AdminCampaigns() {
     setForm(EMPTY_FORM);
     setInitialForm(EMPTY_FORM);
     setValidationErrors({});
+    setFormError(null);
     setShowModal(true);
   };
 
@@ -140,6 +142,7 @@ export default function AdminCampaigns() {
     setForm(loaded);
     setInitialForm(loaded);
     setValidationErrors({});
+    setFormError(null);
     setShowModal(true);
     setActionMenuId(null);
   };
@@ -165,6 +168,7 @@ export default function AdminCampaigns() {
   const handleSave = async () => {
     if (!validateForm()) return;
     setSaving(true);
+    setFormError(null);
     try {
       if (editingCampaign) {
         await campaignService.update(editingCampaign.id, form);
@@ -175,9 +179,28 @@ export default function AdminCampaigns() {
       }
       setShowModal(false);
       fetchCampaigns();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to save campaign.';
-      showToast(msg, 'error');
+    } catch (err: any) {
+      // AMP-012: Parse 422 validation errors from backend
+      if (err?.response?.status === 422) {
+        const detail = err.response?.data?.detail;
+        if (Array.isArray(detail)) {
+          const fieldErrors: Record<string, string> = {};
+          detail.forEach((d: { loc?: string[]; msg?: string }) => {
+            const field = d.loc?.[d.loc.length - 1];
+            if (field) fieldErrors[field] = d.msg ?? 'Invalid value.';
+          });
+          if (Object.keys(fieldErrors).length > 0) {
+            setValidationErrors((prev) => ({ ...prev, ...fieldErrors }));
+          }
+          setFormError('Please fix the highlighted fields and try again.');
+        } else {
+          setFormError(typeof detail === 'string' ? detail : 'Validation error. Please check the form fields.');
+        }
+      } else {
+        const msg = err instanceof Error ? err.message : 'Failed to save campaign.';
+        setFormError(msg);
+        showToast(msg, 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -416,6 +439,13 @@ export default function AdminCampaigns() {
               </button>
             </div>
             <div className="p-6 space-y-4">
+              {/* AMP-012: Global form error banner */}
+              {formError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-4 py-3 font-medium flex items-start gap-2">
+                  <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                  <span>{formError}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Campaign Name <span className="text-red-500">*</span></label>
                 <input
@@ -447,7 +477,7 @@ export default function AdminCampaigns() {
                 {validationErrors.client_id && <p className="text-red-500 text-[11px] mt-1">{validationErrors.client_id}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* BUG-28: Type field defaults to prompt state requiring selection */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Type <span className="text-red-500">*</span></label>
@@ -479,7 +509,7 @@ export default function AdminCampaigns() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Start Date</label>
                   <input
@@ -500,7 +530,7 @@ export default function AdminCampaigns() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Budget (₹)</label>
                   <input

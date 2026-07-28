@@ -68,6 +68,7 @@ export default function AdminClients() {
   const [initialFormData, setInitialFormData] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -125,6 +126,7 @@ export default function AdminClients() {
     setFormData(EMPTY_FORM);
     setInitialFormData(EMPTY_FORM);
     setValidationErrors({});
+    setFormError(null);
     setShowForm(true);
   };
 
@@ -145,6 +147,7 @@ export default function AdminClients() {
     setFormData(loaded);
     setInitialFormData(loaded);
     setValidationErrors({});
+    setFormError(null);
     setShowForm(true);
     setOpenActionId(null);
   };
@@ -180,24 +183,52 @@ export default function AdminClients() {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
+    setFormError(null);
     try {
-      const payload = {
-        ...formData,
-        is_active: formData.status !== 'inactive' && formData.status !== 'suspended' && formData.status !== 'archived',
-      };
+      // AMP-012: Sanitize empty optional fields to avoid backend 422 errors
+      const sanitized: Record<string, unknown> = { company_name: formData.company_name.trim() };
+      if (formData.display_name?.trim()) sanitized.display_name = formData.display_name.trim();
+      if (formData.industry?.trim()) sanitized.industry = formData.industry.trim();
+      if (formData.website?.trim()) sanitized.website = formData.website.trim();
+      if (formData.email?.trim()) sanitized.email = formData.email.trim();
+      if (formData.phone?.trim()) sanitized.phone = formData.phone.trim();
+      if (formData.client_type) sanitized.client_type = formData.client_type;
+      if (formData.status) sanitized.status = formData.status;
+      if (formData.onboarding_date?.trim()) sanitized.onboarding_date = formData.onboarding_date;
+      if (formData.notes?.trim()) sanitized.notes = formData.notes.trim();
+      sanitized.is_active = formData.status !== 'inactive' && formData.status !== 'suspended' && formData.status !== 'archived';
 
       if (editingClient) {
-        await clientService.update(editingClient.id, payload);
+        await clientService.update(editingClient.id, sanitized);
         showToast(`Client "${formData.company_name}" updated successfully!`, 'success');
       } else {
-        await clientService.create(payload);
+        await clientService.create(sanitized as Parameters<typeof clientService.create>[0]);
         showToast(`Client "${formData.company_name}" created successfully!`, 'success');
       }
       setShowForm(false);
       fetchClients();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to save client.';
-      showToast(message, 'error');
+    } catch (err: any) {
+      // AMP-012: Parse 422 validation errors from backend
+      if (err?.response?.status === 422) {
+        const detail = err.response?.data?.detail;
+        if (Array.isArray(detail)) {
+          const fieldErrors: Record<string, string> = {};
+          detail.forEach((d: { loc?: string[]; msg?: string }) => {
+            const field = d.loc?.[d.loc.length - 1];
+            if (field) fieldErrors[field] = d.msg ?? 'Invalid value.';
+          });
+          if (Object.keys(fieldErrors).length > 0) {
+            setValidationErrors((prev) => ({ ...prev, ...fieldErrors }));
+          }
+          setFormError('Please fix the highlighted fields and try again.');
+        } else {
+          setFormError(typeof detail === 'string' ? detail : 'Validation error. Please check the form fields.');
+        }
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to save client.';
+        setFormError(message);
+        showToast(message, 'error');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -434,6 +465,13 @@ export default function AdminClients() {
             </div>
 
             <form onSubmit={handleFormSubmit} className="p-6 space-y-4">
+              {/* AMP-012: Global form error banner */}
+              {formError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-4 py-3 font-medium flex items-start gap-2">
+                  <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                  <span>{formError}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Company Name <span className="text-red-500">*</span></label>
                 <input
@@ -448,7 +486,7 @@ export default function AdminClients() {
                 {validationErrors.company_name && <p className="text-red-500 text-[11px] mt-1">{validationErrors.company_name}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Display Name</label>
                   <input
@@ -471,7 +509,7 @@ export default function AdminClients() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Client Type</label>
                   <select
@@ -498,7 +536,7 @@ export default function AdminClients() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Email <span className="text-red-500">*</span></label>
                   <input

@@ -7,6 +7,7 @@ import { CTASection } from '@/components/marketing/CTASection';
 import { blogPosts } from '@/data/blogPosts';
 import { Clock, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { PageHero } from '@/components/marketing/PageHero';
 import { insightsHero } from '@/data/heroConfigs';
 
@@ -58,8 +59,14 @@ export default function BlogPage() {
                   href={`/insights/${post.slug}`}
                   className="bg-white rounded-2xl overflow-hidden border border-slate-200 hover:shadow-lg transition-shadow group flex flex-col"
                 >
-                  <div className="h-48 overflow-hidden">
-                    <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="h-48 overflow-hidden relative">
+                    <Image
+                      src={post.image}
+                      alt={post.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                   </div>
                   <div className="p-6 flex flex-col flex-1">
                     <div className="flex gap-2 mb-3">
