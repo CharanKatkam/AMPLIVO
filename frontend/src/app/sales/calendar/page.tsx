@@ -1,13 +1,22 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { SalesHeader } from '@/components/sales/SalesSidebar';
 import { useSalesStore } from '@/store/salesStore';
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, Video, Phone, MapPin, Monitor } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CalendarDays, Clock, Video, Phone, MapPin, Monitor } from 'lucide-react';
 import Link from 'next/link';
 import { Meeting } from '@/types';
+import { getEffectiveMeetingStatus } from '@/lib/utils';
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function formatTime(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return time;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+}
 
 const TypeIcon = ({ type }: { type: Meeting['type'] }) => {
   if (type === 'Video Call') return <Video size={12} />;
@@ -22,6 +31,19 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(today.toISOString().split('T')[0]);
 
+  const [showJump, setShowJump] = useState(false);
+  const [jumpMonth, setJumpMonth] = useState(currentDate.getMonth());
+  const [jumpYear, setJumpYear] = useState(currentDate.getFullYear());
+  const jumpRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (jumpRef.current && !jumpRef.current.contains(e.target as Node)) setShowJump(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
@@ -30,6 +52,18 @@ export default function CalendarPage() {
 
   const goPrev = () => setCurrentDate(new Date(year, month - 1, 1));
   const goNext = () => setCurrentDate(new Date(year, month + 1, 1));
+  const goPrevYear = () => setCurrentDate(new Date(year - 1, month, 1));
+  const goNextYear = () => setCurrentDate(new Date(year + 1, month, 1));
+
+  const openJump = () => {
+    setJumpMonth(month);
+    setJumpYear(year);
+    setShowJump((o) => !o);
+  };
+  const applyJump = () => {
+    setCurrentDate(new Date(jumpYear, jumpMonth, 1));
+    setShowJump(false);
+  };
 
   const getMeetingsForDate = (dateStr: string) =>
     meetings.filter((m) => m.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
@@ -41,7 +75,10 @@ export default function CalendarPage() {
 
   for (let i = firstDay - 1; i >= 0; i--) {
     const d = prevMonthDays - i;
-    const ds = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    // Bug 15 fixed: use padded month (month is 0-indexed, so prev month = month, not month-1 string)
+    const prevMonth = month === 0 ? 12 : month;
+    const prevYear = month === 0 ? year - 1 : year;
+    const ds = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     calendarDays.push({ date: d, dateStr: ds, isCurrentMonth: false, isToday: false });
   }
   for (let d = 1; d <= daysInMonth; d++) {
@@ -51,7 +88,10 @@ export default function CalendarPage() {
   }
   const remaining = 42 - calendarDays.length;
   for (let d = 1; d <= remaining; d++) {
-    const ds = `${year}-${String(month + 2).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    // Bug 16 fixed: handle December overflow (month+2 would be 13 for December)
+    const nextMonth = (month + 2) > 12 ? 1 : month + 2;
+    const nextYear = (month + 2) > 12 ? year + 1 : year;
+    const ds = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     calendarDays.push({ date: d, dateStr: ds, isCurrentMonth: false, isToday: false });
   }
 
@@ -63,13 +103,52 @@ export default function CalendarPage() {
           {/* Calendar */}
           <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             {/* Month Nav */}
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h2 className="font-bold text-slate-900 text-lg" style={{ fontFamily: "'Sora', sans-serif" }}>
-                {MONTHS[month]} {year}
-              </h2>
-              <div className="flex gap-2">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 relative">
+              <div className="relative" ref={jumpRef}>
+                <button
+                  onClick={openJump}
+                  className="font-bold text-slate-900 text-lg hover:text-[#4C1D95] transition-colors"
+                  style={{ fontFamily: "'Sora', sans-serif" }}
+                >
+                  {MONTHS[month]} {year}
+                </button>
+                {showJump && (
+                  <div className="absolute left-0 top-full mt-2 z-20 bg-white border border-slate-200 rounded-xl shadow-lg p-4 w-64">
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <select
+                        value={jumpMonth}
+                        onChange={(e) => setJumpMonth(Number(e.target.value))}
+                        className="px-2 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20"
+                      >
+                        {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                      </select>
+                      <input
+                        type="number"
+                        value={jumpYear}
+                        onChange={(e) => setJumpYear(Number(e.target.value))}
+                        className="px-2 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20"
+                      />
+                    </div>
+                    <button
+                      onClick={applyJump}
+                      className="w-full py-2 bg-[#4C1D95] text-white rounded-lg text-xs font-semibold hover:bg-[#3b1574] transition-colors"
+                    >
+                      Go to Date
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={goPrevYear}
+                  title="Previous year"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
                 <button
                   onClick={goPrev}
+                  title="Previous month"
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
                 >
                   <ChevronLeft size={16} />
@@ -82,9 +161,17 @@ export default function CalendarPage() {
                 </button>
                 <button
                   onClick={goNext}
+                  title="Next month"
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
                 >
                   <ChevronRight size={16} />
+                </button>
+                <button
+                  onClick={goNextYear}
+                  title="Next year"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronsRight size={16} />
                 </button>
               </div>
             </div>
@@ -123,13 +210,16 @@ export default function CalendarPage() {
                     {dayMeetings.slice(0, 2).map((m, i) => (
                       <div
                         key={i}
-                        className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md mb-0.5 truncate ${
-                          m.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-                          m.status === 'Scheduled' ? 'bg-violet-100 text-violet-700' :
-                          'bg-slate-100 text-slate-500'
+                        title={`${formatTime(m.time)} · ${m.leadName} (${m.type})`}
+                        className={`flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-md mb-0.5 truncate border ${
+                          m.status === 'Completed' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                          getEffectiveMeetingStatus(m) === 'Scheduled' ? 'bg-violet-100 text-violet-700 border-violet-200' :
+                          'bg-slate-100 text-slate-500 border-slate-200'
                         }`}
                       >
-                        {m.time} {m.leadName.split(' ')[0]}
+                        <TypeIcon type={m.type} />
+                        <span className="opacity-70">{formatTime(m.time)}</span>
+                        <span className="truncate">{m.leadName.split(' ')[0]}</span>
                       </div>
                     ))}
                     {dayMeetings.length > 2 && (
@@ -169,14 +259,14 @@ export default function CalendarPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <div className="flex items-center gap-1"><Clock size={11} />{meeting.time}</div>
+                        <div className="flex items-center gap-1"><Clock size={11} />{formatTime(meeting.time)}</div>
                         <div>{meeting.duration} min</div>
                         <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
                           meeting.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
-                          meeting.status === 'Scheduled' ? 'bg-violet-50 text-violet-600' :
+                          getEffectiveMeetingStatus(meeting) === 'Scheduled' ? 'bg-violet-50 text-violet-600' :
                           'bg-slate-50 text-slate-400'
                         }`}>
-                          {meeting.status}
+                          {meeting.status === 'Scheduled' && getEffectiveMeetingStatus(meeting) === 'No-Show' ? 'No-Show' : meeting.status}
                         </span>
                       </div>
                       {meeting.agenda && (

@@ -39,12 +39,13 @@ export default function ReportsPage() {
   );
 
   const monthlyData = useMemo(() => {
-    const grouped: Record<string, { newLeads: number; won: number; lost: number; revenue: number }> = {};
+    // Bug 6/17 fixed: build label alongside key so it is never lost in the sort/slice
+    const grouped: Record<string, { label: string; newLeads: number; won: number; lost: number; revenue: number }> = {};
     leads.forEach((l) => {
       const d = new Date(l.createdAt);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
       const label = `${MONTH_NAMES[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
-      if (!grouped[key]) grouped[key] = { newLeads: 0, won: 0, lost: 0, revenue: 0 };
+      if (!grouped[key]) grouped[key] = { label, newLeads: 0, won: 0, lost: 0, revenue: 0 };
       grouped[key].newLeads += 1;
       if (l.status === 'Won' || l.status === 'Ready for CRM') {
         grouped[key].won += 1;
@@ -55,10 +56,7 @@ export default function ReportsPage() {
     return Object.entries(grouped)
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
-      .map(([, v]) => ({
-        month: Object.keys(grouped).find((k) => grouped[k] === v)?.split('-').map((p, i) => i === 1 ? MONTH_NAMES[Number(p)] : p).join(' ') || '',
-        ...v,
-      }));
+      .map(([, v]) => ({ month: v.label, newLeads: v.newLeads, won: v.won, lost: v.lost, revenue: v.revenue }));
   }, [leads]);
 
   const revenueData = useMemo(() =>

@@ -39,6 +39,28 @@ export function getInitials(name: string | undefined | null): string {
 }
 
 /**
+ * A meeting still flagged "Scheduled" whose date/time has already passed is
+ * no longer "Upcoming" — treat it as No-Show everywhere (badges, tabs, KPIs)
+ * until a human explicitly marks it Completed, so counts never disagree
+ * across the sidebar, dashboard, and meetings page.
+ */
+export function getEffectiveMeetingStatus<T extends { date: string; time: string; status: string }>(
+  meeting: T
+): T['status'] {
+  if (meeting.status === 'Scheduled') {
+    const scheduledAt = new Date(`${meeting.date}T${meeting.time}`);
+    if (!isNaN(scheduledAt.getTime()) && scheduledAt.getTime() < Date.now()) {
+      return 'No-Show' as T['status'];
+    }
+  }
+  return meeting.status;
+}
+
+export function isMeetingUpcoming<T extends { date: string; time: string; status: string }>(meeting: T): boolean {
+  return getEffectiveMeetingStatus(meeting) === 'Scheduled';
+}
+
+/**
  * Status badge color mapping
  */
 export const statusColors: Record<string, string> = {

@@ -1,0 +1,564 @@
+Total leads in database: 53
+
+[1] ID: 07caa71f-5307-4213-af1c-83663f3fe24a
+    Title: Website inquiry - bulk order
+    Contact Name: Rahul Mehta
+    Company: None
+    Email: rahul.mehta@example.com
+    Phone: +91 98111 22334
+    Status: Hot
+    Est Value: 45000.0
+    Notes: Wants a quote for 200 units.
+----------------------------------------
+[2] ID: 61a925ee-22a8-4a7d-830a-946c7580dbd6
+    Title: website inquiry 
+    Contact Name: john
+    Company: helloworld
+    Email: john@gmail.com
+    Phone: 7993586917
+    Status: MEETING_SCHEDULED
+    Est Value: 14.0
+    Notes: None
+----------------------------------------
+[3] ID: a0d92e95-d95f-4284-8b48-472d2a17df32
+    Title: Instagram DM lead
+    Contact Name: Sneha Kapoor
+    Company: None
+    Email: sneha.k@example.com
+    Phone: +91 98222 33445
+    Status: NEW_LEAD
+    Est Value: 12000.0
+    Notes: None
+----------------------------------------
+[4] ID: 03b99c44-7f76-4e6a-a706-73c19e3c68ef
+    Title: High Value Enterprise Lead
+    Contact Name: John Doe
+    Company: Enterprise Corp
+    Email: john@enterprise.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: None
+----------------------------------------
+[5] ID: 0fcb39a5-b336-4f6d-874e-8deb868c81c9
+    Title: High Value Enterprise Lead
+    Contact Name: John Doe
+    Company: Enterprise Corp
+    Email: john@enterprise.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: None
+----------------------------------------
+[6] ID: 6f618355-27a5-497a-beea-1d79e7656dac
+    Title: E2E Verify Lead
+    Contact Name: None
+    Company: Acme
+    Email: None
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: None
+----------------------------------------
+[7] ID: 12721fe0-32bf-4deb-9d38-e99211e04cb8
+    Title: Playwright UI Lead
+    Contact Name: 
+    Company: 
+    Email: 
+    Phone: 
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: 
+----------------------------------------
+[8] ID: e410e329-0c8e-436e-8d1c-78a54b157149
+    Title: Playwright UI Lead
+    Contact Name: 
+    Company: 
+    Email: 
+    Phone: 
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: 
+----------------------------------------
+[9] ID: 4c23a924-16e7-4ed7-8f17-7e6cd3128044
+    Title: Playwright UI Lead
+    Contact Name: 
+    Company: 
+    Email: 
+    Phone: 
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: 
+----------------------------------------
+[10] ID: 5153152b-b553-40f7-be61-4fa3ed3d30b0
+    Title: Playwright UI Lead
+    Contact Name: 
+    Company: 
+    Email: 
+    Phone: 
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: 
+----------------------------------------
+[11] ID: e7a5bf76-b398-4bd6-8a8b-da2474b44d37
+    Title: Playwright UI Lead
+    Contact Name: 
+    Company: 
+    Email: 
+    Phone: 
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: 
+----------------------------------------
+[12] ID: 90d45112-c41c-45c1-877f-f59d63656da8
+    Title: Playwright UI Lead
+    Contact Name: 
+    Company: 
+    Email: 
+    Phone: 
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: 
+----------------------------------------
+[13] ID: ef913921-cd2a-4cbd-9374-f93fb57bb9ca
+    Title: Consultation: Ajay - FVC
+    Contact Name: Ajay
+    Company: FVC
+    Email: ajay@gmail.com
+    Phone: 9654321122
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: fdvsfwa
+
+Budget: ₹50,000 – ₹1,00,000
+----------------------------------------
+[14] ID: 87e0a88f-90ce-4eb9-8b5e-37d9f65b696b
+    Title: Consultation: Messi Ronaldo - parul university
+    Contact Name: Messi Ronaldo
+    Company: parul university
+    Email: sameerbasha.0809@gmail.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: cirtino ronaldo suiii
+
+Budget: ₹2,50,000 – ₹5,00,000
+----------------------------------------
+[15] ID: 1477997f-fe61-431e-a319-4f4aade26f82
+    Title: Consultation: 7869879guj - v87908-090
+    Contact Name: 7869879guj
+    Company: v87908-090
+    Email: kummisana123@gmail.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: 
+----------------------------------------
+[16] ID: e31aa4b4-c980-4602-b8bb-209b2e656b05
+    Title: Consultation: Sam - SAMTECH
+    Contact Name: Sam
+    Company: SAMTECH
+    Email: shaiksanasamreen28@gmail.com
+    Phone: 7981466226
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: needed service
+
+Budget: ₹25,000 – ₹50,000
+----------------------------------------
+[17] ID: 8b4aa536-4f02-40ba-8514-9ae05533b918
+    Title: Consultation: Adiki Manohar Kumar - DELL
+    Contact Name: Adiki Manohar Kumar
+    Company: DELL
+    Email: manumanohar1027@gmail.com
+    Phone: 9848946249
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: Budget: ₹50,000 – ₹1,00,000
+----------------------------------------
+[18] ID: a987f02b-d2c0-4de5-9495-cef585c6eed1
+    Title: Consultation: manohar - Amplivo
+    Contact Name: manohar
+    Company: Amplivo
+    Email: manohar@gmail.com
+    Phone: 799358617
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: dfghjk
+
+Budget: ₹1,00,000 – ₹2,50,000
+----------------------------------------
+[19] ID: 50a128a7-c709-41b2-b6db-257ea4cbd076
+    Title: Contact Form: Phase A Test - Individual
+    Contact Name: Phase A Test
+    Company: None
+    Email: phasea-test@example.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: Testing NEW_LEAD status wiring.
+----------------------------------------
+[20] ID: 14ddb9de-17a6-4b97-b9a6-8e684d13f468
+    Title: Contact Form: Phase A Test - Individual
+    Contact Name: Phase A Test
+    Company: None
+    Email: phasea-test@example.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: Testing NEW_LEAD status wiring.
+----------------------------------------
+[21] ID: 501871c7-11bc-4bae-bb7d-857e94e45659
+    Title: Consultation: Phase A Consult Test - Individual
+    Contact Name: Phase A Consult Test
+    Company: None
+    Email: phasea-consult@example.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: Testing NEW_LEAD.
+----------------------------------------
+[22] ID: 58882da8-7014-4838-a4c7-8d0d6dd99570
+    Title: Contact Form: Lost Deal Test - Individual
+    Contact Name: Lost Deal Test
+    Company: None
+    Email: lost-1785137923@example.com
+    Phone: None
+    Status: LOST
+    Est Value: None
+    Notes: test
+
+[LOST] Budget cut
+----------------------------------------
+[23] ID: ffbcc987-92df-4a5d-b02e-64b87c8e925c
+    Title: Consultation: john alex - qwerty
+    Contact Name: john alex
+    Company: qwerty
+    Email: johnalexander2706@gmail.com
+    Phone: 799358617
+    Status: Approved
+    Est Value: None
+    Notes: gfschxjanasuyhhsaadhsasjhahjsajashahj
+
+Budget: ₹50,000 – ₹1,00,000
+----------------------------------------
+[24] ID: c03cf9ba-4ff2-4b42-85fb-a08628d2f7c8
+    Title: Consultation: rejesh - code
+    Contact Name: rejesh
+    Company: code
+    Email: rejesh@gmail.com
+    Phone: 7993586917
+    Status: PROPOSAL_CREATED
+    Est Value: None
+    Notes: basdxsyhdsbxc
+
+Budget: ₹25,000 – ₹50,000
+----------------------------------------
+[25] ID: c212efe1-aa46-48ed-adee-d5ce78160c87
+    Title: Contact Form: Repro Test - Individual
+    Contact Name: Repro Test
+    Company: None
+    Email: repro-test@example.com
+    Phone: None
+    Status: PROPOSAL_CREATED
+    Est Value: None
+    Notes: test
+----------------------------------------
+[26] ID: adb7878d-b5a2-467d-bb9e-114013be54ac
+    Title: Contact Form: Cancel Meeting Test - Individual
+    Contact Name: Cancel Meeting Test
+    Company: None
+    Email: cancel-1785137923@example.com
+    Phone: None
+    Status: EMAIL_SENT
+    Est Value: None
+    Notes: test
+----------------------------------------
+[27] ID: b6decc88-bcb3-4580-9857-ad3c5183b3e2
+    Title: Contact Form: E2E Workflow Client - E2E Workflow Co
+    Contact Name: E2E Workflow Client
+    Company: E2E Workflow Co
+    Email: e2e-workflow-client@example.com
+    Phone: None
+    Status: PROJECT_CREATED
+    Est Value: None
+    Notes: We need a full marketing package.
+----------------------------------------
+[28] ID: a29813ae-bf98-4416-ac40-c5a315b11c51
+    Title: Contact Form: E2E Workflow Client - E2E Workflow Co
+    Contact Name: E2E Workflow Client
+    Company: E2E Workflow Co
+    Email: e2e-workflow-client-1785137463@example.com
+    Phone: None
+    Status: PROJECT_CREATED
+    Est Value: None
+    Notes: We need a full marketing package.
+----------------------------------------
+[29] ID: 9823e451-4d5f-4d4a-a7f8-abf62eea743d
+    Title: Contact Form: Lost Deal Test - Individual
+    Contact Name: Lost Deal Test
+    Company: None
+    Email: lost-1785137698@example.com
+    Phone: None
+    Status: LOST
+    Est Value: None
+    Notes: test
+
+[LOST] Budget cut
+----------------------------------------
+[30] ID: a33e3375-d3ae-4d7b-a159-e0faa9eecb58
+    Title: Contact Form: Cancel Meeting Test - Individual
+    Contact Name: Cancel Meeting Test
+    Company: None
+    Email: cancel-1785137698@example.com
+    Phone: None
+    Status: PROPOSAL_CREATED
+    Est Value: None
+    Notes: test
+----------------------------------------
+[31] ID: e19ffe11-f8ca-48a8-bb55-9f750b355ccc
+    Title: Contact Form: E2E Workflow Client - E2E Workflow Co
+    Contact Name: E2E Workflow Client
+    Company: E2E Workflow Co
+    Email: e2e-workflow-client@example.com
+    Phone: None
+    Status: EMAIL_SENT
+    Est Value: None
+    Notes: We need a full marketing package.
+----------------------------------------
+[32] ID: d9250970-706b-42da-8811-08fbaa597cdd
+    Title: Contact Form: Lost Deal Test - Individual
+    Contact Name: Lost Deal Test
+    Company: None
+    Email: lost-1785137800@example.com
+    Phone: None
+    Status: LOST
+    Est Value: None
+    Notes: test
+
+[LOST] Budget cut
+----------------------------------------
+[33] ID: 38695e17-30fc-44a8-94d5-4ef1b5737bbe
+    Title: Contact Form: Cancel Meeting Test - Individual
+    Contact Name: Cancel Meeting Test
+    Company: None
+    Email: cancel-1785137800@example.com
+    Phone: None
+    Status: PROPOSAL_CREATED
+    Est Value: None
+    Notes: test
+----------------------------------------
+[34] ID: 892e9d8e-96ce-4e99-aaf6-bdd3d579d80d
+    Title: Contact Form: Phase E Client - Individual
+    Contact Name: Phase E Client
+    Company: None
+    Email: e2e-phase-e-1785138850@example.com
+    Phone: None
+    Status: PROJECT_COMPLETED
+    Est Value: None
+    Notes: test
+----------------------------------------
+[35] ID: aa42b39c-5082-460b-9fd2-b6bc9ef5e33a
+    Title: Contact Form: Phase E Client - Individual
+    Contact Name: Phase E Client
+    Company: None
+    Email: e2e-phase-e-1785138584@example.com
+    Phone: None
+    Status: PROJECT_COMPLETED
+    Est Value: None
+    Notes: test
+----------------------------------------
+[36] ID: f3574720-c0cb-4860-9d67-d17b2d21e3c0
+    Title: Contact Form: Phase E Client - Individual
+    Contact Name: Phase E Client
+    Company: None
+    Email: e2e-phase-e-1785138272@example.com
+    Phone: None
+    Status: PROJECT_CREATED
+    Est Value: None
+    Notes: test
+----------------------------------------
+[37] ID: 3e60384d-1178-4fab-9139-196e4416f751
+    Title: Consultation: Sonu - Logitech
+    Contact Name: Sonu
+    Company: Logitech
+    Email: shaiksamreen7981@gmail.com
+    Phone: +917981466226
+    Status: Approved
+    Est Value: 100000.0
+    Notes: Needed service
+
+Budget: ₹50,000 – ₹1,00,000
+
+===REQUIREMENTS===
+hii
+----------------------------------------
+[38] ID: 77aaf48f-879d-423a-a6d9-275202144be0
+    Title: Contact Form: Debug - Debug Co
+    Contact Name: Debug
+    Company: Debug Co
+    Email: e2e-debug-1785144263@example.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: 100000.0
+    Notes: x
+----------------------------------------
+[39] ID: 3f26a347-4774-4edc-867c-9c89f97daed1
+    Title: Contact Form: Debug - Debug Co
+    Contact Name: Debug
+    Company: Debug Co
+    Email: e2e-debug2-1785144307@example.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: 100000.0
+    Notes: x
+----------------------------------------
+[40] ID: e69bec61-6071-4c4e-be97-aae45ceb3961
+    Title: Contact Form: Budget Flow Test - Budget Flow Co
+    Contact Name: Budget Flow Test
+    Company: Budget Flow Co
+    Email: e2e-budgetflow-1785148836@example.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: Testing the Deal Overview budget field.
+----------------------------------------
+[41] ID: 7e3c4447-1db5-498f-b23b-00e437b8568a
+    Title: Contact Form: Task5 E2E Client - Task5 E2E Co
+    Contact Name: Task5 E2E Client
+    Company: Task5 E2E Co
+    Email: e2e-task5-client-1785144134@example.com
+    Phone: None
+    Status: EMAIL_SENT
+    Est Value: 150000.0
+    Notes: Need a full package.
+----------------------------------------
+[42] ID: 73cf8c1d-9235-4814-b202-7ad446560328
+    Title: Contact Form: Task5 E2E Client - Task5 E2E Co
+    Contact Name: Task5 E2E Client
+    Company: Task5 E2E Co
+    Email: e2e-task5-client-1785144447@example.com
+    Phone: None
+    Status: EMAIL_SENT
+    Est Value: 150000.0
+    Notes: Need a full package.
+----------------------------------------
+[43] ID: 7cc1f9cb-8361-4b79-a367-feb31f74dedf
+    Title: Consultation: kumar - vpfd
+    Contact Name: kumar
+    Company: vpfd
+    Email: kumar@gmail.com
+    Phone: 799358617
+    Status: Won
+    Est Value: None
+    Notes: fghjk
+
+Budget: ₹50,000 – ₹1,00,000
+----------------------------------------
+[44] ID: c3809b03-1698-4e96-bc23-93a690448c6c
+    Title: Contact Form: Priya Sharma - Sharma Textiles
+    Contact Name: Priya Sharma
+    Company: Sharma Textiles
+    Email: e2e-clientcontact-1785146771@example.com
+    Phone: None
+    Status: PROJECT_CREATED
+    Est Value: 200000.0
+    Notes: Need full digital marketing.
+----------------------------------------
+[45] ID: b69a59e7-b6ec-4307-acac-e177e4abab0f
+    Title: Contact Form: Debug - Debug Co
+    Contact Name: Debug
+    Company: Debug Co
+    Email: e2e-debug3-1785144345@example.com
+    Phone: None
+    Status: EMAIL_SENT
+    Est Value: 100000.0
+    Notes: x
+----------------------------------------
+[46] ID: 86996254-5770-43bd-9b91-f8e4b82576fa
+    Title: Consultation: john alexander - ABC TEchnologies
+    Contact Name: john alexander
+    Company: ABC TEchnologies
+    Email: johnalexander2706@gmail.com
+    Phone: 7993586917
+    Status: Proposal Sent
+    Est Value: None
+    Notes: Need promotional videos for our product launch
+
+Budget: ₹1,00,000 – ₹2,50,000
+----------------------------------------
+[47] ID: 3046cdad-1d0a-4185-8b42-10f59fbae486
+    Title: Contact Form: Budget Flow Test - Budget Flow Co
+    Contact Name: Budget Flow Test
+    Company: Budget Flow Co
+    Email: e2e-budgetflow-1785148870@example.com
+    Phone: None
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: Testing the Deal Overview budget field.
+----------------------------------------
+[48] ID: 6f5a96b7-1bc0-4628-a17f-cf0f10dfb5c4
+    Title: Consultation: ssss - varmora
+    Contact Name: ssss
+    Company: varmora
+    Email: shaiksanasamreen28@gmail.com
+    Phone: +917981466226
+    Status: Approved
+    Est Value: 150000.0
+    Notes: ===REQUIREMENTS===
+needed service
+----------------------------------------
+[49] ID: 51811663-0bb2-4a8b-afa2-0d67507ce1ea
+    Title: Contact Form: Budget Flow Test - Budget Flow Co
+    Contact Name: Budget Flow Test
+    Company: Budget Flow Co
+    Email: e2e-budgetflow-1785148902@example.com
+    Phone: None
+    Status: CRM_PENDING
+    Est Value: 27000.0
+    Notes: Testing the Deal Overview budget field.
+----------------------------------------
+[50] ID: ea3956b4-d2f0-46ee-b448-7dd0ff172726
+    Title: Contact Form: Dharma Raj - vpd
+    Contact Name: Dharma Raj
+    Company: vpd
+    Email: dharmaraj25143@gmail.com
+    Phone: +917095001032
+    Status: New
+    Est Value: None
+    Notes: wefvdgbebed
+----------------------------------------
+[51] ID: 412f22bf-ab4d-484d-a582-5ad70c374afe
+    Title: Consultation: Test Client - ABC Technologies
+    Contact Name: Test Client
+    Company: ABC Technologies
+    Email: ajaynagirikanti@gmail.com
+    Phone: +917095001032
+    Status: MEETING_SCHEDULED
+    Est Value: None
+    Notes: Need promotional videos for product launch
+
+Budget: ₹50,000 – ₹1,00,000
+----------------------------------------
+[52] ID: 4a2bcd59-c05c-4936-b9a8-e455636b2983
+    Title: Consultation: uday - VPD
+    Contact Name: uday
+    Company: VPD
+    Email: uday77@gmail.com
+    Phone: +919876543210
+    Status: NEW_LEAD
+    Est Value: None
+    Notes: hello
+
+Budget: ₹25,000 – ₹50,000
+----------------------------------------
+[53] ID: bc4fc6ab-65ba-4b7c-aa74-4e0b0e1182f8
+    Title: Consultation: 713587 - 12873
+    Contact Name: 713587
+    Company: 12873
+    Email: efqkyhb@33.com
+    Phone: None
+    Status: MEETING_SCHEDULED
+    Est Value: None
+    Notes: 
+----------------------------------------

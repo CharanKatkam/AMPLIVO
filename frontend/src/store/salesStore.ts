@@ -2,10 +2,16 @@ import { create } from 'zustand';
 import { SalesLead, SalesLeadStatus, Meeting, SalesInvoice } from '@/types';
 import { SalesService } from '@/types';
 import { leadService } from '@/services/leadService';
-import type { LeadRead } from '@/services/leadService';
+import type { LeadRead, LeadCreatePayload, LeadUpdatePayload } from '@/services/leadService';
 import { meetingService } from '@/services/meetingService';
 import { proposalService } from '@/services/proposalService';
 import { financeService } from '@/services/crmService';
+import { useToastStore } from '@/store/toastStore';
+
+function extractErrorMessage(err: unknown, fallback: string): string {
+  const withResponse = err as { response?: { data?: { message?: string; detail?: string } } };
+  return withResponse?.response?.data?.message || withResponse?.response?.data?.detail || fallback;
+}
 
 interface SalesState {
   leads: SalesLead[];
@@ -16,6 +22,9 @@ interface SalesState {
 
   // API Actions
   fetchLeads: () => Promise<void>;
+  createLead: (payload: Omit<LeadCreatePayload, 'status'>) => Promise<void>;
+  editLead: (leadId: string, payload: LeadUpdatePayload) => Promise<void>;
+  deleteLead: (leadId: string) => Promise<void>;
 
   // Actions - every one of these now calls the real backend first, then
   // reflects the confirmed result into local state (previously these only
@@ -48,9 +57,99 @@ function mapLeadStatus(status: string): SalesLeadStatus {
   return 'New';
 }
 
+function parseBudgetFromNotes(notes: string | null | undefined): number {
+  if (!notes) return 0;
+  const regex = /Budget:\s*(?:₹|INR)?\s*([0-9,]+)/i;
+  const match = notes.match(regex);
+  if (match) {
+    const val = parseInt(match[1].replace(/,/g, ''), 10);
+    if (!isNaN(val)) {
+      return val;
+    }
+  }
+  return 0;
+}
+
+function getTimeZoneOffset(timeZone: string, date: Date = new Date()): string {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      timeZoneName: 'longOffset',
+    });
+    const parts = formatter.formatToParts(date);
+    const tzPart = parts.find((p) => p.type === 'timeZoneName');
+    if (!tzPart) return 'Z';
+    const val = tzPart.value;
+    if (val === 'GMT') return '+00:00';
+    const match = val.match(/GMT([+-])(\d+):?(\d+)?/);
+    if (match) {
+      const sign = match[1];
+      const hours = match[2].padStart(2, '0');
+      const minutes = (match[3] || '00').padStart(2, '0');
+      return `${sign}${hours}:${minutes}`;
+    }
+    return 'Z';
+  } catch {
+    return 'Z';
+  }
+}
+
+// Bug 5 fixed: map source_id to a proper SalesLead source label instead of always 'Organic'
+const SOURCE_MAP: Record<string, SalesLead['source']> = {
+  organic: 'Organic',
+  referral: 'Referral',
+  paid_ads: 'Paid Ads',
+  social_media: 'Social Media',
+  cold_outreach: 'Cold Outreach',
+  event: 'Event',
+  contact_form: 'Contact Form',
+};
+
+function mapSource(sourceId: string | null | undefined): SalesLead['source'] {
+  if (!sourceId) return 'Organic';
+  const key = sourceId.toLowerCase().replace(/[^a-z_]/g, '_');
+  return SOURCE_MAP[key] ?? 'Organic';
+}
+
+function mapMeetingRead(m: Record<string, unknown>): Meeting {
+  const scheduledAt = String(m.scheduled_at || '');
+  const datePart = scheduledAt.split('T')[0] || '';
+  const timePart = scheduledAt.split('T')[1]?.slice(0, 5) || '';
+  const typeRaw = String(m.meeting_type || 'Video Call');
+  const typeMap: Record<string, Meeting['type']> = {
+    video_call: 'Video Call', video: 'Video Call',
+    phone_call: 'Phone Call', phone: 'Phone Call',
+    in_person: 'In-Person', in_person_meeting: 'In-Person',
+    demo: 'Demo',
+  };
+  const meetingType: Meeting['type'] = typeMap[typeRaw.toLowerCase().replace(/ /g, '_')] ?? 'Video Call';
+  const statusRaw = String(m.status || 'scheduled').toLowerCase();
+  const statusMap: Record<string, Meeting['status']> = {
+    scheduled: 'Scheduled', completed: 'Completed',
+    cancelled: 'Cancelled', no_show: 'No-Show',
+  };
+  return {
+    id: String(m.id || ''),
+    leadId: String(m.lead_id || ''),
+    leadName: String(m.lead_name || m.title || ''),
+    company: String(m.company || ''),
+    date: datePart,
+    time: timePart,
+    duration: Number(m.duration_minutes || 60),
+    type: meetingType,
+    status: statusMap[statusRaw] ?? 'Scheduled',
+    notes: String(m.notes || ''),
+    agenda: m.agenda ? String(m.agenda) : undefined,
+    followUpRequired: Boolean(m.follow_up_required),
+    timezone: m.timezone ? String(m.timezone) : undefined,
+  };
+}
+
 function mapLeadRead(l: LeadRead): SalesLead {
+  const parsedBudget = parseBudgetFromNotes(l.notes);
   return {
     id: l.id,
+    title: l.title || '',
     firstName: (l.contact_name || '').split(' ')[0] || '',
     lastName: (l.contact_name || '').split(' ').slice(1).join(' ') || '',
     email: l.email || '',
@@ -62,10 +161,11 @@ function mapLeadRead(l: LeadRead): SalesLead {
     website: '',
     city: '',
     status: mapLeadStatus(l.status || 'new'),
-    source: 'Organic' as const,
+    // Bug 5 fixed: use actual source from backend
+    source: mapSource(l.source_id),
     assignedTo: l.assigned_to || '',
     priority: (l.priority as 'Low' | 'Medium' | 'High' | 'Critical') || 'Medium',
-    budget: l.estimated_value || 0,
+    budget: l.estimated_value || parsedBudget || 0,
     expectedCloseDate: '',
     probability: 50,
     interestedServices: l.interested_services || [],
@@ -76,6 +176,50 @@ function mapLeadRead(l: LeadRead): SalesLead {
     createdAt: l.created_at || new Date().toISOString(),
     lastUpdated: l.updated_at || new Date().toISOString(),
     followUpDate: '',
+  };
+}
+
+function mapInvoiceStatus(status: string): SalesInvoice['status'] {
+  const s = status.toLowerCase();
+  if (s.includes('final_paid') || s === 'paid' || s.includes('fully')) return 'Fully Paid';
+  if (s.includes('advance_paid')) return 'Advance Paid';
+  if (s.includes('sent') || s.includes('overdue')) return 'Sent';
+  return 'Draft';
+}
+
+function mapInvoiceRead(inv: Record<string, unknown>, leadsById: Map<string, SalesLead>): SalesInvoice {
+  const leadId = String(inv.lead_id || '');
+  const lead = leadsById.get(leadId);
+  const subtotal = Number(inv.subtotal || 0);
+  const taxTotal = Number(inv.tax_total || 0);
+  const total = Number(inv.total_amount || 0);
+  const invoiceType = String(inv.invoice_type || 'standard');
+  return {
+    id: String(inv.id || ''),
+    invoiceNumber: String(inv.invoice_number || ''),
+    leadId,
+    clientName: lead ? `${lead.firstName} ${lead.lastName}`.trim() : '',
+    clientEmail: lead?.email || '',
+    clientPhone: lead?.phone || '',
+    company: lead?.company || '',
+    issueDate: String(inv.issue_date || ''),
+    dueDate: String(inv.due_date || ''),
+    lineItems: [{
+      serviceId: invoiceType,
+      serviceName: invoiceType.charAt(0).toUpperCase() + invoiceType.slice(1) + ' Invoice',
+      description: String(inv.notes || ''),
+      quantity: 1,
+      unitPrice: subtotal,
+      total: subtotal,
+    }],
+    subtotal,
+    taxRate: subtotal > 0 ? Math.round((taxTotal / subtotal) * 100) : 0,
+    taxAmount: taxTotal,
+    grandTotal: total,
+    advancePercent: invoiceType === 'advance' ? 25 : 0,
+    advanceDue: total,
+    status: mapInvoiceStatus(String(inv.status || 'draft')),
+    notes: String(inv.notes || ''),
   };
 }
 
@@ -108,25 +252,98 @@ export const useSalesStore = create<SalesState>((set, get) => ({
   fetchLeads: async () => {
     set({ isLoading: true });
     try {
-      const res = await leadService.getAll({ page_size: 100 });
-      const backendLeads = res.items || res || [];
-      set({ leads: backendLeads.map(mapLeadRead), isLoading: false });
-    } catch {
+      // Bug 4 fixed: also fetch meetings from backend so the meetings array is populated
+      // Invoices were never fetched at all (the store's `invoices` array only ever
+      // grew from generateInvoice() during the current session) - the Invoices page
+      // always showed 0 even though persisted invoices existed. Fetch them too.
+      const [leadsRes, meetingsRes, invoicesRes] = await Promise.all([
+        leadService.getAll({ page_size: 200 }),
+        meetingService.getAll({ page_size: 200 }).catch(() => ({ items: [] })),
+        financeService.getInvoices({ page_size: 200 }).catch(() => ({ items: [] })),
+      ]);
+      const backendLeads = leadsRes.items || leadsRes || [];
+      const backendMeetings = (meetingsRes as { items?: unknown[] }).items || meetingsRes || [];
+      const backendInvoices = (invoicesRes as { items?: unknown[] }).items || invoicesRes || [];
+      const mappedLeads = backendLeads.map(mapLeadRead);
+      const mappedMeetings: Meeting[] = (backendMeetings as Parameters<typeof mapMeetingRead>[0][]).map(mapMeetingRead);
+      const leadsById = new Map(mappedLeads.map((l) => [l.id, l]));
+      const mappedInvoices: SalesInvoice[] = (backendInvoices as Record<string, unknown>[]).map((inv) => mapInvoiceRead(inv, leadsById));
+      set({ leads: mappedLeads, meetings: mappedMeetings, invoices: mappedInvoices, isLoading: false });
+    } catch (err) {
+      // A silently-swallowed failure here previously rendered as an empty,
+      // error-free leads table indistinguishable from "there's just no data" -
+      // surface it instead so a 4xx/5xx/network failure is never mistaken for empty state.
+      console.error('Failed to load leads/meetings:', err);
+      useToastStore.getState().showToast(extractErrorMessage(err, 'Failed to load leads.'), 'error');
       set({ isLoading: false });
     }
   },
 
-  updateLeadStatus: async (leadId, status) => {
-    if (status === 'Lost') {
-      await leadService.markLost(leadId);
-    } else {
-      await leadService.update(leadId, { status });
+  createLead: async (payload) => {
+    set({ isLoading: true });
+    try {
+      const created = await leadService.create({
+        ...payload,
+        status: 'NEW_LEAD',
+      });
+      const newLead = mapLeadRead(created);
+      set((state) => ({
+        leads: [newLead, ...state.leads],
+        isLoading: false,
+      }));
+    } catch (err) {
+      set({ isLoading: false });
+      throw err;
     }
+  },
+
+  editLead: async (leadId, payload) => {
+    set({ isLoading: true });
+    try {
+      const updated = await leadService.update(leadId, payload);
+      const mapped = mapLeadRead(updated);
+      set((state) => ({
+        leads: state.leads.map((l) => (l.id === leadId ? mapped : l)),
+        isLoading: false,
+      }));
+    } catch (err) {
+      set({ isLoading: false });
+      throw err;
+    }
+  },
+
+  deleteLead: async (leadId) => {
+    set({ isLoading: true });
+    try {
+      await leadService.delete(leadId);
+      set((state) => ({
+        leads: state.leads.filter((l) => l.id !== leadId),
+        isLoading: false,
+      }));
+    } catch (err) {
+      set({ isLoading: false });
+      throw err;
+    }
+  },
+
+  updateLeadStatus: async (leadId, status) => {
+    // Bug 20 fixed: optimistic update first, roll back on error
+    const prev = get().leads;
     set((state) => ({
       leads: state.leads.map((lead) =>
         lead.id === leadId ? pushTimelineEvent({ ...lead, status }, 'status_changed', `Status changed to ${status}`) : lead,
       ),
     }));
+    try {
+      if (status === 'Lost') {
+        await leadService.markLost(leadId);
+      } else {
+        await leadService.update(leadId, { status });
+      }
+    } catch (err) {
+      set({ leads: prev });
+      throw err;
+    }
   },
 
   updateLeadNotes: async (leadId, notes) => {
@@ -159,7 +376,11 @@ export const useSalesStore = create<SalesState>((set, get) => ({
   },
 
   scheduleMeeting: async (meeting) => {
-    const scheduledAt = new Date(`${meeting.date}T${meeting.time}:00`).toISOString();
+    let scheduledAt = new Date(`${meeting.date}T${meeting.time}:00`).toISOString();
+    if (meeting.timezone) {
+      const offset = getTimeZoneOffset(meeting.timezone, new Date(`${meeting.date}T${meeting.time}:00`));
+      scheduledAt = `${meeting.date}T${meeting.time}:00${offset}`;
+    }
     const created = await meetingService.create({
       lead_id: meeting.leadId,
       title: `${meeting.type} with ${meeting.leadName}`,
