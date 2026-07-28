@@ -15,7 +15,7 @@ from app.core.exceptions import ForbiddenException
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
-from app.dependencies.rbac import require_roles
+from app.dependencies.rbac import STAFF_ROLE_SLUGS, require_roles
 from app.dependencies.tenant import get_current_user_role_slug
 from app.models.user import User
 from app.modules.users.dependencies import (
@@ -88,6 +88,7 @@ async def list_users(
     is_active: bool | None = Query(None, description="Filter by active status"),
     svc: UserManagementService = Depends(get_user_management_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> PaginatedResponse[UserListItem]:
     items, total = await svc.list_users(
         search=params.search, user_type=user_type, status=user_status,
@@ -110,6 +111,7 @@ async def get_user(
     user_id: uuid.UUID,
     svc: UserManagementService = Depends(get_user_management_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> UserDetail:
     user = await svc.get_user(user_id)
     return UserDetail.model_validate(user)
@@ -159,6 +161,7 @@ async def deactivate_user(
     db: AsyncSession = Depends(get_db),
     svc: UserManagementService = Depends(get_user_management_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("hr")),
 ) -> UserDetail:
     user = await svc.deactivate_user(user_id)
     await db.commit()
@@ -175,6 +178,7 @@ async def activate_user(
     db: AsyncSession = Depends(get_db),
     svc: UserManagementService = Depends(get_user_management_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("hr")),
 ) -> UserDetail:
     user = await svc.activate_user(user_id)
     await db.commit()
@@ -192,8 +196,14 @@ async def activate_user(
 async def get_user_profile(
     user_id: uuid.UUID,
     svc: UserProfileService = Depends(get_user_profile_service),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
+    role_slug: str | None = Depends(get_current_user_role_slug),
 ) -> UserProfileRead:
+    # Mirrors upsert_user_profile below: any authenticated user could
+    # otherwise read an arbitrary colleague's (or another client's)
+    # profile PII by id alone.
+    if role_slug != "admin" and user_id != current_user.id:
+        raise ForbiddenException("You can only view your own profile.")
     profile = await svc.get_profile(user_id)
     return UserProfileRead.model_validate(profile)
 
@@ -205,7 +215,7 @@ async def get_user_profile(
 )
 async def upsert_user_profile(
     user_id: uuid.UUID,
-    payload: UserProfileCreate,
+    payload: UserProfileUpdate,
     db: AsyncSession = Depends(get_db),
     svc: UserProfileService = Depends(get_user_profile_service),
     current_user: User = Depends(get_current_user),
@@ -229,6 +239,7 @@ async def list_roles(
     params: PaginationParams = Depends(),
     svc: RoleService = Depends(get_role_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> PaginatedResponse[RoleRead]:
     items, total = await svc.list_roles(
         search=params.search, sort_by=params.sort_by, sort_order=params.sort_order,
@@ -258,6 +269,7 @@ async def get_role(
     role_id: uuid.UUID,
     svc: RoleService = Depends(get_role_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> RoleRead:
     role = await svc.get_role(role_id)
     return RoleRead.model_validate(role)
@@ -299,6 +311,7 @@ async def list_role_permissions(
     role_id: uuid.UUID,
     svc: RoleService = Depends(get_role_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> list[PermissionRead]:
     perms = await svc.get_role_permissions(role_id)
     return [PermissionRead.model_validate(p) for p in perms]
@@ -350,6 +363,7 @@ async def list_permissions(
     module: str | None = Query(None, description="Filter by module"),
     svc: PermissionService = Depends(get_permission_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> PaginatedResponse[PermissionRead]:
     items, total = await svc.list_permissions(
         search=params.search, module=module, sort_by=params.sort_by,
@@ -390,6 +404,7 @@ async def list_branches(
     is_active: bool | None = Query(None, description="Filter by active status"),
     svc: BranchService = Depends(get_branch_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> PaginatedResponse[BranchRead]:
     items, total = await svc.list_branches(
         search=params.search, is_active=is_active, sort_by=params.sort_by,
@@ -419,6 +434,7 @@ async def get_branch(
     branch_id: uuid.UUID,
     svc: BranchService = Depends(get_branch_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> BranchRead:
     branch = await svc.get_branch(branch_id)
     return BranchRead.model_validate(branch)
@@ -461,6 +477,7 @@ async def list_departments(
     params: PaginationParams = Depends(),
     svc: DepartmentService = Depends(get_department_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> PaginatedResponse[DepartmentRead]:
     items, total = await svc.list_departments(
         search=params.search, sort_by=params.sort_by, sort_order=params.sort_order,
@@ -495,6 +512,7 @@ async def get_department(
     department_id: uuid.UUID,
     svc: DepartmentService = Depends(get_department_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> DepartmentRead:
     dept = await svc.get_department(department_id)
     return DepartmentRead.model_validate(dept)
@@ -543,6 +561,7 @@ async def list_teams(
     is_active: bool | None = Query(None, description="Filter by active status"),
     svc: TeamService = Depends(get_team_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> PaginatedResponse[TeamRead]:
     items, total = await svc.list_teams(
         search=params.search, department_id=department_id, is_active=is_active,
@@ -573,6 +592,7 @@ async def get_team(
     team_id: uuid.UUID,
     svc: TeamService = Depends(get_team_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> TeamRead:
     team = await svc.get_team(team_id)
     return TeamRead.model_validate(team)
@@ -616,6 +636,7 @@ async def list_designations(
     is_active: bool | None = Query(None, description="Filter by active status"),
     svc: DesignationService = Depends(get_designation_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> PaginatedResponse[DesignationRead]:
     items, total = await svc.list_designations(
         search=params.search, is_active=is_active, sort_by=params.sort_by,
@@ -650,6 +671,7 @@ async def get_designation(
     designation_id: uuid.UUID,
     svc: DesignationService = Depends(get_designation_service),
     _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS)),
 ) -> DesignationRead:
     d = await svc.get_designation(designation_id)
     return DesignationRead.model_validate(d)

@@ -26,7 +26,7 @@ export default async function CaseStudyDetailPage({ params }: { params: Promise<
   if (!cs) notFound();
 
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
       <CaseStudyDetailClient caseStudy={cs} />
       <CTASection />

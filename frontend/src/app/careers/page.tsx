@@ -25,7 +25,7 @@ const benefits = [
 
 export default function CareersPage() {
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       <PageHero config={careersHero} />

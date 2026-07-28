@@ -5,12 +5,15 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.core.field_types import NameStr
+from app.core.sanitizers import SanitizedModel
 
 
-class ApprovalPolicyBase(BaseModel):
-    name: str
-    module: str
+class ApprovalPolicyBase(SanitizedModel):
+    name: NameStr
+    module: str = Field(min_length=1, max_length=100)
     description: Optional[str] = None
     required_approvers: int = 1
     is_active: bool = True
@@ -25,25 +28,25 @@ class ApprovalPolicyRead(ApprovalPolicyBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
-class ApprovalRequestBase(BaseModel):
+class ApprovalRequestBase(SanitizedModel):
     policy_id: Optional[uuid.UUID] = None
-    entity_type: str
+    entity_type: str = Field(min_length=1, max_length=100)
     entity_id: uuid.UUID
-    title: str
+    title: NameStr
     description: Optional[str] = None
     requested_by: Optional[uuid.UUID] = None
-    status: str = "pending"
+    status: str = Field(default="pending", min_length=1, max_length=50)
 
 
 class ApprovalRequestCreate(ApprovalRequestBase):
     pass
 
 
-class ApprovalRequestUpdate(BaseModel):
-    status: Optional[str] = None
+class ApprovalRequestUpdate(SanitizedModel):
+    status: Optional[str] = Field(None, min_length=1, max_length=50)
 
 
 class ApprovalRequestRead(ApprovalRequestBase):
@@ -51,13 +54,13 @@ class ApprovalRequestRead(ApprovalRequestBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
-class ApprovalDecisionBase(BaseModel):
+class ApprovalDecisionBase(SanitizedModel):
     request_id: uuid.UUID
     approver_id: Optional[uuid.UUID] = None
-    decision: str
+    decision: str = Field(min_length=1, max_length=50)
     comment: Optional[str] = None
 
 
@@ -69,4 +72,4 @@ class ApprovalDecisionRead(ApprovalDecisionBase):
     id: uuid.UUID
     decided_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

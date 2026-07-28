@@ -29,6 +29,15 @@ export function ActivityFeed({ events, maxItems }: ActivityFeedProps) {
   });
   const displayed = maxItems ? sorted.slice(0, maxItems) : sorted;
 
+  if (displayed.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <StickyNote size={32} className="text-slate-300 mb-2" />
+        <p className="text-sm text-slate-400 font-medium">No activity recorded yet</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
       {/* Vertical line */}

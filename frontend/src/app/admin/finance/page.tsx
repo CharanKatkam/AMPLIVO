@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminHeader } from '@/components/admin/AdminSidebar';
-import { financeService } from '@/services/crmService';
-import { Search, Plus, IndianRupee, FileText, TrendingDown, TrendingUp, X, Loader2, AlertTriangle } from 'lucide-react';
+import { financeService, clientService } from '@/services/crmService';
+import { useToastStore } from '@/store/toastStore';
+import { Search, Plus, IndianRupee, FileText, TrendingDown, TrendingUp, X, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 
 interface Invoice {
   id: string;
@@ -26,12 +27,14 @@ interface Expense {
   created_at: string;
 }
 
+interface ClientOption {
+  id: string;
+  company_name: string;
+}
+
 interface InvoiceListResponse {
   items: Invoice[];
   total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
 }
 
 interface ExpenseListResponse {
@@ -54,14 +57,35 @@ function formatDate(dateStr: string) {
 export default function AdminFinance() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [clients, setClients] = useState<ClientOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [form, setForm] = useState({ client_name: '', amount: '', status: 'Pending', issue_date: '', due_date: '', notes: '' });
+  const [form, setForm] = useState({
+    client_name: '',
+    amount: '',
+    status: 'Pending',
+    issue_date: today,
+    due_date: '',
+    notes: '',
+  });
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const showToast = useToastStore((s) => s.showToast);
+
+  const fetchClients = useCallback(async () => {
+    try {
+      const res = await clientService.getAll({ page_size: 100 });
+      setClients(res?.items ?? []);
+    } catch {
+      setClients([]);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -84,34 +108,54 @@ export default function AdminFinance() {
   }, [search]);
 
   useEffect(() => {
+    fetchClients();
     fetchData();
-  }, [fetchData]);
+  }, [fetchClients, fetchData]);
 
   const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
   const outstanding = invoices.filter((inv) => inv.status !== 'Paid').reduce((sum, inv) => sum + (inv.amount || 0), 0);
   const totalExpenses = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
   const profit = totalRevenue - totalExpenses;
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // BUG-44 Fixed: Mandatory Client Name selection
+    if (!form.client_name.trim()) errors.client_name = 'Please select a client for this invoice.';
+
+    if (!form.amount || Number(form.amount) <= 0) errors.amount = 'Invoice amount must be greater than 0.';
+
+    // BUG-45 Fixed: Mandatory Issue & Due Date with logical ordering check
+    if (!form.issue_date) errors.issue_date = 'Issue date is required.';
+    if (!form.due_date) errors.due_date = 'Due date is required.';
+    if (form.issue_date && form.due_date && form.due_date < form.issue_date) {
+      errors.due_date = 'Due date cannot be earlier than the issue date.';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.amount || Number(form.amount) <= 0) return;
+    if (!validateForm()) return;
     setSaving(true);
-    setSaveError(null);
     try {
       await financeService.createInvoice({
-        client_name: form.client_name || undefined,
+        client_name: form.client_name,
         amount: Number(form.amount),
         status: form.status,
-        issue_date: form.issue_date || undefined,
-        due_date: form.due_date || undefined,
+        issue_date: form.issue_date,
+        due_date: form.due_date,
         notes: form.notes || undefined,
       });
+      showToast(`Invoice for "${form.client_name}" created successfully!`, 'success');
       setShowCreateModal(false);
-      setForm({ client_name: '', amount: '', status: 'Pending', issue_date: '', due_date: '', notes: '' });
+      setForm({ client_name: '', amount: '', status: 'Pending', issue_date: today, due_date: '', notes: '' });
       fetchData();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create invoice.';
-      setSaveError(message);
+      showToast(message, 'error');
     } finally {
       setSaving(false);
     }
@@ -130,8 +174,8 @@ export default function AdminFinance() {
     <div>
       <AdminHeader title="Finance & Billing" subtitle="Track agency revenue, invoices, and expenses." />
 
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative w-full sm:w-80">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -139,11 +183,11 @@ export default function AdminFinance() {
               placeholder="Search invoices, clients..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
             />
           </div>
           <button
-            onClick={() => { setShowCreateModal(true); setSaveError(null); }}
+            onClick={() => { setShowCreateModal(true); setValidationErrors({}); setForm((f) => ({ ...f, issue_date: today })); }}
             className="flex items-center gap-2 px-4 py-2 bg-[#4C1D95] text-white rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors"
           >
             <Plus size={16} /> Create Invoice
@@ -170,7 +214,7 @@ export default function AdminFinance() {
         {!loading && !error && (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-slate-500">Total Revenue</h3>
@@ -225,7 +269,7 @@ export default function AdminFinance() {
                 <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Invoice</th>
+                      <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Invoice #</th>
                       <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Client</th>
                       <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
                       <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Issue Date</th>
@@ -241,8 +285,8 @@ export default function AdminFinance() {
                     )}
                     {invoices.map((inv) => (
                       <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-4 px-6 font-semibold text-slate-900 text-sm">{inv.invoice_number ?? inv.id.slice(0, 8)}</td>
-                        <td className="py-4 px-6 text-sm text-slate-700">{inv.client_name ?? '—'}</td>
+                        <td className="py-4 px-6 font-semibold text-slate-900 text-sm">{inv.invoice_number ?? `INV-${inv.id.slice(0, 6).toUpperCase()}`}</td>
+                        <td className="py-4 px-6 text-sm font-medium text-slate-900">{inv.client_name ?? '—'}</td>
                         <td className="py-4 px-6 font-bold text-slate-900 text-sm">{formatCurrency(inv.amount)}</td>
                         <td className="py-4 px-6 text-sm text-slate-600">{inv.issue_date ? formatDate(inv.issue_date) : '—'}</td>
                         <td className="py-4 px-6 text-sm text-slate-600">{inv.due_date ? formatDate(inv.due_date) : '—'}</td>
@@ -261,7 +305,7 @@ export default function AdminFinance() {
         )}
       </div>
 
-      {/* Create Invoice Modal */}
+      {/* Create Invoice Modal (BUG-44 & BUG-45 Fixed) */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowCreateModal(false)}>
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -272,40 +316,45 @@ export default function AdminFinance() {
               </button>
             </div>
             <form onSubmit={handleCreateInvoice} className="px-6 py-5 space-y-4">
-              {saveError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">{saveError}</div>
-              )}
+              {/* BUG-44: Mandatory Client Selector Dropdown */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Client Name</label>
-                <input
-                  type="text"
-                  pattern="[A-Za-z\s]+"
-                  title="Only letters and spaces are allowed"
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Client Name <span className="text-red-500">*</span></label>
+                <select
                   value={form.client_name}
                   onChange={(e) => setForm({ ...form, client_name: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
-                  placeholder="Acme Corp"
-                />
+                  className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:border-[#4C1D95] bg-white ${
+                    validationErrors.client_name ? 'border-red-500 bg-red-50/50' : 'border-slate-200'
+                  }`}
+                >
+                  <option value="">Select registered client...</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.company_name}>{c.company_name}</option>
+                  ))}
+                </select>
+                {validationErrors.client_name && <p className="text-red-500 text-[11px] mt-1">{validationErrors.client_name}</p>}
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Amount (INR) <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Amount (INR) <span className="text-red-500">*</span></label>
                   <input
                     type="number"
-                    required
                     min="1"
                     value={form.amount}
                     onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
+                    className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:border-[#4C1D95] ${
+                      validationErrors.amount ? 'border-red-500 bg-red-50/50' : 'border-slate-200'
+                    }`}
                     placeholder="0"
                   />
+                  {validationErrors.amount && <p className="text-red-500 text-[11px] mt-1">{validationErrors.amount}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Status</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Status</label>
                   <select
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95] cursor-pointer"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95] bg-white cursor-pointer"
                   >
                     <option value="Pending">Pending</option>
                     <option value="Paid">Paid</option>
@@ -314,38 +363,47 @@ export default function AdminFinance() {
                   </select>
                 </div>
               </div>
+
+              {/* BUG-45: Mandatory Issue & Due Dates with Due Date >= Issue Date validation */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Issue Date</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Issue Date <span className="text-red-500">*</span></label>
                   <input
                     type="date"
-                    min={new Date().toISOString().split('T')[0]}
                     value={form.issue_date}
                     onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
+                    className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:border-[#4C1D95] ${
+                      validationErrors.issue_date ? 'border-red-500 bg-red-50/50' : 'border-slate-200'
+                    }`}
                   />
+                  {validationErrors.issue_date && <p className="text-red-500 text-[11px] mt-1">{validationErrors.issue_date}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Due Date</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Due Date <span className="text-red-500">*</span></label>
                   <input
                     type="date"
-                    min={new Date().toISOString().split('T')[0]}
+                    min={form.issue_date || today}
                     value={form.due_date}
                     onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95]"
+                    className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:border-[#4C1D95] ${
+                      validationErrors.due_date ? 'border-red-500 bg-red-50/50' : 'border-slate-200'
+                    }`}
                   />
+                  {validationErrors.due_date && <p className="text-red-500 text-[11px] mt-1">{validationErrors.due_date}</p>}
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Notes</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Notes</label>
                 <textarea
                   rows={3}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#4C1D95] resize-none"
-                  placeholder="Invoice notes..."
+                  placeholder="Invoice payment terms, bank details, or notes..."
                 />
               </div>
+
               <div className="flex justify-end gap-3 pt-2 pb-1">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
                   Cancel

@@ -10,9 +10,16 @@ interface PerformanceChartProps {
   height?: number;
 }
 export function PerformanceChart({ data, height = 220 }: PerformanceChartProps) {
+  const formatYAxis = (v: number) => {
+    if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)}Cr`;
+    if (v >= 100000) return `₹${(v / 100000).toFixed(0)}L`;
+    if (v >= 1000) return `₹${(v / 1000).toFixed(0)}K`;
+    return `₹${v}`;
+  };
+
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={data} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+      <AreaChart data={data} margin={{ top: 5, right: 15, bottom: 0, left: 15 }}>
         <defs>
           <linearGradient id="gImp" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#4C1D95" stopOpacity={0.15} />
@@ -25,7 +32,7 @@ export function PerformanceChart({ data, height = 220 }: PerformanceChartProps) 
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
         <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={formatYAxis} width={50} />
         <Tooltip
           contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -11,6 +11,7 @@ from app.modules.contact_forms.schemas import ContactSubmissionCreate, ContactSu
 from app.modules.leads.repository import LeadRepository
 from app.core import lead_pipeline
 from app.core.exceptions import NotFoundException
+from app.utils.sales_events import log_activity, notify_role
 
 
 class ContactSubmissionService:
@@ -50,6 +51,21 @@ class ContactSubmissionService:
         submission.converted_lead_id = lead.id
         await self._session.flush()
         await self._session.refresh(submission)
+
+        # This path creates the Lead directly via the repository rather than
+        # LeadService.create_lead(), so it must raise its own notification -
+        # otherwise a brand-new public enquiry silently reaches no one on the
+        # sales team until someone happens to open the Leads page.
+        await notify_role(
+            self._session, "sales",
+            title="New enquiry received",
+            message=f"{data.name} ({data.company or 'Individual'}) submitted a contact form enquiry."
+            + (f" Subject: {data.subject}." if data.subject else ""),
+        )
+        await log_activity(
+            self._session, user_id=None, entity_type="lead", entity_id=lead.id,
+            action="lead_created", description=f"Lead '{lead.title}' created from a contact form submission.",
+        )
 
         return submission
 

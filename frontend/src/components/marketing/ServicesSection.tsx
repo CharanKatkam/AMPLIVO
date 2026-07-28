@@ -58,6 +58,15 @@ export function ServicesSection() {
             );
           })}
         </div>
+
+        <div className="mt-10 text-center">
+          <Link
+            href="/services"
+            className="inline-flex items-center gap-2 bg-[#4C1D95] text-white font-semibold px-7 py-3.5 rounded-xl hover:bg-[#3b1574] transition-all hover:-translate-y-1"
+          >
+            Explore Services <ArrowRight size={16} />
+          </Link>
+        </div>
       </div>
     </section>
   );

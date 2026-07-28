@@ -18,6 +18,7 @@ export default function SEOPage() {
   const [audits, setAudits] = useState<SeoAudit[]>([]);
   const [backlinks, setBacklinks] = useState<SeoBacklink[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchingReport, setFetchingReport] = useState(false);
   const [error, setError] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('current_rank');
@@ -45,15 +46,20 @@ export default function SEOPage() {
   useEffect(() => {
     if (!selectedProjectId) return;
     setVisibleCount(10);
+    setFetchingReport(true);
     Promise.all([
       seoService.getKeywords(selectedProjectId).catch(() => []),
       seoService.getAudits(selectedProjectId).catch(() => []),
       seoService.getBacklinks(selectedProjectId).catch(() => []),
-    ]).then(([kw, au, bl]) => {
-      setKeywords(kw?.items ?? kw ?? []);
-      setAudits((au?.items ?? au ?? []).sort((a: SeoAudit, b: SeoAudit) => new Date(a.audit_date).getTime() - new Date(b.audit_date).getTime()));
-      setBacklinks(bl?.items ?? bl ?? []);
-    });
+    ])
+      .then(([kw, au, bl]) => {
+        setKeywords(kw?.items ?? kw ?? []);
+        setAudits((au?.items ?? au ?? []).sort((a: SeoAudit, b: SeoAudit) => new Date(a.audit_date).getTime() - new Date(b.audit_date).getTime()));
+        setBacklinks(bl?.items ?? bl ?? []);
+      })
+      .finally(() => {
+        setFetchingReport(false);
+      });
   }, [selectedProjectId]);
 
   const totalKeywords = keywords.length;
@@ -127,14 +133,16 @@ export default function SEOPage() {
 
         {projects.length > 0 && (
           <div className="flex items-center gap-3">
+            {fetchingReport && <Loader2 size={16} className="animate-spin text-[#4C1D95]" />}
             <select
-              className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:border-[#4C1D95]"
+              className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:border-[#4C1D95] disabled:opacity-50"
               value={selectedProjectId || ''}
+              disabled={fetchingReport}
               onChange={(e) => setSelectedProjectId(e.target.value)}
             >
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <button onClick={handleExport} disabled={exporting || keywords.length === 0} className="flex items-center gap-2 bg-[#4C1D95] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#3b1574] transition-colors disabled:opacity-60">
+            <button onClick={handleExport} disabled={exporting || fetchingReport || keywords.length === 0} className="flex items-center gap-2 bg-[#4C1D95] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#3b1574] transition-colors disabled:opacity-60">
               {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} Export Report
             </button>
           </div>
@@ -148,7 +156,7 @@ export default function SEOPage() {
       )}
 
       {projects.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200 text-center py-16 text-sm text-slate-400">No SEO projects yet</div>
+        <div className="bg-white rounded-2xl border border-slate-200 text-center py-16 text-sm text-slate-400">No SEO projects found</div>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

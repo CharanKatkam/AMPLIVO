@@ -10,12 +10,27 @@ export default function GlobalError({
 }) {
   return (
     <html lang="en">
-      <body>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-          <h2>Something went wrong!</h2>
-          <button onClick={() => reset()} style={{ padding: '8px 16px', background: '#4C1D95', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-            Try again
-          </button>
+      <body className="font-inter antialiased">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-[#F9FAFB] px-6 text-center">
+          <p className="text-sm font-semibold tracking-wide text-[#4C1D95]">500</p>
+          <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">Something went wrong</h1>
+          <p className="mt-3 max-w-md text-slate-600">
+            An unexpected error occurred on our end. Please try again, or head back to the homepage.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => reset()}
+              className="rounded-xl bg-[#4C1D95] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#3b1675]"
+            >
+              Try again
+            </button>
+            <a
+              href="/"
+              className="rounded-xl border border-slate-200 px-6 py-3 text-sm font-medium text-slate-700 transition-colors hover:border-[#4C1D95] hover:text-[#4C1D95]"
+            >
+              Return Home
+            </a>
+          </div>
         </div>
       </body>
     </html>

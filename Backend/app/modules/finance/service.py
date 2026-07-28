@@ -172,11 +172,16 @@ class InvoiceService:
 
     async def crm_approve_advance(self, invoice_id: uuid.UUID, *, actor_id: uuid.UUID | None) -> Invoice:
         """CRM reviews the lead/meeting/proposal/invoice, approves, and the
-        proposal+invoice+payment-link email goes out to the client."""
+        proposal+invoice+payment-link email goes out to the client.
+
+        If email delivery fails the invoice stays CRM_APPROVED (not
+        EMAIL_SENT) so the caller can inspect and retry. The activity log
+        records the outcome.
+        """
         from app.modules.leads.repository import LeadRepository
         from app.modules.portal_access.repository import PortalAccessTokenRepository
         from app.modules.portal_access.service import PortalAccessTokenService
-        from app.services.email_service import EmailService
+        from app.services.email_service import EmailDeliveryError, EmailService
 
         invoice = await self.get_invoice(invoice_id)
         if invoice.invoice_type not in (finance_constants.INVOICE_TYPE_ADVANCE, finance_constants.INVOICE_TYPE_FINAL):
@@ -202,8 +207,7 @@ class InvoiceService:
             token_service = PortalAccessTokenService(PortalAccessTokenRepository(self._db))
             email_service = EmailService()
 
-            # Proposal decision link (accept/reject/revise) - the client
-            # doesn't have a portal login yet, so this is a magic link too.
+            # Proposal decision link (accept/reject/revise) — magic link.
             if invoice.proposal_id:
                 from app.modules.crm.repository import ProposalRepository
                 proposal = await ProposalRepository(self._db).get_by_id(invoice.proposal_id)
@@ -214,25 +218,41 @@ class InvoiceService:
                         is_single_use=True, created_by=actor_id,
                     )
                     proposal_url = f"{settings.FRONTEND_URL}/portal-public/proposal/{proposal_token}"
-                    await email_service.send_proposal_link_email(
-                        to_email=contact_email, contact_name=contact_name,
-                        proposal_title=proposal.title, portal_url=proposal_url,
-                    )
+                    try:
+                        await email_service.send_proposal_link_email(
+                            to_email=contact_email, contact_name=contact_name,
+                            proposal_title=proposal.title, portal_url=proposal_url,
+                        )
+                    except EmailDeliveryError:
+                        await log_activity(
+                            self._db, user_id=actor_id, entity_type="invoice", entity_id=invoice.id,
+                            action="email_failed", description=f"Proposal email for invoice {invoice.invoice_number} failed to send to {contact_email}.",
+                        )
 
-            # Invoice payment link.
+            # Invoice payment link — the critical email.
             payment_token = await token_service.issue(
                 resource_type="invoice_payment", resource_id=invoice.id, lead_id=invoice.lead_id,
                 expires_in=timedelta(hours=settings.PAYMENT_LINK_TOKEN_EXPIRE_HOURS),
                 is_single_use=False, created_by=actor_id,
             )
             portal_url = f"{settings.FRONTEND_URL}/portal-public/pay/{payment_token}"
-            await email_service.send_invoice_payment_link_email(
-                to_email=contact_email, contact_name=contact_name, invoice_number=invoice.invoice_number,
-                amount=invoice.total_amount, currency=invoice.currency, portal_url=portal_url,
-            )
-            invoice.status = finance_constants.INVOICE_STATUS_EMAIL_SENT
-            if lead is not None:
-                lead.status = lead_pipeline.EMAIL_SENT
+            try:
+                await email_service.send_invoice_payment_link_email(
+                    to_email=contact_email, contact_name=contact_name, invoice_number=invoice.invoice_number,
+                    amount=invoice.total_amount, currency=invoice.currency, portal_url=portal_url,
+                )
+                invoice.status = finance_constants.INVOICE_STATUS_EMAIL_SENT
+                if lead is not None:
+                    lead.status = lead_pipeline.EMAIL_SENT
+                await log_activity(
+                    self._db, user_id=actor_id, entity_type="invoice", entity_id=invoice.id,
+                    action="email_sent", description=f"Payment-link email for invoice {invoice.invoice_number} sent to {contact_email}.",
+                )
+            except EmailDeliveryError:
+                await log_activity(
+                    self._db, user_id=actor_id, entity_type="invoice", entity_id=invoice.id,
+                    action="email_failed", description=f"Payment-link email for invoice {invoice.invoice_number} failed to send to {contact_email}. Invoice stays CRM_APPROVED.",
+                )
             await self._db.flush()
             await self._db.refresh(invoice)
 
@@ -283,6 +303,10 @@ class PaymentService:
         self._repo = repo
     async def list_payments(self, invoice_id: uuid.UUID) -> Sequence[Payment]:
         return await self._repo.list_by_invoice(invoice_id)
+    async def list_all_payments(self, *, status=None, sort_by=None, sort_order="desc", offset=0, limit=20):
+        items = await self._repo.get_all_filtered(status=status, sort_by=sort_by, sort_order=sort_order, offset=offset, limit=limit)
+        total = await self._repo.count_filtered(status=status)
+        return items, total
     async def get_payment(self, payment_id: uuid.UUID) -> Payment:
         payment = await self._repo.get_by_id(payment_id)
         if payment is None: raise NotFoundException("Payment")

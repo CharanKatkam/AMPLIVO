@@ -55,7 +55,7 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
   const Icon = iconMap[industry.icon] || Building2;
 
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       {/* Hero Section */}

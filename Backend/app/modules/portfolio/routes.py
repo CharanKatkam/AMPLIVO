@@ -5,6 +5,9 @@ import uuid
 
 from fastapi import APIRouter, Depends, status
 
+from app.dependencies.auth import get_current_user
+from app.dependencies.rbac import require_roles
+from app.models.user import User
 from app.modules.portfolio.dependencies import get_portfolio_service
 from app.modules.portfolio.schemas import PortfolioItemCreate, PortfolioItemRead, PortfolioItemUpdate
 from app.modules.portfolio.service import PortfolioItemService
@@ -12,6 +15,7 @@ from app.modules.portfolio.service import PortfolioItemService
 router = APIRouter(prefix="/portfolio", tags=["Portfolio"])
 
 
+# List/detail stay public - this is the marketing site's published content.
 @router.get("", response_model=list[PortfolioItemRead])
 async def list_portfolio(skip: int = 0, limit: int = 100, service: PortfolioItemService = Depends(get_portfolio_service)):
     return await service.list_all(skip=skip, limit=limit)
@@ -23,15 +27,15 @@ async def get_portfolio_item(id: uuid.UUID, service: PortfolioItemService = Depe
 
 
 @router.post("", response_model=PortfolioItemRead, status_code=status.HTTP_201_CREATED)
-async def create_portfolio_item(data: PortfolioItemCreate, service: PortfolioItemService = Depends(get_portfolio_service)):
+async def create_portfolio_item(data: PortfolioItemCreate, service: PortfolioItemService = Depends(get_portfolio_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     return await service.create(data)
 
 
 @router.put("/{id}", response_model=PortfolioItemRead)
-async def update_portfolio_item(id: uuid.UUID, data: PortfolioItemUpdate, service: PortfolioItemService = Depends(get_portfolio_service)):
+async def update_portfolio_item(id: uuid.UUID, data: PortfolioItemUpdate, service: PortfolioItemService = Depends(get_portfolio_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     return await service.update(id, data)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_portfolio_item(id: uuid.UUID, service: PortfolioItemService = Depends(get_portfolio_service)):
+async def delete_portfolio_item(id: uuid.UUID, service: PortfolioItemService = Depends(get_portfolio_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     await service.delete(id)

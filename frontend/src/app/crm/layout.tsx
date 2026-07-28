@@ -51,6 +51,7 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
+    <ProtectedRoute allowedRoles={['admin', 'crm']}>
     <div className="flex h-screen bg-[#0d0f17] overflow-hidden">
       {sidebarOpen && (
         <div
@@ -167,11 +168,10 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <ProtectedRoute>
-            {children}
-          </ProtectedRoute>
+          {children}
         </main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

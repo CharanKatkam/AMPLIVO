@@ -4,8 +4,11 @@ import uuid
 from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
+from app.core.sanitizers import SanitizedModel
+from app.core.field_types import HttpUrlStr
+
 # ── Project ──
-class ProjectBase(BaseModel):
+class ProjectBase(SanitizedModel):
     name: str = Field(min_length=1, max_length=200)
     client_id: uuid.UUID | None = None
     description: str | None = None
@@ -15,7 +18,7 @@ class ProjectBase(BaseModel):
     manager_id: uuid.UUID | None = None
 
 class ProjectCreate(ProjectBase): pass
-class ProjectUpdate(BaseModel):
+class ProjectUpdate(SanitizedModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     client_id: uuid.UUID | None = None
     description: str | None = None
@@ -40,7 +43,7 @@ class ProjectRead(BaseModel):
     member_ids: list[uuid.UUID] = Field(default_factory=list)
 
 # ── ProjectMember ──
-class ProjectMemberCreate(BaseModel):
+class ProjectMemberCreate(SanitizedModel):
     user_id: uuid.UUID
 
 class ProjectMemberRead(BaseModel):
@@ -51,7 +54,7 @@ class ProjectMemberRead(BaseModel):
     assigned_at: datetime
 
 # ── Task ──
-class TaskBase(BaseModel):
+class TaskBase(SanitizedModel):
     title: str = Field(min_length=1, max_length=300)
     description: str | None = None
     project_id: uuid.UUID | None = None
@@ -62,7 +65,7 @@ class TaskBase(BaseModel):
     assigned_to: uuid.UUID | None = None
 
 class TaskCreate(TaskBase): pass
-class TaskUpdate(BaseModel):
+class TaskUpdate(SanitizedModel):
     title: str | None = Field(None, min_length=1, max_length=300)
     description: str | None = None
     project_id: uuid.UUID | None = None
@@ -98,11 +101,11 @@ class TaskRead(BaseModel):
         return self.assigned_to
 
 # ── TaskComment ──
-class TaskCommentBase(BaseModel):
+class TaskCommentBase(SanitizedModel):
     content: str = Field(min_length=1)
 
 class TaskCommentCreate(TaskCommentBase): pass
-class TaskCommentUpdate(BaseModel):
+class TaskCommentUpdate(SanitizedModel):
     content: str | None = Field(None, min_length=1)
 
 class TaskCommentRead(BaseModel):
@@ -115,9 +118,9 @@ class TaskCommentRead(BaseModel):
     updated_at: datetime
 
 # ── TaskAttachment ──
-class TaskAttachmentBase(BaseModel):
+class TaskAttachmentBase(SanitizedModel):
     file_name: str = Field(min_length=1, max_length=300)
-    file_url: str
+    file_url: HttpUrlStr = Field(min_length=1)
 
 class TaskAttachmentCreate(TaskAttachmentBase): pass
 class TaskAttachmentRead(BaseModel):
@@ -130,21 +133,21 @@ class TaskAttachmentRead(BaseModel):
     created_at: datetime
 
 # ── TaskSubmission ──
-class TaskSubmissionCreate(BaseModel):
+class TaskSubmissionCreate(SanitizedModel):
     title: str = Field(min_length=1, max_length=300)
     work_summary: str | None = None
     deliverable_type: str = "link"
-    external_url: str | None = None
+    external_url: HttpUrlStr | None = None
     completion_percentage: int = Field(100, ge=0, le=100)
 
-class TaskSubmissionUpdate(BaseModel):
+class TaskSubmissionUpdate(SanitizedModel):
     title: str | None = Field(None, min_length=1, max_length=300)
     work_summary: str | None = None
     deliverable_type: str | None = None
-    external_url: str | None = None
+    external_url: HttpUrlStr | None = None
     completion_percentage: int | None = Field(None, ge=0, le=100)
 
-class TaskSubmissionReview(BaseModel):
+class TaskSubmissionReview(SanitizedModel):
     approve: bool
     reviewer_feedback: str | None = None
 

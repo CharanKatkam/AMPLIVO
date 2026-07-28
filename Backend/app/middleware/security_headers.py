@@ -5,10 +5,27 @@ from starlette.responses import Response
 _SECURITY_HEADERS = {
     "X-Frame-Options": "DENY",
     "X-Content-Type-Options": "nosniff",
+    # Legacy reflected-XSS filter. OWASP's Secure Headers Project now
+    # recommends explicitly disabling it (value "0") rather than "1;
+    # mode=block": the filter itself has been the target of exploitable
+    # bugs in older browsers, no current browser still implements it, and
+    # CSP (below) is the actual XSS mitigation. Sending "0" is the
+    # documented-safe way to stop those old browsers from engaging it.
+    "X-XSS-Protection": "0",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+    "Permissions-Policy": (
+        "geolocation=(), microphone=(), camera=(), payment=(), usb=(), "
+        "magnetometer=(), gyroscope=(), accelerometer=()"
+    ),
     "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'",
 }
+
+# Only meaningful - and only sent, per OWASP guidance - over an HTTPS
+# connection. 1 year + includeSubDomains is OWASP's minimum recommended
+# baseline. `preload` is deliberately omitted: it requires submitting the
+# domain to the browser preload list, an action with effects the app
+# itself can't undo, so that's a deploy-owner decision, not a default.
+_HSTS_VALUE = "max-age=31536000; includeSubDomains"
 
 # Swagger UI and ReDoc load JS/CSS from cdn.jsdelivr.net.  A blanket
 # 'self'-only CSP blocks those resources and renders the docs page blank.
@@ -23,6 +40,63 @@ _DOCS_CSP = (
     "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
     "frame-ancestors 'none'"
 )
+
+
+# The CSRF double-submit cookie (app/middleware/csrf.py) must be readable
+# by frontend JS to be echoed back in the X-CSRF-Token header - that's the
+# mechanism, not an oversight - so it's the one cookie exempted from the
+# blanket HttpOnly enforcement below.
+CSRF_COOKIE_NAME = "csrf_token"
+_NO_HTTPONLY_COOKIES = {CSRF_COOKIE_NAME}
+
+
+def is_secure_request(request: Request) -> bool:
+    """True for a connection the browser sees as HTTPS. Render (and most
+    PaaS hosts) terminate TLS at an edge proxy and forward plain HTTP to
+    the app, so request.url.scheme alone can't be trusted - the proxy's
+    X-Forwarded-Proto is read directly instead of relying on uvicorn
+    having already rewritten scope["scheme"] (which needs its own
+    --forwarded-allow-ips trust config we don't control here).
+    """
+    if request.url.scheme == "https":
+        return True
+    forwarded_proto = request.headers.get("x-forwarded-proto", "")
+    return forwarded_proto.split(",")[0].strip().lower() == "https"
+
+
+def _harden_cookie(cookie: str, *, is_secure: bool) -> str:
+    """Force HttpOnly/SameSite onto a single Set-Cookie value, without
+    disturbing whichever ones it already declares. Secure is only added
+    when the connection is actually HTTPS: a browser silently refuses to
+    store *any* cookie carrying the Secure attribute over plain HTTP, so
+    forcing it unconditionally would make cookies vanish in local/non-TLS
+    dev instead of hardening anything.
+    """
+    parts = [p.strip() for p in cookie.split(";") if p.strip()]
+    name = parts[0].split("=", 1)[0].strip()
+    attrs = {p.split("=", 1)[0].strip().lower() for p in parts[1:]}
+    if is_secure and "secure" not in attrs:
+        parts.append("Secure")
+    if "httponly" not in attrs and name not in _NO_HTTPONLY_COOKIES:
+        parts.append("HttpOnly")
+    if "samesite" not in attrs:
+        parts.append("SameSite=Lax")
+    return "; ".join(parts)
+
+
+def _harden_cookies(response: Response, *, is_secure: bool) -> None:
+    """Defense-in-depth: this app authenticates with bearer JWTs in the
+    response body, not cookies, so today this is a no-op on every route
+    except the CSRF double-submit cookie. It exists so that if a route
+    ever does add its own Set-Cookie header, it cannot ship without
+    HttpOnly/SameSite (and Secure, over HTTPS) already enforced.
+    """
+    cookies = response.headers.getlist("set-cookie")
+    if not cookies:
+        return
+    del response.headers["set-cookie"]
+    for cookie in cookies:
+        response.headers.append("set-cookie", _harden_cookie(cookie, is_secure=is_secure))
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -41,5 +115,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 response.headers.setdefault(header, _DOCS_CSP)
             else:
                 response.headers.setdefault(header, value)
+
+        is_secure = is_secure_request(request)
+
+        if is_secure:
+            response.headers.setdefault("Strict-Transport-Security", _HSTS_VALUE)
+
+        # Neither FastAPI, Starlette, nor this app ever sets this - it's an
+        # Express/PHP convention - but strip it defensively in case a
+        # dependency ever does; OWASP flags it as a stack-fingerprinting leak.
+        if "x-powered-by" in response.headers:
+            del response.headers["x-powered-by"]
+
+        _harden_cookies(response, is_secure=is_secure)
+
         return response
 

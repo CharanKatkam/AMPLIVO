@@ -5,6 +5,9 @@ import uuid
 
 from fastapi import APIRouter, Depends, status
 
+from app.dependencies.auth import get_current_user
+from app.dependencies.rbac import require_roles
+from app.models.user import User
 from app.modules.faqs.dependencies import get_faq_service
 from app.modules.faqs.schemas import FaqCategoryCreate, FaqCategoryRead, FaqCreate, FaqRead, FaqUpdate
 from app.modules.faqs.service import FaqService
@@ -12,6 +15,7 @@ from app.modules.faqs.service import FaqService
 router = APIRouter(prefix="/faqs", tags=["FAQs"])
 
 
+# List/detail stay public - this is the marketing site's published content.
 @router.get("", response_model=list[FaqRead])
 async def list_faqs(skip: int = 0, limit: int = 100, service: FaqService = Depends(get_faq_service)):
     return await service.list_all(skip=skip, limit=limit)
@@ -23,17 +27,17 @@ async def get_faq(id: uuid.UUID, service: FaqService = Depends(get_faq_service))
 
 
 @router.post("", response_model=FaqRead, status_code=status.HTTP_201_CREATED)
-async def create_faq(data: FaqCreate, service: FaqService = Depends(get_faq_service)):
+async def create_faq(data: FaqCreate, service: FaqService = Depends(get_faq_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     return await service.create(data)
 
 
 @router.put("/{id}", response_model=FaqRead)
-async def update_faq(id: uuid.UUID, data: FaqUpdate, service: FaqService = Depends(get_faq_service)):
+async def update_faq(id: uuid.UUID, data: FaqUpdate, service: FaqService = Depends(get_faq_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     return await service.update(id, data)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_faq(id: uuid.UUID, service: FaqService = Depends(get_faq_service)):
+async def delete_faq(id: uuid.UUID, service: FaqService = Depends(get_faq_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     await service.delete(id)
 
 
@@ -43,5 +47,5 @@ async def list_faq_categories(service: FaqService = Depends(get_faq_service)):
 
 
 @router.post("/categories", response_model=FaqCategoryRead, status_code=status.HTTP_201_CREATED)
-async def create_faq_category(data: FaqCategoryCreate, service: FaqService = Depends(get_faq_service)):
+async def create_faq_category(data: FaqCategoryCreate, service: FaqService = Depends(get_faq_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     return await service.create_category(data)

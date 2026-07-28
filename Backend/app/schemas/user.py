@@ -1,13 +1,20 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import ConfigDict, EmailStr, Field, field_validator
+
+from app.core.field_types import NameStr
+from app.core.sanitizers import SanitizedModel, sanitize_string
 
 
-class UserBase(BaseModel):
+class UserBase(SanitizedModel):
     email: EmailStr
-    username: str = Field(min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_.]+$")
-    full_name: str = Field(min_length=2, max_length=150)
+    username: str = Field(
+        min_length=3, max_length=50,
+        pattern=r"^[a-zA-Z0-9_.]+$",
+        description="Alphanumeric, underscores, dots.",
+    )
+    full_name: NameStr = Field(min_length=2, max_length=150)
 
 
 class UserCreate(UserBase):
@@ -33,8 +40,23 @@ class UserCreate(UserBase):
             raise ValueError("Password must contain at least one letter.")
         return value
 
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        return value.strip().lower()
 
-class UserRead(BaseModel):
+    @field_validator("username")
+    @classmethod
+    def sanitize_username(cls, value: str) -> str:
+        return sanitize_string(value.strip().lower())
+
+    @field_validator("full_name")
+    @classmethod
+    def sanitize_name(cls, value: str) -> str:
+        return sanitize_string(value)
+
+
+class UserRead(SanitizedModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -49,12 +71,14 @@ class UserRead(BaseModel):
     updated_at: datetime
     role_name: str | None = None
 
+    _sanitized_fields = {"full_name": "raw", "username": "raw"}
 
-class EmailExistsResponse(BaseModel):
+
+class EmailExistsResponse(SanitizedModel):
     email: EmailStr
     exists: bool
 
 
-class UsernameExistsResponse(BaseModel):
+class UsernameExistsResponse(SanitizedModel):
     username: str
     exists: bool

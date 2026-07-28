@@ -18,7 +18,31 @@ const meetingTypes: { value: MeetingType; label: string; icon: React.ElementType
   { value: 'Demo', label: 'Demo', icon: Monitor },
 ];
 
+// 30-minute interval slots for the whole day, e.g. "09:00" -> "9:00 AM"
+const TIME_SLOTS: { value: string; label: string }[] = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? '00' : '30';
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return { value: `${String(h).padStart(2, '0')}:${m}`, label: `${hour12}:${m} ${period}` };
+});
+
+const COMMON_TIMEZONES = [
+  { value: 'Asia/Kolkata', label: 'IST' },
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/New_York', label: 'EST/EDT (New York)' },
+  { value: 'America/Chicago', label: 'CST/CDT (Chicago)' },
+  { value: 'America/Denver', label: 'MST/MDT (Denver)' },
+  { value: 'America/Los_Angeles', label: 'PST/PDT (Los Angeles)' },
+  { value: 'Europe/London', label: 'BST/GMT (London)' },
+  { value: 'Europe/Paris', label: 'CEST/CET (Paris)' },
+  { value: 'Asia/Singapore', label: 'SGT (Singapore)' },
+  { value: 'Australia/Sydney', label: 'AEST/AEDT (Sydney)' },
+];
+
 export function ScheduleMeetingModal({ leadId, leadName, company, onClose, onSchedule }: ScheduleMeetingModalProps) {
+  const detectedTz = typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
+  const [selectedTz, setSelectedTz] = useState(detectedTz);
   const [form, setForm] = useState({
     date: '',
     time: '',
@@ -29,9 +53,32 @@ export function ScheduleMeetingModal({ leadId, leadName, company, onClose, onSch
     followUpRequired: false,
   });
 
+  const [dateTimeError, setDateTimeError] = useState<string | null>(null);
+
+  const timezoneOptions = [...COMMON_TIMEZONES];
+  if (detectedTz && !timezoneOptions.some(tz => tz.value === detectedTz)) {
+    timezoneOptions.unshift({ value: detectedTz, label: `${detectedTz} (Local)` });
+  }
+
+  const [agendaError, setAgendaError] = useState<string | null>(null);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.date || !form.time) return;
+
+    if (!form.agenda.trim()) {
+      setAgendaError('Agenda is required.');
+      return;
+    }
+    setAgendaError(null);
+
+    const selected = new Date(`${form.date}T${form.time}:00`);
+    if (selected.getTime() < Date.now()) {
+      setDateTimeError('Meeting date/time cannot be in the past.');
+      return;
+    }
+    setDateTimeError(null);
+
     onSchedule({
       leadId,
       leadName,
@@ -44,6 +91,7 @@ export function ScheduleMeetingModal({ leadId, leadName, company, onClose, onSch
       agenda: form.agenda,
       notes: form.notes,
       followUpRequired: form.followUpRequired,
+      timezone: selectedTz,
     });
     onClose();
   };
@@ -75,23 +123,15 @@ export function ScheduleMeetingModal({ leadId, leadName, company, onClose, onSch
           {/* Meeting Type */}
           <div>
             <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Meeting Type</label>
-            <div className="grid grid-cols-2 gap-2">
-              {meetingTypes.map(({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setForm({ ...form, type: value })}
-                  className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
-                    form.type === value
-                      ? 'bg-[#4C1D95] text-white border-[#4C1D95] shadow-sm'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-[#4C1D95]/40 hover:bg-violet-50/50'
-                  }`}
-                >
-                  <Icon size={16} />
-                  {label}
-                </button>
+            <select
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value as MeetingType })}
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+            >
+              {meetingTypes.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
-            </div>
+            </select>
           </div>
 
           {/* Date + Time */}
@@ -103,9 +143,10 @@ export function ScheduleMeetingModal({ leadId, leadName, company, onClose, onSch
               <input
                 type="date"
                 required
+                aria-required="true"
                 min={new Date().toISOString().split('T')[0]}
                 value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                onChange={(e) => { setForm({ ...form, date: e.target.value }); setDateTimeError(null); }}
                 className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
               />
             </div>
@@ -113,15 +154,25 @@ export function ScheduleMeetingModal({ leadId, leadName, company, onClose, onSch
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
                 <Clock size={12} className="inline mr-1" />Time <span className="text-red-500">*</span>
               </label>
-              <input
-                type="time"
+              <select
                 required
+                aria-required="true"
                 value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
-              />
+                onChange={(e) => { setForm({ ...form, time: e.target.value }); setDateTimeError(null); }}
+                className={`w-full px-3 py-2.5 border rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 ${
+                  dateTimeError ? 'border-red-400' : 'border-slate-200 focus:border-[#4C1D95]'
+                }`}
+              >
+                <option value="">-- Select time --</option>
+                {TIME_SLOTS.map((slot) => (
+                  <option key={slot.value} value={slot.value}>{slot.label}</option>
+                ))}
+              </select>
             </div>
           </div>
+          {dateTimeError && (
+            <p className="-mt-3 text-xs text-red-500 font-medium">{dateTimeError}</p>
+          )}
 
           {/* Duration */}
           <div>
@@ -140,16 +191,39 @@ export function ScheduleMeetingModal({ leadId, leadName, company, onClose, onSch
             </select>
           </div>
 
+          {/* Timezone */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Timezone</label>
+            <select
+              value={selectedTz}
+              onChange={(e) => setSelectedTz(e.target.value)}
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+            >
+              {timezoneOptions.map((tz) => (
+                <option key={tz.value} value={tz.value}>
+                  {tz.label} ({tz.value})
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Agenda */}
           <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Agenda</label>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+              Agenda <span className="text-red-500">*</span>
+            </label>
             <textarea
+              required
+              aria-required="true"
               value={form.agenda}
-              onChange={(e) => setForm({ ...form, agenda: e.target.value })}
+              onChange={(e) => { setForm({ ...form, agenda: e.target.value }); setAgendaError(null); }}
               placeholder="What will be discussed in this meeting?"
               rows={3}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95] resize-none"
+              className={`w-full px-3 py-2.5 border rounded-xl text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 resize-none ${
+                agendaError ? 'border-red-400' : 'border-slate-200 focus:border-[#4C1D95]'
+              }`}
             />
+            {agendaError && <p className="mt-1.5 text-xs text-red-500 font-medium">{agendaError}</p>}
           </div>
 
           {/* Follow-up */}

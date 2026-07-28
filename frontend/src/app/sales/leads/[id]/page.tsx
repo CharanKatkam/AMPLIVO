@@ -7,6 +7,7 @@ import { ActivityFeed } from '@/components/sales/ActivityFeed';
 import { ScheduleMeetingModal } from '@/components/sales/ScheduleMeetingModal';
 import { ServiceSelector } from '@/components/sales/ServiceSelector';
 import { useSalesStore } from '@/store/salesStore';
+import { useToastStore } from '@/store/toastStore';
 import { SalesLeadStatus } from '@/types';
 import {
   ArrowLeft, CalendarDays, Clock, FileText, Edit2, Save, X,
@@ -20,19 +21,42 @@ interface PageProps {
 }
 
 const STATUS_OPTIONS: SalesLeadStatus[] = [
-  'New', 'Contacted', 'Meeting Scheduled', 'Proposal Sent', 'Negotiation', 'Won', 'Lost',
+  'New', 'Contacted', 'Meeting Scheduled', 'Proposal Sent', 'Negotiation', 'Won', 'Lost', 'Ready for CRM',
 ];
+
+const formatDate = (isoString: string | null | undefined) => {
+  if (!isoString) return 'Not Scheduled';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return isoString;
+  }
+};
 
 export default function LeadDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
   const { leads, updateLeadStatus, updateLeadNotes, updateLeadBudget, updateLeadServices, scheduleMeeting, generateInvoice } = useSalesStore();
+  const { showToast } = useToastStore();
   const lead = leads.find((l) => l.id === id);
 
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [editingBudget, setEditingBudget] = useState(false);
   const [editingServices, setEditingServices] = useState(false);
+  // Bugs 11, 12, 13: local edit state is seeded from the lead record at the
+  // moment each editor opens (see the "Edit"/"Edit Services" handlers below),
+  // rather than kept in sync via an effect - these values are only ever read
+  // while their corresponding editingX flag is true.
   const [notesValue, setNotesValue] = useState(lead?.notes ?? '');
   const [budgetValue, setBudgetValue] = useState(lead?.budget ?? 0);
   const [servicesValue, setServicesValue] = useState(lead?.interestedServices ?? []);
@@ -86,52 +110,7 @@ export default function LeadDetailPage({ params }: PageProps) {
     <div>
       <SalesHeader
         title={`${lead.firstName} ${lead.lastName}`}
-        subtitle={`${lead.company} · ${lead.city}`}
-        actions={
-          <div className="flex items-center gap-2">
-            <Link
-              href="/sales/leads"
-              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
-            >
-              <ArrowLeft size={14} /> Back
-            </Link>
-
-            <button
-              onClick={() => setShowMeetingModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-[#4C1D95] rounded-xl text-sm font-semibold hover:bg-violet-50 hover:border-violet-200 transition-colors"
-            >
-              <CalendarDays size={15} /> Schedule Meeting
-            </button>
-
-            {canGenerateInvoice && (
-              <button
-                onClick={handleGenerateInvoice}
-                disabled={generatingInvoice}
-                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-[#4C1D95] to-[#7C3AED] text-white rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-violet-500/25 transition-all disabled:opacity-70"
-              >
-                {generatingInvoice ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <FileText size={15} /> Generate 25% Invoice
-                  </>
-                )}
-              </button>
-            )}
-
-            {lead.invoiceGenerated && lead.invoiceId && (
-              <Link
-                href={`/sales/invoices/${lead.invoiceId}`}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-50 border border-purple-200 text-purple-700 rounded-xl text-sm font-semibold hover:bg-purple-100 transition-colors"
-              >
-                <CheckCircle2 size={15} /> View Invoice
-              </Link>
-            )}
-          </div>
-        }
+        subtitle={`${lead.company || 'No Company Provided'} · ${lead.city || 'Unassigned City'}`}
       />
 
       {/* Invoice Error Toast */}
@@ -156,7 +135,64 @@ export default function LeadDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      <div className="p-6">
+      <div className="p-6 space-y-6">
+        {/* Page Actions Bar (BUG-014 Layout Hierarchy & BUG-023 Back Button Referrer) */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                if (window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push('/sales/leads');
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+            >
+              <ArrowLeft size={14} /> Back
+            </button>
+            <div className="h-4 w-px bg-slate-200" />
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Lead Profile</h2>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowMeetingModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-[#4C1D95] rounded-xl text-xs font-bold hover:bg-violet-50 hover:border-violet-200 transition-colors shadow-sm"
+            >
+              <CalendarDays size={14} /> Schedule Meeting
+            </button>
+
+            {canGenerateInvoice && (
+              <button
+                onClick={handleGenerateInvoice}
+                disabled={generatingInvoice}
+                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-[#4C1D95] to-[#7C3AED] text-white rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-violet-500/25 transition-all disabled:opacity-70 shadow-sm"
+              >
+                {generatingInvoice ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileText size={14} /> Generate 25% Invoice
+                  </>
+                )}
+              </button>
+            )}
+
+            {lead.invoiceGenerated && lead.invoiceId && (
+              <Link
+                href={`/sales/invoices/${lead.invoiceId}`}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-50 border border-purple-200 text-purple-700 rounded-xl text-xs font-semibold hover:bg-purple-100 transition-colors shadow-sm"
+              >
+                <CheckCircle2 size={14} /> View Invoice
+              </Link>
+            )}
+          </div>
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* LEFT COLUMN */}
           <div className="space-y-5">
@@ -165,13 +201,13 @@ export default function LeadDetailPage({ params }: PageProps) {
               <div className="flex items-start justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#4C1D95] to-[#7C3AED] flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
-                    {lead.firstName[0]}{lead.lastName[0]}
+                    {(lead.firstName?.[0] || '') + (lead.lastName?.[0] || '') || 'UL'}
                   </div>
                   <div>
                     <h2 className="font-bold text-slate-900 text-base" style={{ fontFamily: "'Sora', sans-serif" }}>
-                      {lead.firstName} {lead.lastName}
+                      {lead.firstName || lead.lastName ? `${lead.firstName} ${lead.lastName}`.trim() : 'Unnamed Lead'}
                     </h2>
-                    <p className="text-sm text-slate-500">{lead.designation}</p>
+                    <p className="text-sm text-slate-500">{lead.designation || <span className="text-slate-400 italic">No Designation Provided</span>}</p>
                   </div>
                 </div>
                 <LeadStatusBadge status={lead.status} size="sm" />
@@ -180,15 +216,27 @@ export default function LeadDetailPage({ params }: PageProps) {
               <div className="space-y-3">
                 <div className="flex items-center gap-3 text-sm">
                   <Mail size={15} className="text-slate-300 flex-shrink-0" />
-                  <a href={`mailto:${lead.email}`} className="text-slate-700 hover:text-[#4C1D95] transition-colors truncate">{lead.email}</a>
+                  {lead.email ? (
+                    <a href={`mailto:${lead.email}`} className="text-slate-700 hover:text-[#4C1D95] transition-colors truncate">{lead.email}</a>
+                  ) : (
+                    <span className="text-slate-400 italic">No Email Provided</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Phone size={15} className="text-slate-300 flex-shrink-0" />
-                  <a href={`tel:${lead.phone}`} className="text-slate-700 hover:text-[#4C1D95] transition-colors">{lead.phone}</a>
+                  {lead.phone ? (
+                    <a href={`tel:${lead.phone}`} className="text-slate-700 hover:text-[#4C1D95] transition-colors">{lead.phone}</a>
+                  ) : (
+                    <span className="text-slate-400 italic">No Phone Provided</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Globe size={15} className="text-slate-300 flex-shrink-0" />
-                  <a href={`https://${lead.website}`} target="_blank" rel="noreferrer" className="text-[#4C1D95] hover:underline truncate">{lead.website}</a>
+                  {lead.website ? (
+                    <a href={`https://${lead.website}`} target="_blank" rel="noreferrer" className="text-[#4C1D95] hover:underline truncate">{lead.website}</a>
+                  ) : (
+                    <span className="text-slate-400 italic">No Website Provided</span>
+                  )}
                 </div>
               </div>
 
@@ -215,23 +263,23 @@ export default function LeadDetailPage({ params }: PageProps) {
               <div className="space-y-3">
                 <div>
                   <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Company</div>
-                  <div className="text-sm text-slate-700 font-semibold mt-0.5">{lead.company}</div>
+                  <div className="text-sm text-slate-700 font-semibold mt-0.5">{lead.company || <span className="text-slate-400 italic">No Company Provided</span>}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Industry</div>
-                  <div className="text-sm text-slate-700 mt-0.5">{lead.industry}</div>
+                  <div className="text-sm text-slate-700 mt-0.5">{lead.industry || <span className="text-slate-400 italic">Not Provided</span>}</div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Team Size</div>
                     <div className="flex items-center gap-1 text-sm text-slate-700 mt-0.5">
-                      <Users size={12} className="text-slate-300" />{lead.companySize}
+                      <Users size={12} className="text-slate-300" />{lead.companySize || <span className="text-slate-400 italic">Not Provided</span>}
                     </div>
                   </div>
                   <div>
                     <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">City</div>
                     <div className="flex items-center gap-1 text-sm text-slate-700 mt-0.5">
-                      <MapPin size={12} className="text-slate-300" />{lead.city}
+                      <MapPin size={12} className="text-slate-300" />{lead.city || <span className="text-slate-400 italic">Not Provided</span>}
                     </div>
                   </div>
                 </div>
@@ -278,7 +326,7 @@ export default function LeadDetailPage({ params }: PageProps) {
                       <div className="text-2xl font-bold text-[#4C1D95]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                         ₹{lead.budget.toLocaleString('en-IN')}
                       </div>
-                      <button onClick={() => setEditingBudget(true)} className="p-1.5 text-slate-400 hover:text-[#4C1D95] rounded-lg hover:bg-violet-50 transition-colors">
+                      <button onClick={() => { setBudgetValue(lead.budget); setEditingBudget(true); }} className="p-1.5 text-slate-400 hover:text-[#4C1D95] rounded-lg hover:bg-violet-50 transition-colors">
                         <Edit2 size={13} />
                       </button>
                     </div>
@@ -302,10 +350,12 @@ export default function LeadDetailPage({ params }: PageProps) {
                 <div>
                   <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Assigned To</div>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#4C1D95] to-[#7C3AED] flex items-center justify-center text-white text-[10px] font-bold">
-                      {lead.assignedTo.split(' ').map((p) => p[0]).join('').slice(0, 2)}
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white text-[10px] font-bold">
+                      {lead.assignedTo ? lead.assignedTo.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase() : 'UA'}
                     </div>
-                    <span className="text-sm font-medium text-slate-700">{lead.assignedTo}</span>
+                    <span className="text-sm font-medium text-slate-700">
+                      {lead.assignedTo || <span className="text-slate-400 italic">Unassigned</span>}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -319,7 +369,17 @@ export default function LeadDetailPage({ params }: PageProps) {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-slate-800 text-sm">Interested Services</h3>
                 <button
-                  onClick={() => setEditingServices(!editingServices)}
+                  onClick={() => {
+                    if (!editingServices) {
+                      setServicesValue(lead.interestedServices);
+                      setEditingServices(true);
+                    } else {
+                      // "Done" must persist the selection, not silently discard it.
+                      updateLeadServices(lead.id, servicesValue);
+                      setEditingServices(false);
+                      showToast('Interested services saved successfully', 'success');
+                    }
+                  }}
                   className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
                     editingServices ? 'bg-[#4C1D95] text-white' : 'bg-violet-50 text-[#4C1D95] hover:bg-violet-100'
                   }`}
@@ -335,7 +395,11 @@ export default function LeadDetailPage({ params }: PageProps) {
                     onChange={setServicesValue}
                   />
                   <button
-                    onClick={() => { updateLeadServices(lead.id, servicesValue); setEditingServices(false); }}
+                    onClick={() => {
+                      updateLeadServices(lead.id, servicesValue);
+                      setEditingServices(false);
+                      showToast('Interested services saved successfully', 'success');
+                    }}
                     className="mt-4 w-full py-2.5 bg-[#4C1D95] text-white rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors"
                   >
                     Save Services
@@ -383,7 +447,11 @@ export default function LeadDetailPage({ params }: PageProps) {
                   />
                   <div className="flex gap-2 mt-3">
                     <button
-                      onClick={() => { updateLeadNotes(lead.id, notesValue); setEditingNotes(false); }}
+                      onClick={() => {
+                        updateLeadNotes(lead.id, notesValue);
+                        setEditingNotes(false);
+                        showToast('Notes saved successfully', 'success');
+                      }}
                       className="flex-1 py-2.5 bg-[#4C1D95] text-white rounded-xl text-sm font-semibold hover:bg-[#3b1574] transition-colors"
                     >
                       Save Notes
@@ -506,13 +574,15 @@ export default function LeadDetailPage({ params }: PageProps) {
                 <CalendarDays size={18} className="text-amber-600 flex-shrink-0" />
                 <div>
                   <div className="text-xs text-amber-700 font-semibold">Next Follow-up</div>
-                  <div className="text-sm font-bold text-amber-800">{lead.followUpDate}</div>
+                  <div className="text-sm font-bold text-amber-800">
+                    {lead.followUpDate ? formatDate(lead.followUpDate) : 'Not Scheduled'}
+                  </div>
                 </div>
               </div>
-              <div className="mt-3 text-xs text-slate-400">
-                <span className="font-medium text-slate-500">Created:</span> {lead.createdAt}
+              <div className="mt-3 text-[10px] text-slate-400">
+                <span className="font-medium text-slate-500">Created:</span> {formatDate(lead.createdAt)}
                 {' · '}
-                <span className="font-medium text-slate-500">Last Updated:</span> {lead.lastUpdated}
+                <span className="font-medium text-slate-500">Last Updated:</span> {formatDate(lead.lastUpdated)}
               </div>
             </div>
           </div>

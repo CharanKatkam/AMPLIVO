@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.sanitizers import prevent_header_injection, sanitize_string
+
 
 class LoginRequest(BaseModel):
     model_config = ConfigDict(
@@ -13,6 +15,13 @@ class LoginRequest(BaseModel):
 
     identifier: str = Field(..., min_length=3, max_length=255, description="Email address or username")
     password: str = Field(..., min_length=8, max_length=128)
+
+    @classmethod
+    def _sanitize_login(cls, data: dict) -> dict:
+        if isinstance(data, dict):
+            if "identifier" in data and isinstance(data["identifier"], str):
+                data["identifier"] = sanitize_string(prevent_header_injection(data["identifier"]))
+        return data
 
 
 class RefreshTokenRequest(BaseModel):

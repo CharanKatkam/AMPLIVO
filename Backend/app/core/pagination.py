@@ -25,7 +25,11 @@ class PaginationParams:
     def __init__(
         self,
         page: int = Query(1, ge=1, description="Page number (1-indexed)"),
-        page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+        # Several frontend "load everything for client-side filtering" views
+        # (sales leads/meetings, admin analytics, portal calendar, etc.) request
+        # page_size=200 in one shot; the cap must cover that or every one of
+        # those requests 422s and the page silently renders empty.
+        page_size: int = Query(20, ge=1, le=500, description="Items per page"),
         sort_by: str | None = Query(None, description="Column name to sort by"),
         sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort direction"),
         search: str | None = Query(None, min_length=1, max_length=200, description="Free-text search term"),

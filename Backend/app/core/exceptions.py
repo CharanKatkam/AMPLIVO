@@ -70,6 +70,19 @@ class RateLimitException(AppException):
     error_code = "rate_limit_exceeded"
     message = "Too many requests. Please try again later."
 
+    def __init__(self, message: str | None = None, retry_after: int | None = None) -> None:
+        super().__init__(message)
+        # Seconds until the caller may retry - surfaced as a Retry-After
+        # response header by error_response(). None when not computed by
+        # the caller (falls back to no header, never a wrong value).
+        self.retry_after = retry_after
+
+
+class CSRFException(AppException):
+    status_code = 403
+    error_code = "csrf_token_invalid"
+    message = "CSRF token missing or invalid."
+
 
 class ReservedUsernameException(AppException):
     status_code = 409
