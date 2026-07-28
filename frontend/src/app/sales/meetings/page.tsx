@@ -139,7 +139,8 @@ export default function MeetingsPage() {
                     <CalendarDays size={13} className="text-slate-300" />{meeting.date}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <Clock size={13} className="text-slate-300" />{meeting.time}
+                    <Clock size={13} className="text-slate-300" />
+                    {new Date(`1970-01-01T${meeting.time}:00`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </div>
                   <div className="text-xs text-slate-400">{meeting.duration} min</div>
                 </div>

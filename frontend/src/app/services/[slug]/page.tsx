@@ -7,6 +7,7 @@ import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
 import { BackButton } from '@/components/ui/BackButton';
 import { services } from '@/data/services';
+import { serviceHeroImages } from '@/data/serviceHeroImages';
 import { ArrowRight, ChevronRight, CheckCircle2, Zap, Share2, Target, Search, Palette, FileText, Users, Globe, Star, Video } from 'lucide-react';
 
 const iconMap: Record<string, React.ElementType> = {
@@ -163,25 +164,29 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const relatedServices = services.filter((s) => s.slug !== slug).slice(0, 3);
 
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-32 pb-20 relative overflow-hidden">
-        {/* Hero Background Image */}
-        <Image
-          src={heroImageMap[service.slug] || '/images/services/services-hero.jpg'}
-          alt=""
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="100vw"
-        />
+      <section
+        className="pt-32 pb-20 relative overflow-hidden bg-slate-950"
+      >
+        {/* Optimized Background Image */}
+        {serviceHeroImages[service.slug] && (
+          <Image
+            src={serviceHeroImages[service.slug]}
+            alt={service.title}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover opacity-35"
+          />
+        )}
 
-        {/* Readability Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/45 via-slate-950/20 to-slate-950/45" />
+        {/* Consistent Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-[#1a0540]/80 to-[#4C1D95]/75" />
 
-        {/* Service-Specific Background Overlay */}
+        {/* Service-Specific Graphic Overlay */}
         <ServiceHeroBackground slug={service.slug} />
 
         {/* Decorative blobs */}

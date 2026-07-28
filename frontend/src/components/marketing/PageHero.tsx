@@ -49,9 +49,9 @@ const ctaVariants = {
 };
 
 export function PageHero({ config, className = '' }: PageHeroProps) {
-  const { background, content, accent = 'default' } = config;
+  const { background, content } = config;
 
-  const overlayStyle = 'from-slate-950/45 via-slate-950/20 to-slate-950/45';
+  const overlayStyle = 'from-slate-950/85 via-slate-950/70 to-slate-950/85';
 
   return (
     <section
@@ -63,7 +63,7 @@ export function PageHero({ config, className = '' }: PageHeroProps) {
       <div className={`absolute inset-0 bg-gradient-to-br ${overlayStyle}`} />
 
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.06] backdrop-blur-[2px]"
         style={{
           backgroundImage:
             'radial-gradient(circle at 25% 50%, #7C3AED 0%, transparent 50%), radial-gradient(circle at 75% 50%, #06B6D4 0%, transparent 50%)',
@@ -79,7 +79,7 @@ export function PageHero({ config, className = '' }: PageHeroProps) {
         >
           {content.badge && (
             <motion.div variants={badgeVariants} className="mb-6">
-              <span className="inline-block bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-bold px-5 py-2.5 rounded-full uppercase tracking-widest">
+              <span className="inline-block bg-white/15 backdrop-blur-md border border-white/30 text-white text-xs font-bold px-5 py-2.5 rounded-full uppercase tracking-widest drop-shadow-sm">
                 {content.badge}
               </span>
             </motion.div>
@@ -87,7 +87,7 @@ export function PageHero({ config, className = '' }: PageHeroProps) {
 
           {content.iconName && (
             <motion.div variants={badgeVariants} className="mb-6">
-              <div className="w-16 h-16 bg-white/15 rounded-2xl flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
                 <HeroIcon name={content.iconName} />
               </div>
             </motion.div>
@@ -95,7 +95,7 @@ export function PageHero({ config, className = '' }: PageHeroProps) {
 
           <motion.h1
             variants={fadeUpVariants}
-            className={`font-bold text-white mb-5 ${content.titleClass || 'text-4xl lg:text-5xl'}`}
+            className={`font-bold text-slate-50 drop-shadow-xl mb-5 ${content.titleClass || 'text-4xl lg:text-5xl'}`}
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
             {content.title}
@@ -103,7 +103,7 @@ export function PageHero({ config, className = '' }: PageHeroProps) {
 
           <motion.p
             variants={fadeUpVariants}
-            className="text-white/75 text-lg leading-relaxed max-w-2xl mx-auto"
+            className="text-slate-100/90 text-lg leading-relaxed max-w-2xl mx-auto drop-shadow-md font-medium"
           >
             {content.subtitle}
           </motion.p>
@@ -112,7 +112,7 @@ export function PageHero({ config, className = '' }: PageHeroProps) {
             <motion.div variants={ctaVariants} className="mt-8">
               <a
                 href={content.cta.href}
-                className="inline-block bg-white text-[#4C1D95] font-semibold px-8 py-3.5 rounded-xl shadow-lg shadow-black/20 hover:-translate-y-1 transition-all duration-200"
+                className="inline-block bg-white text-[#4C1D95] font-semibold px-8 py-3.5 rounded-xl shadow-xl hover:-translate-y-1 transition-all duration-200"
               >
                 {content.cta.label}
               </a>

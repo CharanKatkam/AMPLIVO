@@ -23,10 +23,15 @@ def get_audit_service(db: AsyncSession = Depends(get_db)) -> AuditService:
     return AuditService(AuditLogRepository(db))
 
 
+from functools import lru_cache
+
+
+@lru_cache(maxsize=1)
 def get_email_service() -> EmailService:
     return EmailService()
 
 
+@lru_cache(maxsize=1)
 def get_geolocation_service() -> GeoLocationService:
     return GeoLocationService()
 

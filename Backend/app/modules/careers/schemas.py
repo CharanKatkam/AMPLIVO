@@ -5,21 +5,24 @@ import uuid
 from datetime import date, datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
+
+from app.core.field_types import HttpUrlStr, NameStr, PhoneNumber
+from app.core.sanitizers import SanitizedModel
 
 
-class JobOpeningBase(BaseModel):
-    title: str
+class JobOpeningBase(SanitizedModel):
+    title: NameStr
     department_id: Optional[uuid.UUID] = None
-    location: Optional[str] = None
-    employment_type: str = "full_time"
-    work_mode: Optional[str] = None
+    location: Optional[str] = Field(None, min_length=1, max_length=200)
+    employment_type: str = Field(default="full_time", min_length=1, max_length=50)
+    work_mode: Optional[str] = Field(None, min_length=1, max_length=50)
     vacancies: int = 1
     skills_required: Optional[list[str]] = None
     description: Optional[str] = None
     requirements: Optional[str] = None
-    salary_range: Optional[str] = None
-    status: str = "open"
+    salary_range: Optional[str] = Field(None, min_length=1, max_length=100)
+    status: str = Field(default="open", min_length=1, max_length=50)
     posted_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
 
@@ -28,18 +31,18 @@ class JobOpeningCreate(JobOpeningBase):
     pass
 
 
-class JobOpeningUpdate(BaseModel):
-    title: Optional[str] = None
+class JobOpeningUpdate(SanitizedModel):
+    title: Optional[NameStr] = None
     department_id: Optional[uuid.UUID] = None
-    location: Optional[str] = None
-    employment_type: Optional[str] = None
-    work_mode: Optional[str] = None
+    location: Optional[str] = Field(None, min_length=1, max_length=200)
+    employment_type: Optional[str] = Field(None, min_length=1, max_length=50)
+    work_mode: Optional[str] = Field(None, min_length=1, max_length=50)
     vacancies: Optional[int] = None
     skills_required: Optional[list[str]] = None
     description: Optional[str] = None
     requirements: Optional[str] = None
-    salary_range: Optional[str] = None
-    status: Optional[str] = None
+    salary_range: Optional[str] = Field(None, min_length=1, max_length=100)
+    status: Optional[str] = Field(None, min_length=1, max_length=50)
     posted_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
 
@@ -49,21 +52,21 @@ class JobOpeningRead(JobOpeningBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
-class JobApplicationBase(BaseModel):
+class JobApplicationBase(SanitizedModel):
     job_opening_id: uuid.UUID
-    applicant_name: str
-    applicant_email: str
-    applicant_phone: Optional[str] = None
-    resume_url: Optional[str] = None
+    applicant_name: NameStr
+    applicant_email: EmailStr
+    applicant_phone: PhoneNumber = None
+    resume_url: HttpUrlStr = None
     cover_letter: Optional[str] = None
-    portfolio_url: Optional[str] = None
+    portfolio_url: HttpUrlStr = None
     skills: Optional[list[str]] = None
     education: Optional[list[dict]] = None
     work_history: Optional[list[dict]] = None
-    status: str = "submitted"
+    status: str = Field(default="submitted", min_length=1, max_length=50)
     notes: Optional[str] = None
 
 
@@ -71,8 +74,8 @@ class JobApplicationCreate(JobApplicationBase):
     pass
 
 
-class JobApplicationUpdate(BaseModel):
-    status: Optional[str] = None
+class JobApplicationUpdate(SanitizedModel):
+    status: Optional[str] = Field(None, min_length=1, max_length=50)
     notes: Optional[str] = None
 
 
@@ -81,33 +84,33 @@ class JobApplicationRead(JobApplicationBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
-# ── Interviews ──
+# Interviews
 
-class InterviewCreate(BaseModel):
-    interviewer: Optional[str] = None
-    interview_type: str = "technical"
+class InterviewCreate(SanitizedModel):
+    interviewer: Optional[str] = Field(None, min_length=1, max_length=200)
+    interview_type: str = Field(default="technical", min_length=1, max_length=100)
     scheduled_at: datetime
-    meeting_link: Optional[str] = None
+    meeting_link: HttpUrlStr = None
     notes: Optional[str] = None
 
 
-class InterviewUpdate(BaseModel):
-    interviewer: Optional[str] = None
-    interview_type: Optional[str] = None
+class InterviewUpdate(SanitizedModel):
+    interviewer: Optional[str] = Field(None, min_length=1, max_length=200)
+    interview_type: Optional[str] = Field(None, min_length=1, max_length=100)
     scheduled_at: Optional[datetime] = None
-    meeting_link: Optional[str] = None
-    status: Optional[str] = None
+    meeting_link: HttpUrlStr = None
+    status: Optional[str] = Field(None, min_length=1, max_length=50)
     feedback: Optional[str] = None
     notes: Optional[str] = None
-    recommendation: Optional[str] = None
+    recommendation: Optional[str] = Field(None, min_length=1, max_length=100)
 
 
-class InterviewCompleteRequest(BaseModel):
+class InterviewCompleteRequest(SanitizedModel):
     feedback: Optional[str] = None
-    recommendation: Optional[str] = None
+    recommendation: Optional[str] = Field(None, min_length=1, max_length=100)
 
 
 class InterviewRead(BaseModel):
@@ -125,22 +128,22 @@ class InterviewRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
-# ── Offers ──
+# Offers
 
-class OfferCreate(BaseModel):
-    salary: Optional[str] = None
+class OfferCreate(SanitizedModel):
+    salary: Optional[str] = Field(None, min_length=1, max_length=100)
     joining_date: Optional[date] = None
-    offer_letter_url: Optional[str] = None
+    offer_letter_url: HttpUrlStr = None
 
 
-class OfferUpdate(BaseModel):
-    salary: Optional[str] = None
+class OfferUpdate(SanitizedModel):
+    salary: Optional[str] = Field(None, min_length=1, max_length=100)
     joining_date: Optional[date] = None
-    status: Optional[str] = None
-    offer_letter_url: Optional[str] = None
+    status: Optional[str] = Field(None, min_length=1, max_length=50)
+    offer_letter_url: HttpUrlStr = None
 
 
 class OfferRead(BaseModel):
@@ -154,4 +157,4 @@ class OfferRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

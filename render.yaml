@@ -1,14 +1,15 @@
 services:
   # ── FastAPI Backend ────────────────────────────────────────────────────────
   - type: web
-    name: amplivo-backend
+    name: amplivo
     runtime: python
     rootDir: Backend
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt && alembic upgrade head
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-server-header
+    healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        value: postgresql+asyncpg://postgres.fhxkiprlcdwbgtaxlffk:Shivanivpd123@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?prepared_statement_cache_size=0
+        sync: false
       - key: DB_SSL_MODE
         value: require
       - key: DB_POOL_SIZE
@@ -32,7 +33,7 @@ services:
       - key: BCRYPT_ROUNDS
         value: 12
       - key: CORS_ORIGINS
-        value: https://amplivo.onrender.com
+        value: https://amplivo.in,https://www.amplivo.in,https://amplivo.vercel.app
       - key: MAX_FAILED_LOGIN_ATTEMPTS
         value: 5
       - key: ACCOUNT_LOCK_MINUTES
@@ -43,6 +44,10 @@ services:
         value: 10
       - key: RATE_LIMIT_REFRESH_PER_MINUTE
         value: 30
+      - key: RATE_LIMIT_FORM_SUBMISSION_PER_MINUTE
+        value: 5
+      - key: RATE_LIMIT_DEFAULT_PER_MINUTE
+        value: 300
       - key: ENVIRONMENT
         value: production
 
@@ -55,4 +60,4 @@ services:
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://amplivo-front-and-backend.onrender.com/api/v1
+        value: https://amplivo.onrender.com/api/v1

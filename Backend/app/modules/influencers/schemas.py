@@ -2,31 +2,34 @@
 from __future__ import annotations
 import uuid
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.core.field_types import HttpUrlStr, NameStr, PhoneNumber
+from app.core.sanitizers import SanitizedModel
 
 # ── Influencer ──
-class InfluencerBase(BaseModel):
-    name: str = Field(min_length=1, max_length=200)
+class InfluencerBase(SanitizedModel):
+    name: NameStr = Field(min_length=1, max_length=200)
     email: EmailStr | None = None
-    phone: str | None = None
-    niche: str | None = None
+    phone: PhoneNumber = None
+    niche: str | None = Field(None, min_length=1, max_length=200)
     platform: str = Field(min_length=1, max_length=100)
-    profile_url: str | None = None
+    profile_url: HttpUrlStr = None
     followers_count: int | None = None
     engagement_rate: float | None = None
-    status: str = "active"
+    status: str = Field(min_length=1, max_length=50)
 
 class InfluencerCreate(InfluencerBase): pass
-class InfluencerUpdate(BaseModel):
-    name: str | None = Field(None, min_length=1, max_length=200)
+class InfluencerUpdate(SanitizedModel):
+    name: NameStr | None = Field(None, min_length=1, max_length=200)
     email: EmailStr | None = None
-    phone: str | None = None
-    niche: str | None = None
+    phone: PhoneNumber = None
+    niche: str | None = Field(None, min_length=1, max_length=200)
     platform: str | None = Field(None, min_length=1, max_length=100)
-    profile_url: str | None = None
+    profile_url: HttpUrlStr = None
     followers_count: int | None = None
     engagement_rate: float | None = None
-    status: str | None = None
+    status: str | None = Field(None, min_length=1, max_length=50)
 
 class InfluencerRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -44,18 +47,18 @@ class InfluencerRead(BaseModel):
     updated_at: datetime
 
 # ── InfluencerCampaign ──
-class InfluencerCampaignBase(BaseModel):
+class InfluencerCampaignBase(SanitizedModel):
     campaign_id: uuid.UUID | None = None
-    status: str = "negotiation"
-    deliverables: str | None = None
+    status: str = Field(min_length=1, max_length=50)
+    deliverables: str | None = Field(None, min_length=1, max_length=5000)
     budget: float | None = None
     publish_date: date | None = None
 
 class InfluencerCampaignCreate(InfluencerCampaignBase): pass
-class InfluencerCampaignUpdate(BaseModel):
+class InfluencerCampaignUpdate(SanitizedModel):
     campaign_id: uuid.UUID | None = None
-    status: str | None = None
-    deliverables: str | None = None
+    status: str | None = Field(None, min_length=1, max_length=50)
+    deliverables: str | None = Field(None, min_length=1, max_length=5000)
     budget: float | None = None
     publish_date: date | None = None
 
@@ -72,18 +75,18 @@ class InfluencerCampaignRead(BaseModel):
     updated_at: datetime
 
 # ── InfluencerContract ──
-class InfluencerContractBase(BaseModel):
+class InfluencerContractBase(SanitizedModel):
     campaign_id: uuid.UUID | None = None
-    document_url: str | None = None
-    status: str = "draft"
+    document_url: HttpUrlStr = None
+    status: str = Field(min_length=1, max_length=50)
     signed_date: date | None = None
     valid_until: date | None = None
 
 class InfluencerContractCreate(InfluencerContractBase): pass
-class InfluencerContractUpdate(BaseModel):
+class InfluencerContractUpdate(SanitizedModel):
     campaign_id: uuid.UUID | None = None
-    document_url: str | None = None
-    status: str | None = None
+    document_url: HttpUrlStr = None
+    status: str | None = Field(None, min_length=1, max_length=50)
     signed_date: date | None = None
     valid_until: date | None = None
 

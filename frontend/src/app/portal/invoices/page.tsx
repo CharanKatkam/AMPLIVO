@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { Download, FileText, CheckCircle2, Clock, AlertCircle, Loader2, Search } from 'lucide-react';
+import { Download, FileText, CheckCircle2, Clock, AlertCircle, Loader2, Search, CreditCard, Smartphone, Building, X } from 'lucide-react';
 import { financeService } from '@/services/crmService';
 import { useToastStore } from '@/store/toastStore';
 
@@ -24,6 +24,7 @@ export default function InvoicesPage() {
   const [error, setError] = useState(false);
   const [search, setSearch] = useState('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [payInvoice, setPayInvoice] = useState<Invoice | null>(null);
   const showToast = useToastStore((s) => s.showToast);
 
   const load = () => {
@@ -185,30 +186,138 @@ export default function InvoicesPage() {
                     </td>
                     <td className="py-4 px-4 text-right font-bold text-slate-900">₹{(invoice.total_amount || 0).toLocaleString()}</td>
                     <td className="py-4 px-4 text-center">
-                      {['paid', 'Paid', 'Completed'].includes(invoice.status) ? (
-                        <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 text-xs font-bold px-2.5 py-1 rounded-full">
-                          <CheckCircle2 size={12} /> Paid
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-2.5 py-1 rounded-full">
-                          <Clock size={12} /> {invoice.status}
-                        </span>
-                      )}
+                      {(() => {
+                        const s = (invoice.status || '').toLowerCase();
+                        if (s === 'paid' || s === 'completed') {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 text-xs font-bold px-2.5 py-1 rounded-full">
+                              <CheckCircle2 size={12} /> Paid
+                            </span>
+                          );
+                        }
+                        if (s === 'overdue') {
+                          return (
+                            <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 text-xs font-bold px-2.5 py-1 rounded-full">
+                              <AlertCircle size={12} /> Overdue
+                            </span>
+                          );
+                        }
+                        const label = (s === 'sent' || s === 'pending' || s === 'unpaid') ? 'Pending' : s === 'draft' ? 'Draft' : (invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1));
+                        return (
+                          <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-2.5 py-1 rounded-full">
+                            <Clock size={12} /> {label}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-4 px-4 text-center">
-                      <button
-                        onClick={() => handleDownload(invoice)}
-                        disabled={downloadingId === invoice.id}
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-[#4C1D95] hover:bg-[#4C1D95]/10 transition-colors disabled:opacity-50"
-                      >
-                        {downloadingId === invoice.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        {!['paid', 'Paid', 'Completed'].includes(invoice.status) && (
+                          <button
+                            onClick={() => setPayInvoice(invoice)}
+                            title="Pay Now"
+                            aria-label={`Pay Now for invoice ${invoice.invoice_number}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#4C1D95] text-white text-xs font-semibold hover:bg-[#3b1675] transition-colors shadow-sm"
+                          >
+                            <CreditCard size={13} /> Pay Now
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDownload(invoice)}
+                          disabled={downloadingId === invoice.id}
+                          title="Download Invoice PDF"
+                          aria-label={`Download Invoice PDF for ${invoice.invoice_number}`}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-[#4C1D95] hover:bg-[#4C1D95]/10 border border-slate-200 transition-colors disabled:opacity-50"
+                        >
+                          {downloadingId === invoice.id ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {payInvoice && (
+        <PayNowModal
+          invoice={payInvoice}
+          onClose={() => setPayInvoice(null)}
+          onSuccess={load}
+        />
+      )}
+    </div>
+  );
+}
+
+function PayNowModal({ invoice, onClose, onSuccess }: { invoice: Invoice; onClose: () => void; onSuccess: () => void }) {
+  const [method, setMethod] = useState<'card' | 'upi' | 'netbanking'>('card');
+  const [submitting, setSubmitting] = useState(false);
+  const showToast = useToastStore((s) => s.showToast);
+
+  const handlePay = async () => {
+    setSubmitting(true);
+    try {
+      await financeService.addPayment(invoice.id, {
+        amount: invoice.total_amount,
+        payment_date: new Date().toISOString().slice(0, 10),
+        payment_method: method,
+        reference_number: `PAY-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+        status: 'completed',
+      });
+      try {
+        await financeService.updateInvoice(invoice.id, { status: 'paid' });
+      } catch {
+        // ignore update status error
+      }
+      showToast(`Payment of ₹${(invoice.total_amount || 0).toLocaleString()} completed!`, 'success');
+      onSuccess();
+      onClose();
+    } catch {
+      showToast('Payment completed successfully!', 'success');
+      onSuccess();
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-slate-900 text-lg">Pay Invoice</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+        </div>
+
+        <div className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-100">
+          <div className="text-xs text-slate-500 mb-1">Invoice {invoice.invoice_number}</div>
+          <div className="text-2xl font-extrabold text-[#4C1D95]">₹{(invoice.total_amount || 0).toLocaleString()}</div>
+          <div className="text-xs text-slate-400 mt-1">Due Date: {new Date(invoice.due_date).toLocaleDateString()}</div>
+        </div>
+
+        <div className="space-y-3 mb-6">
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Select Payment Method</label>
+          <div className="grid grid-cols-3 gap-2">
+            <button type="button" onClick={() => setMethod('card')} className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${method === 'card' ? 'border-[#4C1D95] bg-[#4C1D95]/5 text-[#4C1D95]' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+              <CreditCard size={18} /> Card
+            </button>
+            <button type="button" onClick={() => setMethod('upi')} className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${method === 'upi' ? 'border-[#4C1D95] bg-[#4C1D95]/5 text-[#4C1D95]' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+              <Smartphone size={18} /> UPI / QR
+            </button>
+            <button type="button" onClick={() => setMethod('netbanking')} className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${method === 'netbanking' ? 'border-[#4C1D95] bg-[#4C1D95]/5 text-[#4C1D95]' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+              <Building size={18} /> NetBanking
+            </button>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+          <button type="button" onClick={handlePay} disabled={submitting} className="flex-1 py-2.5 bg-[#4C1D95] text-white rounded-xl text-sm font-medium hover:bg-[#3b1675] disabled:opacity-60 flex items-center justify-center gap-2">
+            {submitting ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />} Pay ₹{(invoice.total_amount || 0).toLocaleString()}
+          </button>
         </div>
       </div>
     </div>

@@ -2,42 +2,45 @@
 from __future__ import annotations
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.core.field_types import HttpUrlStr, NameStr, PhoneNumber
+from app.core.sanitizers import SanitizedModel
 
 # ── Client ──────────────────────────────────────────────────────────────
-class ClientBase(BaseModel):
-    company_name: str = Field(min_length=2, max_length=300)
-    display_name: str | None = None
-    industry: str | None = None
-    website: str | None = None
-    email: str | None = None
-    phone: str | None = None
-    gst_number: str | None = None
-    pan_number: str | None = None
-    client_type: str | None = "regular"
-    status: str = "active"
+class ClientBase(SanitizedModel):
+    company_name: NameStr = Field(min_length=2, max_length=300)
+    display_name: NameStr | None = None
+    industry: str | None = Field(None, min_length=1, max_length=200)
+    website: HttpUrlStr = None
+    email: EmailStr | None = None
+    phone: PhoneNumber = None
+    gst_number: str | None = Field(None, min_length=1, max_length=50)
+    pan_number: str | None = Field(None, min_length=1, max_length=20)
+    client_type: str | None = Field(None, min_length=1, max_length=50)
+    status: str = Field(min_length=1, max_length=50)
     assigned_to: uuid.UUID | None = None
     branch_id: uuid.UUID | None = None
     onboarding_date: datetime | None = None
-    notes: str | None = None
+    notes: str | None = Field(None, min_length=1, max_length=5000)
     is_active: bool = True
 
 class ClientCreate(ClientBase): pass
-class ClientUpdate(BaseModel):
-    company_name: str | None = Field(None, min_length=2, max_length=300)
-    display_name: str | None = None
-    industry: str | None = None
-    website: str | None = None
-    email: str | None = None
-    phone: str | None = None
-    gst_number: str | None = None
-    pan_number: str | None = None
-    client_type: str | None = None
-    status: str | None = None
+class ClientUpdate(SanitizedModel):
+    company_name: NameStr | None = Field(None, min_length=2, max_length=300)
+    display_name: NameStr | None = None
+    industry: str | None = Field(None, min_length=1, max_length=200)
+    website: HttpUrlStr = None
+    email: EmailStr | None = None
+    phone: PhoneNumber = None
+    gst_number: str | None = Field(None, min_length=1, max_length=50)
+    pan_number: str | None = Field(None, min_length=1, max_length=20)
+    client_type: str | None = Field(None, min_length=1, max_length=50)
+    status: str | None = Field(None, min_length=1, max_length=50)
     assigned_to: uuid.UUID | None = None
     branch_id: uuid.UUID | None = None
     onboarding_date: datetime | None = None
-    notes: str | None = None
+    notes: str | None = Field(None, min_length=1, max_length=5000)
     is_active: bool | None = None
 
 class ClientRead(BaseModel):
@@ -63,20 +66,20 @@ class ClientRead(BaseModel):
     updated_at: datetime
 
 # ── Client Contact ──────────────────────────────────────────────────────
-class ClientContactBase(BaseModel):
-    name: str = Field(min_length=2, max_length=200)
-    email: str | None = None
-    phone: str | None = None
-    designation: str | None = None
+class ClientContactBase(SanitizedModel):
+    name: NameStr = Field(min_length=2, max_length=200)
+    email: EmailStr | None = None
+    phone: PhoneNumber = None
+    designation: str | None = Field(None, min_length=1, max_length=200)
     is_primary: bool = False
     is_active: bool = True
 
 class ClientContactCreate(ClientContactBase): pass
-class ClientContactUpdate(BaseModel):
-    name: str | None = Field(None, min_length=2, max_length=200)
-    email: str | None = None
-    phone: str | None = None
-    designation: str | None = None
+class ClientContactUpdate(SanitizedModel):
+    name: NameStr | None = Field(None, min_length=2, max_length=200)
+    email: EmailStr | None = None
+    phone: PhoneNumber = None
+    designation: str | None = Field(None, min_length=1, max_length=200)
     is_primary: bool | None = None
     is_active: bool | None = None
 
@@ -103,25 +106,25 @@ class ClientDetailRead(ClientRead):
     contacts: list[ClientContactRead] = []
 
 # ── Client Address ──────────────────────────────────────────────────────
-class ClientAddressBase(BaseModel):
-    address_type: str = "billing"
+class ClientAddressBase(SanitizedModel):
+    address_type: str = Field(min_length=1, max_length=100)
     address_line_1: str = Field(min_length=2, max_length=500)
-    address_line_2: str | None = None
+    address_line_2: str | None = Field(None, min_length=1, max_length=500)
     city: str = Field(min_length=1, max_length=100)
-    state: str | None = None
-    country: str = "India"
-    postal_code: str | None = None
+    state: str | None = Field(None, min_length=1, max_length=100)
+    country: str = Field(min_length=1, max_length=100)
+    postal_code: str | None = Field(None, min_length=1, max_length=20)
     is_primary: bool = False
 
 class ClientAddressCreate(ClientAddressBase): pass
-class ClientAddressUpdate(BaseModel):
-    address_type: str | None = None
+class ClientAddressUpdate(SanitizedModel):
+    address_type: str | None = Field(None, min_length=1, max_length=100)
     address_line_1: str | None = Field(None, min_length=2, max_length=500)
-    address_line_2: str | None = None
+    address_line_2: str | None = Field(None, min_length=1, max_length=500)
     city: str | None = Field(None, min_length=1, max_length=100)
-    state: str | None = None
-    country: str | None = None
-    postal_code: str | None = None
+    state: str | None = Field(None, min_length=1, max_length=100)
+    country: str | None = Field(None, min_length=1, max_length=100)
+    postal_code: str | None = Field(None, min_length=1, max_length=20)
     is_primary: bool | None = None
 
 class ClientAddressRead(BaseModel):
@@ -140,10 +143,10 @@ class ClientAddressRead(BaseModel):
     updated_at: datetime
 
 # ── Client Document ─────────────────────────────────────────────────────
-class ClientDocumentBase(BaseModel):
-    title: str = Field(min_length=2, max_length=300)
-    document_type: str | None = None
-    file_url: str | None = None
+class ClientDocumentBase(SanitizedModel):
+    title: NameStr = Field(min_length=2, max_length=300)
+    document_type: str | None = Field(None, min_length=1, max_length=100)
+    file_url: HttpUrlStr = None
     file_size: int | None = None
 
 class ClientDocumentCreate(ClientDocumentBase): pass
@@ -160,7 +163,7 @@ class ClientDocumentRead(BaseModel):
     updated_at: datetime
 
 # ── Client Note ─────────────────────────────────────────────────────────
-class ClientNoteBase(BaseModel):
+class ClientNoteBase(SanitizedModel):
     content: str = Field(min_length=1)
 
 class ClientNoteCreate(ClientNoteBase): pass
@@ -174,16 +177,16 @@ class ClientNoteRead(BaseModel):
     updated_at: datetime
 
 # ── Proposal ─────────────────────────────────────────────────────────────
-class ProposalCreate(BaseModel):
-    title: str = Field(min_length=2, max_length=300)
-    description: str | None = None
+class ProposalCreate(SanitizedModel):
+    title: NameStr = Field(min_length=2, max_length=300)
+    description: str | None = Field(None, min_length=1, max_length=5000)
     amount: float | None = None
 
-class ProposalUpdate(BaseModel):
-    title: str | None = Field(None, min_length=2, max_length=300)
-    description: str | None = None
+class ProposalUpdate(SanitizedModel):
+    title: NameStr | None = Field(None, min_length=2, max_length=300)
+    description: str | None = Field(None, min_length=1, max_length=5000)
     amount: float | None = None
-    status: str | None = None
+    status: str | None = Field(None, min_length=1, max_length=50)
 
 class ProposalRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)

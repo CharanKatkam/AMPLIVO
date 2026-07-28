@@ -5,6 +5,9 @@ import uuid
 
 from fastapi import APIRouter, Depends, status
 
+from app.dependencies.auth import get_current_user
+from app.dependencies.rbac import require_roles
+from app.models.user import User
 from app.modules.consultation_requests.dependencies import get_consultation_service
 from app.modules.consultation_requests.schemas import ConsultationRequestCreate, ConsultationRequestRead, ConsultationRequestUpdate
 from app.modules.consultation_requests.service import ConsultationRequestService
@@ -12,11 +15,15 @@ from app.modules.consultation_requests.service import ConsultationRequestService
 router = APIRouter(prefix="/consultation-requests", tags=["Consultation Requests"])
 
 
+# POST stays public (the site's own consultation-request lead-gen form) -
+# everything else exposes submitted leads' PII and is CRM/Sales-internal.
 @router.get("", response_model=list[ConsultationRequestRead])
 async def list_requests(
     skip: int = 0,
     limit: int = 100,
     service: ConsultationRequestService = Depends(get_consultation_service),
+    _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("crm", "sales")),
 ):
     return await service.list_all(skip=skip, limit=limit)
 
@@ -25,6 +32,8 @@ async def list_requests(
 async def get_request(
     id: uuid.UUID,
     service: ConsultationRequestService = Depends(get_consultation_service),
+    _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("crm", "sales")),
 ):
     return await service.get(id)
 
@@ -44,6 +53,8 @@ async def update_request(
     id: uuid.UUID,
     data: ConsultationRequestUpdate,
     service: ConsultationRequestService = Depends(get_consultation_service),
+    _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("crm", "sales")),
 ):
     result = await service.update(id, data)
     await service._session.commit()
@@ -54,6 +65,8 @@ async def update_request(
 async def delete_request(
     id: uuid.UUID,
     service: ConsultationRequestService = Depends(get_consultation_service),
+    _: User = Depends(get_current_user),
+    _role: str = Depends(require_roles("crm", "sales")),
 ):
     await service.delete(id)
     await service._session.commit()

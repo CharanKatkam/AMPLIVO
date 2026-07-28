@@ -233,8 +233,8 @@ function RequestPostModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setErrorMsg('Title is required.');
+    if (!title.trim() || !contentType || !platform || !scheduledDate || !brief.trim()) {
+      setErrorMsg('Please fill in all required fields.');
       return;
     }
     setSubmitting(true);
@@ -273,25 +273,25 @@ function RequestPostModal({ onClose, onCreated }: { onClose: () => void; onCreat
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Content Type</label>
-              <select value={contentType} onChange={(e) => setContentType(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm capitalize">
+              <label className="block text-xs font-medium text-slate-500 mb-1">Content Type <span className="text-red-500">*</span></label>
+              <select value={contentType} onChange={(e) => setContentType(e.target.value)} required className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm capitalize">
                 {CONTENT_TYPES.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Platform</label>
-              <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+              <label className="block text-xs font-medium text-slate-500 mb-1">Platform <span className="text-red-500">*</span></label>
+              <select value={platform} onChange={(e) => setPlatform(e.target.value)} required className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
                 {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Preferred Date</label>
-            <input type="date" min={new Date().toISOString().split('T')[0]} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+            <label className="block text-xs font-medium text-slate-500 mb-1">Preferred Date <span className="text-red-500">*</span></label>
+            <input type="date" min={new Date().toISOString().split('T')[0]} value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} required className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Brief / Notes</label>
-            <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={3} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30" placeholder="What should this post be about?" />
+            <label className="block text-xs font-medium text-slate-500 mb-1">Brief / Notes <span className="text-red-500">*</span></label>
+            <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={3} required className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/30" placeholder="What should this post be about?" />
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="flex-1 border border-slate-200 rounded-lg py-2.5 text-sm font-medium text-slate-600">Cancel</button>

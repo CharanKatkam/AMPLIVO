@@ -3,7 +3,9 @@
 import { use, useState, useEffect, useRef } from 'react';
 import { isAxiosError } from 'axios';
 import { useCrmStore } from '@/store/crmStore';
-import { taskSubmissionService } from '@/services/crmService';
+import { taskSubmissionService, taskService } from '@/services/crmService';
+import { fileManagerService } from '@/services/moduleServices';
+import { useToastStore } from '@/store/toastStore';
 import { EmployeeHeader } from '@/components/employee/EmployeeHeader';
 import { UploadCloud, FileText, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -163,7 +165,26 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
           }]
         });
       }
+
+      // Handle file upload and attachment if a file was selected
+      if (selectedFile) {
+        try {
+          const uploaded = await fileManagerService.uploadBinary(selectedFile);
+          const apiOrigin = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1').replace(/\/api\/v1\/?$/, '');
+          const fileUrl = uploaded.url.startsWith('http') ? uploaded.url : `${apiOrigin}${uploaded.url}`;
+          await taskService.addAttachment(selectedTask.id, {
+            file_name: uploaded.original_name || selectedFile.name,
+            file_url: fileUrl,
+            file_size: selectedFile.size,
+          });
+        } catch (uploadErr) {
+          console.error("Failed to upload/attach file:", uploadErr);
+          useToastStore.getState().showToast('Submission succeeded, but file upload failed.', 'error');
+        }
+      }
+
       setSubmitted(true);
+      useToastStore.getState().showToast(isRevision ? 'Revision submitted successfully!' : 'Work submitted successfully!', 'success');
       // Pull the real, backend-computed task status/progress (the backend
       // sets status='submitted' and progress=completion_percentage) so the
       // Employee Dashboard reflects the submission immediately instead of
@@ -341,7 +362,9 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Completion %</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Completion % <span className="text-red-500">*</span>
+            </label>
             <input
               type="number"
               min={0}

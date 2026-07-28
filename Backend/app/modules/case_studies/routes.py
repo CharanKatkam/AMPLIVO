@@ -5,6 +5,9 @@ import uuid
 
 from fastapi import APIRouter, Depends, status
 
+from app.dependencies.auth import get_current_user
+from app.dependencies.rbac import require_roles
+from app.models.user import User
 from app.modules.case_studies.dependencies import get_case_study_service
 from app.modules.case_studies.schemas import CaseStudyCreate, CaseStudyRead, CaseStudyUpdate
 from app.modules.case_studies.service import CaseStudyService
@@ -12,6 +15,7 @@ from app.modules.case_studies.service import CaseStudyService
 router = APIRouter(prefix="/case-studies", tags=["Case Studies"])
 
 
+# List/detail stay public - this is the marketing site's published content.
 @router.get("", response_model=list[CaseStudyRead])
 async def list_case_studies(skip: int = 0, limit: int = 100, service: CaseStudyService = Depends(get_case_study_service)):
     return await service.list_all(skip=skip, limit=limit)
@@ -23,15 +27,15 @@ async def get_case_study(id: uuid.UUID, service: CaseStudyService = Depends(get_
 
 
 @router.post("", response_model=CaseStudyRead, status_code=status.HTTP_201_CREATED)
-async def create_case_study(data: CaseStudyCreate, service: CaseStudyService = Depends(get_case_study_service)):
+async def create_case_study(data: CaseStudyCreate, service: CaseStudyService = Depends(get_case_study_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     return await service.create(data)
 
 
 @router.put("/{id}", response_model=CaseStudyRead)
-async def update_case_study(id: uuid.UUID, data: CaseStudyUpdate, service: CaseStudyService = Depends(get_case_study_service)):
+async def update_case_study(id: uuid.UUID, data: CaseStudyUpdate, service: CaseStudyService = Depends(get_case_study_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     return await service.update(id, data)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_case_study(id: uuid.UUID, service: CaseStudyService = Depends(get_case_study_service)):
+async def delete_case_study(id: uuid.UUID, service: CaseStudyService = Depends(get_case_study_service), _: User = Depends(get_current_user), _role: str = Depends(require_roles("marketing", "employee"))):
     await service.delete(id)

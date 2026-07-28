@@ -66,6 +66,15 @@ class Settings(BaseSettings):
     RATE_LIMIT_LOGIN_PER_MINUTE: int = 5
     RATE_LIMIT_REGISTER_PER_MINUTE: int = 3
     RATE_LIMIT_REFRESH_PER_MINUTE: int = 10
+    # Public marketing forms (contact-submissions, consultation-requests) -
+    # unauthenticated, so they need their own tighter bucket rather than
+    # relying only on the general default below.
+    RATE_LIMIT_FORM_SUBMISSION_PER_MINUTE: int = 5
+    # Baseline ceiling applied to every /api/v1 request regardless of path,
+    # on top of (not instead of) the tighter per-path rules above - the
+    # general "API rate limiting" layer for the ~440 routes with no
+    # endpoint-specific rule.
+    RATE_LIMIT_DEFAULT_PER_MINUTE: int = 300
 
     EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = 24
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
@@ -89,6 +98,28 @@ class Settings(BaseSettings):
     # Base URL of the deployed frontend, used to build magic-link URLs
     # embedded in proposal/invoice emails (frontend/src/app/portal-public/...).
     FRONTEND_URL: str = "http://localhost:3000"
+
+    # ── Compression ──────────────────────────────────────────────────────────
+    # Minimum response body size in bytes before compression is applied.
+    COMPRESSION_MIN_SIZE: int = 512
+
+    # ── Caching ───────────────────────────────────────────────────────────────
+    # Default TTL for the in-memory cache (seconds).
+    CACHE_DEFAULT_TTL_SECONDS: int = 300
+    # When set, enables Redis-backed caching for the in-memory TTL cache's
+    # "hot" entries.  Falls back gracefully to in-memory-only when absent.
+    REDIS_URL: str | None = None  # already declared above
+
+    # ── Logging ───────────────────────────────────────────────────────────────
+    LOG_LEVEL: str = "INFO"
+    # When "json", outputs structured JSON log lines; "text" uses the standard
+    # Python format (useful for local development).
+    LOG_FORMAT: str = "json"
+
+    # ── Performance ───────────────────────────────────────────────────────────
+    # Log requests that take longer than this threshold (milliseconds) at INFO
+    # level instead of DEBUG.
+    SLOW_REQUEST_THRESHOLD_MS: int = 1000
 
 
 @lru_cache

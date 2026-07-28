@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Navbar } from '@/components/marketing/Navbar';
 import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
@@ -95,7 +96,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <AnimateOnScroll animation="scale-in" delay={80}>
         <div className="max-w-5xl mx-auto px-6 mb-12">
           <div className="w-full h-[400px] md:h-[500px] rounded-2xl overflow-hidden relative">
-            <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
+            <Image
+              src={post.image}
+              alt={post.title}
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 1024px"
+              className="object-cover"
+            />
           </div>
         </div>
         </AnimateOnScroll>
@@ -178,8 +186,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 href={`/insights/${relatedPost.slug}`}
                 className="bg-white rounded-2xl overflow-hidden border border-slate-200 hover:shadow-lg transition-all duration-300 group flex flex-col card-hover"
               >
-                <div className="h-48 overflow-hidden">
-                  <img src={relatedPost.image} alt={relatedPost.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="h-48 overflow-hidden relative">
+                  <Image
+                    src={relatedPost.image}
+                    alt={relatedPost.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
                 </div>
                 <div className="p-6 flex flex-col flex-1">
                   <div className="flex gap-2 mb-3">

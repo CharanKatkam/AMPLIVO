@@ -20,7 +20,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 export default function ServicesPage() {
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       <PageHero config={servicesHero} />

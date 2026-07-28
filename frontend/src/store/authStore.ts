@@ -11,6 +11,10 @@ export interface User {
   image?: string;
   is_active?: boolean;
   is_verified?: boolean;
+  phone?: string;
+  extension?: string;
+  designation?: string;
+  signature?: string;
 }
 
 interface AuthState {

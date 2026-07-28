@@ -117,7 +117,7 @@ export const careersHero: HeroConfig = {
 export const contactHero: HeroConfig = {
   background: {
     type: 'poster',
-    src: `${UNSPLASH}/photo-1573164713714-d95e436ab8d6?w=1920&h=800&fit=crop&auto=format`,
+    src: `${UNSPLASH}/photo-1573164713714-d95e436ab8d6?w=1200&h=600&fit=crop&auto=format&q=80`,
     decoration: 'network',
   },
   content: {

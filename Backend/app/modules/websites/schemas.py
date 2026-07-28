@@ -4,8 +4,10 @@ import uuid
 from datetime import datetime, date as datetime_date
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.sanitizers import SanitizedModel
+
 # ── Website ──
-class WebsiteBase(BaseModel):
+class WebsiteBase(SanitizedModel):
     client_id: uuid.UUID | None = None
     domain: str = Field(min_length=3, max_length=255)
     name: str = Field(min_length=1, max_length=200)
@@ -15,7 +17,7 @@ class WebsiteBase(BaseModel):
     manager_id: uuid.UUID | None = None
 
 class WebsiteCreate(WebsiteBase): pass
-class WebsiteUpdate(BaseModel):
+class WebsiteUpdate(SanitizedModel):
     client_id: uuid.UUID | None = None
     domain: str | None = Field(None, min_length=3, max_length=255)
     name: str | None = Field(None, min_length=1, max_length=200)
@@ -38,7 +40,7 @@ class WebsiteRead(BaseModel):
     updated_at: datetime
 
 # ── WebsitePage ──
-class WebsitePageBase(BaseModel):
+class WebsitePageBase(SanitizedModel):
     title: str = Field(min_length=1, max_length=300)
     url_path: str = Field(min_length=1, max_length=500)
     status: str = "published"
@@ -46,7 +48,7 @@ class WebsitePageBase(BaseModel):
     seo_description: str | None = None
 
 class WebsitePageCreate(WebsitePageBase): pass
-class WebsitePageUpdate(BaseModel):
+class WebsitePageUpdate(SanitizedModel):
     title: str | None = Field(None, min_length=1, max_length=300)
     url_path: str | None = Field(None, min_length=1, max_length=500)
     status: str | None = None
@@ -66,7 +68,7 @@ class WebsitePageRead(BaseModel):
     updated_at: datetime
 
 # ── WebsiteMetric ──
-class WebsiteMetricBase(BaseModel):
+class WebsiteMetricBase(SanitizedModel):
     date: datetime_date
     visitors: int = 0
     page_views: int = 0
@@ -74,7 +76,7 @@ class WebsiteMetricBase(BaseModel):
     avg_session_duration: int | None = None
 
 class WebsiteMetricCreate(WebsiteMetricBase): pass
-class WebsiteMetricUpdate(BaseModel):
+class WebsiteMetricUpdate(SanitizedModel):
     date: datetime_date | None = None
     visitors: int | None = None
     page_views: int | None = None

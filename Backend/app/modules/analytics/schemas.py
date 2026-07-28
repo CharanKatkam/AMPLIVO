@@ -4,15 +4,18 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.field_types import HttpUrlStr
+from app.core.sanitizers import SanitizedModel
+
 # ── Dashboard ──
-class DashboardBase(BaseModel):
+class DashboardBase(SanitizedModel):
     name: str = Field(min_length=1, max_length=200)
     description: str | None = None
     is_shared: bool = False
     layout_config: str | None = None
 
 class DashboardCreate(DashboardBase): pass
-class DashboardUpdate(BaseModel):
+class DashboardUpdate(SanitizedModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     description: str | None = None
     is_shared: bool | None = None
@@ -30,16 +33,16 @@ class DashboardRead(BaseModel):
     updated_at: datetime
 
 # ── Report ──
-class ReportBase(BaseModel):
+class ReportBase(SanitizedModel):
     name: str = Field(min_length=1, max_length=200)
     report_type: str = Field(min_length=1, max_length=100)
     client_id: uuid.UUID | None = None
     parameters: str | None = None
 
 class ReportCreate(ReportBase): pass
-class ReportUpdate(BaseModel):
-    status: str | None = None
-    generated_file_url: str | None = None
+class ReportUpdate(SanitizedModel):
+    status: str | None = Field(None, min_length=1, max_length=50)
+    generated_file_url: HttpUrlStr = None
 
 class ReportRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -54,16 +57,16 @@ class ReportRead(BaseModel):
     created_at: datetime
 
 # ── DataIntegration ──
-class DataIntegrationBase(BaseModel):
+class DataIntegrationBase(SanitizedModel):
     client_id: uuid.UUID | None = None
     provider_name: str = Field(min_length=1, max_length=100)
     credentials_json: str | None = None
-    status: str = "active"
+    status: str = Field(default="active", min_length=1, max_length=50)
 
 class DataIntegrationCreate(DataIntegrationBase): pass
-class DataIntegrationUpdate(BaseModel):
+class DataIntegrationUpdate(SanitizedModel):
     credentials_json: str | None = None
-    status: str | None = None
+    status: str | None = Field(None, min_length=1, max_length=50)
 
 class DataIntegrationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)

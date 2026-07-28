@@ -9,12 +9,11 @@ class LoginHistoryRead(BaseModel):
 
     id: uuid.UUID
     user_id: uuid.UUID
+    refresh_token_id: uuid.UUID | None
     login_time: datetime
     logout_time: datetime | None
     ip_address: str | None
     browser: str | None
     operating_system: str | None
     device: str | None
-    status: str
-    refresh_token_id: uuid.UUID | None
-    created_at: datetime
+    status: str | None

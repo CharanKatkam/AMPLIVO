@@ -5,37 +5,40 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
+
+from app.core.field_types import HttpUrlStr, NameStr, PhoneNumber
+from app.core.sanitizers import SanitizedModel
 
 
-class CompanyBase(BaseModel):
-    name: str
-    registration_number: Optional[str] = None
-    tax_id: Optional[str] = None
-    industry: Optional[str] = None
-    website: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    logo_url: Optional[str] = None
-    status: str = "active"
+class CompanyBase(SanitizedModel):
+    name: NameStr
+    registration_number: Optional[str] = Field(None, min_length=1, max_length=100)
+    tax_id: Optional[str] = Field(None, min_length=1, max_length=100)
+    industry: Optional[str] = Field(None, min_length=1, max_length=200)
+    website: HttpUrlStr = None
+    email: EmailStr | None = None
+    phone: PhoneNumber = None
+    address: Optional[str] = Field(None, min_length=1, max_length=500)
+    logo_url: HttpUrlStr = None
+    status: str = Field(default="active", min_length=1, max_length=50)
 
 
 class CompanyCreate(CompanyBase):
     pass
 
 
-class CompanyUpdate(BaseModel):
-    name: Optional[str] = None
-    registration_number: Optional[str] = None
-    tax_id: Optional[str] = None
-    industry: Optional[str] = None
-    website: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    logo_url: Optional[str] = None
-    status: Optional[str] = None
+class CompanyUpdate(SanitizedModel):
+    name: Optional[NameStr] = None
+    registration_number: Optional[str] = Field(None, min_length=1, max_length=100)
+    tax_id: Optional[str] = Field(None, min_length=1, max_length=100)
+    industry: Optional[str] = Field(None, min_length=1, max_length=200)
+    website: HttpUrlStr = None
+    email: EmailStr | None = None
+    phone: PhoneNumber = None
+    address: Optional[str] = Field(None, min_length=1, max_length=500)
+    logo_url: HttpUrlStr = None
+    status: Optional[str] = Field(None, min_length=1, max_length=50)
 
 
 class CompanyRead(CompanyBase):
@@ -43,4 +46,4 @@ class CompanyRead(CompanyBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

@@ -4,15 +4,17 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.sanitizers import SanitizedModel
+
 # ── SystemSetting ──
-class SystemSettingBase(BaseModel):
+class SystemSettingBase(SanitizedModel):
     key: str = Field(min_length=1, max_length=100)
     value: str = Field(min_length=1)
     description: str | None = None
     is_public: bool = False
 
 class SystemSettingCreate(SystemSettingBase): pass
-class SystemSettingUpdate(BaseModel):
+class SystemSettingUpdate(SanitizedModel):
     value: str | None = Field(None, min_length=1)
     description: str | None = None
     is_public: bool | None = None
@@ -29,7 +31,7 @@ class SystemSettingRead(BaseModel):
     updated_at: datetime
 
 # ── UserPreference ──
-class UserPreferenceBase(BaseModel):
+class UserPreferenceBase(SanitizedModel):
     theme: str = "light"
     language: str = "en"
     timezone: str = "UTC"
@@ -37,7 +39,7 @@ class UserPreferenceBase(BaseModel):
     in_app_notifications: bool = True
 
 class UserPreferenceCreate(UserPreferenceBase): pass
-class UserPreferenceUpdate(BaseModel):
+class UserPreferenceUpdate(SanitizedModel):
     theme: str | None = None
     language: str | None = None
     timezone: str | None = None

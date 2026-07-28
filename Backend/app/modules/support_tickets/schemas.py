@@ -4,8 +4,10 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.sanitizers import SanitizedModel
 
-class SupportTicketCreate(BaseModel):
+
+class SupportTicketCreate(SanitizedModel):
     subject: str = Field(min_length=2, max_length=300)
     description: str = Field(min_length=1)
     category: str = "general"
@@ -13,7 +15,7 @@ class SupportTicketCreate(BaseModel):
     client_id: uuid.UUID | None = None
 
 
-class SupportTicketUpdate(BaseModel):
+class SupportTicketUpdate(SanitizedModel):
     subject: str | None = Field(None, min_length=2, max_length=300)
     description: str | None = None
     category: str | None = None
@@ -37,7 +39,7 @@ class SupportTicketRead(BaseModel):
     updated_at: datetime
 
 
-class SupportTicketCommentCreate(BaseModel):
+class SupportTicketCommentCreate(SanitizedModel):
     content: str = Field(min_length=1)
 
 

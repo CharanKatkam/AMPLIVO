@@ -33,9 +33,15 @@ async def seed():
     async with AsyncSessionLocal() as session:
         client_user = (await session.execute(select(User).where(User.email == "client@amplivo.in"))).scalar_one_or_none()
         admin_user = (await session.execute(select(User).where(User.email == "admin@amplivo.in"))).scalar_one_or_none()
+        crm_user = (await session.execute(select(User).where(User.email == "crm@amplivo.in"))).scalar_one_or_none()
+        if crm_user and crm_user.full_name == "CRM Executive":
+            crm_user.full_name = "Account Manager"
+
         if client_user is None:
             print("client@amplivo.in not found - run seed_demo_users.py first.")
             return
+
+        assigned_manager_id = crm_user.id if crm_user else (admin_user.id if admin_user else None)
 
         client = (await session.execute(select(Client).where(Client.company_name == DEMO_CLIENT_NAME))).scalar_one_or_none()
         if client is None:
@@ -48,7 +54,7 @@ async def seed():
                 phone="+91 90000 00000",
                 client_type="regular",
                 status="active",
-                assigned_to=admin_user.id if admin_user else None,
+                assigned_to=assigned_manager_id,
                 is_active=True,
                 created_by=admin_user.id if admin_user else None,
             )
@@ -56,6 +62,9 @@ async def seed():
             await session.flush()
             print(f"  Created client '{DEMO_CLIENT_NAME}' ({client.id})")
         else:
+            if assigned_manager_id and (client.assigned_to is None or (admin_user and client.assigned_to == admin_user.id)):
+                client.assigned_to = assigned_manager_id
+                print(f"  Updated client '{DEMO_CLIENT_NAME}' assigned_to -> {assigned_manager_id}")
             print(f"  Client '{DEMO_CLIENT_NAME}' already exists ({client.id})")
 
         if client_user.client_id != client.id:

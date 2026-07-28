@@ -2,11 +2,16 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid, func
+from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+
+# JSONB is Postgres-only; the in-memory SQLite DB used by the test suite
+# can't compile it. with_variant keeps production (Postgres) on JSONB
+# unchanged and only swaps in a portable JSON type for other dialects.
+_JSON_TYPE = JSON().with_variant(JSONB, "postgresql")
 
 
 class AuditAction(str, enum.Enum):
@@ -42,8 +47,8 @@ class AuditLog(Base):
     table_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     record_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
     action: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    old_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    new_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    old_data: Mapped[dict | None] = mapped_column(_JSON_TYPE, nullable=True)
+    new_data: Mapped[dict | None] = mapped_column(_JSON_TYPE, nullable=True)
     performed_by: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

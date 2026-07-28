@@ -1,4 +1,4 @@
-'use client';
+import Link from 'next/link';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { AnimateOnScroll } from '@/components/AnimateOnScroll';
 import { industries } from '@/data/industries';
@@ -29,7 +29,10 @@ export function IndustriesSection() {
             const Icon = iconMap[industry.icon] || Briefcase;
             return (
               <AnimateOnScroll key={industry.id} animation="scale-in" delay={i * 40}>
-                <div className="flex flex-col items-center text-center p-4 rounded-2xl border border-slate-200 hover:border-[#4C1D95]/30 hover:shadow-md hover:-translate-y-0.5 transition-all group cursor-pointer card-hover h-full">
+                <Link
+                  href={`/industries/${industry.slug}`}
+                  className="flex flex-col items-center text-center p-4 rounded-2xl border border-slate-200 hover:border-[#4C1D95]/30 hover:shadow-md hover:-translate-y-0.5 transition-all group cursor-pointer card-hover h-full bg-white"
+                >
                   <div
                     className="w-11 h-11 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300"
                     style={{ backgroundColor: `${industry.color}12` }}
@@ -37,7 +40,7 @@ export function IndustriesSection() {
                     <Icon size={20} style={{ color: industry.color }} />
                   </div>
                   <span className="text-slate-700 font-medium text-xs leading-tight">{industry.name}</span>
-                </div>
+                </Link>
               </AnimateOnScroll>
             );
           })}

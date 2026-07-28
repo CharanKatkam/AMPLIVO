@@ -14,6 +14,13 @@ from app.dependencies.tenant import get_current_user_role_slug
 # Roles that can always act as staff/admin regardless of which allowlist is checked.
 ALWAYS_ALLOWED_SLUGS = {"admin", "super_admin"}
 
+# Every internal/staff role - i.e. everyone except the client-portal role.
+# Use `require_roles(*STAFF_ROLE_SLUGS)` for endpoints that must stay closed
+# to client-portal users but aren't owned by one specific department (e.g.
+# a lookup that would otherwise let a client enumerate another client's
+# records by id, with no natural single owning role to name instead).
+STAFF_ROLE_SLUGS = ("admin", "sales", "hr", "employee", "crm", "finance", "marketing")
+
 
 def require_roles(*allowed_slugs: str):
     """Dependency factory: 403s unless the caller's role slug is in `allowed_slugs`

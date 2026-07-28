@@ -40,7 +40,7 @@ const faqs = [
 
 export default function FAQPage() {
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       {/* Hero */}

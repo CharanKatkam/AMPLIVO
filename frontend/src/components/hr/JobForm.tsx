@@ -61,7 +61,7 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Department</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Department <span className="text-red-500">*</span></label>
           <select
             name="department"
             value={formData.department}
@@ -77,7 +77,7 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Work Mode</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Work Mode <span className="text-red-500">*</span></label>
           <select
             name="workMode"
             value={formData.workMode}
@@ -104,7 +104,7 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Employment Type</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Employment Type <span className="text-red-500">*</span></label>
           <select
             name="employmentType"
             value={formData.employmentType}

@@ -307,7 +307,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-2xl p-4 md:p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-slate-900">My Priority Tasks</h3>
-              <Link href="/admin/tasks" className="text-xs font-semibold text-[#4C1D95] hover:underline">Go to Planner</Link>
+              <Link href="/admin/tasks" className="text-xs font-semibold text-[#4C1D95] hover:underline">Go to Tasks</Link>
             </div>
             <div className="space-y-3">
               {(data?.pendingTasks ?? []).length === 0 ? (

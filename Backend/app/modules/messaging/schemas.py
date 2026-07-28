@@ -4,9 +4,12 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.field_types import NameStr
+from app.core.sanitizers import SanitizedModel
 
-class ConversationCreate(BaseModel):
-    subject: str = "General"
+
+class ConversationCreate(SanitizedModel):
+    subject: NameStr = Field(min_length=1, max_length=500)
     client_id: uuid.UUID | None = None
 
 
@@ -20,8 +23,8 @@ class ConversationRead(BaseModel):
     updated_at: datetime
 
 
-class MessageCreate(BaseModel):
-    content: str = Field(min_length=1)
+class MessageCreate(SanitizedModel):
+    content: str = Field(min_length=1, max_length=10000)
 
 
 class MessageRead(BaseModel):

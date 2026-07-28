@@ -4,21 +4,24 @@ import uuid
 from datetime import datetime, date as datetime_date
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.sanitizers import SanitizedModel
+from app.core.field_types import HttpUrlStr
+
 # ── SocialProfile ──
-class SocialProfileBase(BaseModel):
+class SocialProfileBase(SanitizedModel):
     client_id: uuid.UUID | None = None
     platform: str = Field(min_length=1, max_length=50)
     profile_name: str = Field(min_length=1, max_length=200)
-    profile_url: str | None = None
+    profile_url: HttpUrlStr | None = None
     access_token: str | None = None
     status: str = "active"
 
 class SocialProfileCreate(SocialProfileBase): pass
-class SocialProfileUpdate(BaseModel):
+class SocialProfileUpdate(SanitizedModel):
     client_id: uuid.UUID | None = None
     platform: str | None = Field(None, min_length=1, max_length=50)
     profile_name: str | None = Field(None, min_length=1, max_length=200)
-    profile_url: str | None = None
+    profile_url: HttpUrlStr | None = None
     access_token: str | None = None
     status: str | None = None
 
@@ -34,7 +37,7 @@ class SocialProfileRead(BaseModel):
     updated_at: datetime
 
 # ── SocialPost ──
-class SocialPostBase(BaseModel):
+class SocialPostBase(SanitizedModel):
     content: str = Field(min_length=1)
     media_urls: str | None = None
     scheduled_at: datetime | None = None
@@ -42,7 +45,7 @@ class SocialPostBase(BaseModel):
     status: str = "draft"
 
 class SocialPostCreate(SocialPostBase): pass
-class SocialPostUpdate(BaseModel):
+class SocialPostUpdate(SanitizedModel):
     content: str | None = Field(None, min_length=1)
     media_urls: str | None = None
     scheduled_at: datetime | None = None
@@ -63,7 +66,7 @@ class SocialPostRead(BaseModel):
     updated_at: datetime
 
 # ── SocialMetric ──
-class SocialMetricBase(BaseModel):
+class SocialMetricBase(SanitizedModel):
     date: datetime_date
     likes: int = 0
     comments: int = 0
@@ -72,7 +75,7 @@ class SocialMetricBase(BaseModel):
     impressions: int = 0
 
 class SocialMetricCreate(SocialMetricBase): pass
-class SocialMetricUpdate(BaseModel):
+class SocialMetricUpdate(SanitizedModel):
     date: datetime_date | None = None
     likes: int | None = None
     comments: int | None = None

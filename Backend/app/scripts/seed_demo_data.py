@@ -36,6 +36,17 @@ ROLES = [
     {"name": "Employee", "slug": "employee", "description": "Internal employee", "is_system": True},
     {"name": "CRM", "slug": "crm", "description": "CRM portal executive", "is_system": True},
     {"name": "Finance", "slug": "finance", "description": "Finance/accounts executive - verifies client payments", "is_system": True},
+    # Backend RBAC role for marketing-content/automation routes
+    # (app.modules.case_studies/faqs/portfolio/testimonials/marketing_automation
+    # now gate their mutating routes with require_roles("marketing", "employee")
+    # - see those modules for why "employee" is also allowed). Deliberately not
+    # assigned to any demo user below: frontend/src/services/authService.ts's
+    # VALID_ROLES doesn't include "marketing" yet, and its mapRole() silently
+    # falls back to 'admin' for any role it doesn't recognize (same pre-existing
+    # gap already affects "finance") - assigning a demo user to this role would
+    # make them appear as admin in the UI. Add "marketing" (and "finance") to
+    # that frontend list before moving any real user onto this role.
+    {"name": "Marketing", "slug": "marketing", "description": "Marketing team member - manages site content and automation workflows", "is_system": True},
 ]
 
 BRANCHES = [
@@ -63,8 +74,8 @@ DEMO_USERS = [
      "role_slug": "employee", "department_slug": "marketing", "designation": "Employee"},
     {"email": "sales@amplivo.in", "username": "sales", "full_name": "Sales User", "password": "Sales@123",
      "role_slug": "sales", "department_slug": "sales", "designation": "Sales Executive"},
-    {"email": "crm@amplivo.in", "username": "crm", "full_name": "CRM Executive", "password": "Crm@1234",
-     "role_slug": "crm", "department_slug": "client-relations", "designation": "CRM Executive"},
+    {"email": "crm@amplivo.in", "username": "crm", "full_name": "Account Manager", "password": "Crm@1234",
+     "role_slug": "crm", "department_slug": "client-relations", "designation": "Account Manager"},
     {"email": "finance@amplivo.in", "username": "finance", "full_name": "Finance Executive", "password": "Finance@123",
      "role_slug": "finance", "department_slug": "finance", "designation": "Finance Executive"},
     {"email": "performancemarketer@amplivo.in", "username": "performancemarketer", "full_name": "Performance Marketer", "password": "Employee@123",
