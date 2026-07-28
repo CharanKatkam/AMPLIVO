@@ -4,7 +4,7 @@ import { BackButton } from '@/components/ui/BackButton';
 
 export default function RefundPolicyPage() {
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
       <div className="pt-32 pb-24 bg-white">
         <div className="max-w-3xl mx-auto px-6 prose prose-slate">

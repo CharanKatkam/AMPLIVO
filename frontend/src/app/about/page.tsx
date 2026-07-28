@@ -39,7 +39,7 @@ const milestones = [
 
 export default function AboutPage() {
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       <PageHero config={aboutHero} />

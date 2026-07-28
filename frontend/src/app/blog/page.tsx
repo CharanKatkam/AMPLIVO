@@ -16,7 +16,7 @@ const categories = ['All', 'Performance Marketing', 'SEO', 'Social Media', 'Cont
 
 export default function BlogPage() {
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       {/* Hero */}

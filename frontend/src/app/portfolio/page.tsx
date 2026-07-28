@@ -18,7 +18,7 @@ export default function PortfolioPage() {
     ? portfolioItems 
     : portfolioItems.filter(item => item.category === activeCategory);
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       <PageHero config={portfolioHero} />

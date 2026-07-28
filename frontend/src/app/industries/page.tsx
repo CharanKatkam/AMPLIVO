@@ -21,7 +21,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 export default function IndustriesPage() {
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       <PageHero config={industriesHero} />

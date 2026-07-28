@@ -151,7 +151,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const relatedServices = services.filter((s) => s.slug !== slug).slice(0, 3);
 
   return (
-    <main>
+    <main id="main-content">
       <Navbar />
 
       {/* Hero */}
