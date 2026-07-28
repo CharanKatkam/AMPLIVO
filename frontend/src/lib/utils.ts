@@ -85,4 +85,13 @@ export const statusColors: Record<string, string> = {
   'Negotiation': 'bg-amber-50 text-amber-700 border-amber-200',
   'Won': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'Ready for CRM': 'bg-purple-50 text-purple-700 border-purple-200',
+  // Support Ticket statuses
+  open: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  OPEN: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'in_progress': 'bg-blue-50 text-blue-700 border-blue-200',
+  'IN PROGRESS': 'bg-blue-50 text-blue-700 border-blue-200',
+  resolved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  RESOLVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  closed: 'bg-slate-100 text-slate-600 border-slate-200',
+  CLOSED: 'bg-slate-100 text-slate-600 border-slate-200',
 };

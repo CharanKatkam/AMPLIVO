@@ -76,7 +76,13 @@ function useSidebarData() {
         const company = await companyService.getMine();
         if (company.assigned_to) {
           const manager = await userManagementService.getUser(company.assigned_to);
-          if (!cancelled) setAccountManager({ name: manager.full_name ?? manager.name ?? 'Account Manager', email: manager.email ?? '' });
+          let name = manager.full_name ?? manager.name ?? 'Account Manager';
+          let email = manager.email ?? '';
+          if (name === 'Admin User' || email === 'admin@amplivo.in') {
+            name = 'Account Manager';
+            email = 'support@amplivo.in';
+          }
+          if (!cancelled) setAccountManager({ name, email });
         }
       } catch {
         // no account manager assigned / not a client-portal user
@@ -184,21 +190,8 @@ export function PortalSidebar() {
         })}
       </nav>
 
-      {/* Account Manager Card */}
+      {/* Footer / Sign Out */}
       <div className="px-4 py-4 border-t border-[#1F2937]">
-        {accountManager && (
-          <div className="bg-[#1F2937] rounded-xl p-3 mb-3">
-            <div className="text-[#9CA3AF] text-[10px] uppercase tracking-wider mb-2">Account Manager</div>
-            <div className="flex items-center gap-2">
-              <Avatar name={accountManager.name} size="xs" />
-              <div>
-                <div className="text-white text-xs font-medium">{accountManager.name}</div>
-                <div className="text-[#4B5563] text-[10px]">{accountManager.email}</div>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="flex gap-2">
           <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-red-400 transition-all text-xs flex-1">
             <LogOut size={14} /> Sign Out

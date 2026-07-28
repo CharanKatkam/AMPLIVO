@@ -63,8 +63,20 @@ export default function PortalLeads() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await leadService.getAll({ page: 1, page_size: 1000, search: search || undefined, status: statusFilter || undefined });
-      const all: LeadRead[] = res?.items ?? [];
+      const res = await leadService.getAll({ page: 1, page_size: 100, search: search || undefined, status: statusFilter || undefined });
+      let all: LeadRead[] = res?.items ?? [];
+      const totalCount = res?.total ?? all.length;
+      let currentPage = 1;
+      while (all.length < totalCount && currentPage < 20) {
+        currentPage++;
+        const nextRes = await leadService.getAll({ page: currentPage, page_size: 100, search: search || undefined, status: statusFilter || undefined });
+        if (nextRes?.items?.length) {
+          all = [...all, ...nextRes.items];
+        } else {
+          break;
+        }
+      }
+
       const header = ['Name', 'Email', 'Phone', 'Company', 'Source', 'Status', 'Priority', 'Estimated Value'];
       const rows = all.map((l) => [
         l.contact_name || l.title,
