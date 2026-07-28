@@ -256,6 +256,7 @@ const mapBackendLead = (l: Record<string, any>): CrmLead => ({
   id: l.id || '',
   salesLead: {
     id: l.id || '',
+    title: l.title || '',
     firstName: (l.contact_name || '').split(' ')[0] || '',
     lastName: (l.contact_name || '').split(' ').slice(1).join(' ') || '',
     email: l.email || '',

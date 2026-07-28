@@ -262,6 +262,7 @@ export interface Meeting {
   notes: string;
   agenda?: string;
   followUpRequired: boolean;
+  timezone?: string;
 }
 
 export interface TimelineEvent {
@@ -314,6 +315,7 @@ export interface SalesInvoice {
 
 export interface SalesLead {
   id: string;
+  title: string;
   // Contact Info
   firstName: string;
   lastName: string;

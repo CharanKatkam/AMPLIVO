@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import { SalesHeader } from '@/components/sales/SalesSidebar';
 import { useSalesStore } from '@/store/salesStore';
 import { FileText, ExternalLink, Calendar, Clock } from 'lucide-react';
@@ -12,7 +13,14 @@ const statusStyle: Record<string, string> = {
 };
 
 export default function InvoicesPage() {
-  const { invoices } = useSalesStore();
+  const { invoices, fetchLeads } = useSalesStore();
+
+  // Invoices were previously never fetched from the backend at all - this
+  // page only ever showed whatever generateInvoice() had appended locally
+  // during the current session, so a fresh load or reload always read 0.
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
 
   const totalAdvance = invoices.reduce((sum, inv) => sum + inv.advanceDue, 0);
   const totalGrand = invoices.reduce((sum, inv) => sum + inv.grandTotal, 0);

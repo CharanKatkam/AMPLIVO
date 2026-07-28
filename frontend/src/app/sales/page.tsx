@@ -6,6 +6,7 @@ import { LeadStatusBadge } from '@/components/sales/LeadStatusBadge';
 import { ActivityFeed } from '@/components/sales/ActivityFeed';
 import { useSalesStore } from '@/store/salesStore';
 import { salesMonthlyData } from '@/data/sales';
+import { isMeetingUpcoming } from '@/lib/utils';
 import {
   Users, CalendarDays, Clock, Trophy, XCircle, TrendingUp, Zap,
   ArrowRight, Video, Phone, MapPin, Monitor, Plus
@@ -26,6 +27,8 @@ export default function SalesDashboard() {
   const { leads, meetings, fetchLeads } = useSalesStore();
 
   useEffect(() => {
+    // Bug 7 fixed: fetchLeads now also fetches meetings (fixed in salesStore),
+    // so a single call populates both leads and meetings for the dashboard stats.
     fetchLeads();
   }, [fetchLeads]);
 
@@ -34,12 +37,12 @@ export default function SalesDashboard() {
   const newLeads = leads.filter((l) => l.status === 'New').length;
   const today = new Date().toISOString().split('T')[0];
   const meetingsToday = meetings.filter((m) => m.date === today && m.status === 'Scheduled').length;
-  const pendingMeetings = meetings.filter((m) => m.status === 'Scheduled').length;
+  const pendingMeetings = meetings.filter(isMeetingUpcoming).length;
   const wonLeads = leads.filter((l) => l.status === 'Won' || l.status === 'Ready for CRM').length;
   const lostLeads = leads.filter((l) => l.status === 'Lost').length;
 
   const upcomingMeetings = meetings
-    .filter((m) => m.status === 'Scheduled')
+    .filter(isMeetingUpcoming)
     .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime())
     .slice(0, 4);
 
