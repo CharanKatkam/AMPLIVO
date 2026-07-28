@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useCrmStore } from '@/store/crmStore';
 import { useAuthStore } from '@/store/authStore';
 import { EmployeeHeader } from '@/components/employee/EmployeeHeader';
@@ -13,21 +13,23 @@ export default function EmployeeProfile() {
   const currentId = activeEmployeeId || user?.id || '';
   const storeEmployee = getEmployeeById(currentId);
 
-  const employee = storeEmployee || {
-    id: user?.id || 'EMP-001',
-    firstName: user?.name ? user.name.split(' ')[0] : 'Alex',
-    lastName: user?.name ? user.name.split(' ').slice(1).join(' ') : 'Strategist',
-    email: user?.email || 'digital.marketing.strategist@amplivo.employee',
-    phone: '',
-    avatar: '',
-    role: user?.role || 'Staff',
-    designation: 'Digital Strategist',
-    department: 'Marketing',
-    skills: ['Strategy', 'Analytics', 'Growth'],
-    joinDate: '2023-01-15',
-    workloadPercent: 70,
-    availability: 'Available',
-  };
+  const employee = useMemo(() => {
+    return storeEmployee || {
+      id: user?.id || 'EMP-001',
+      firstName: user?.name ? user.name.split(' ')[0] : 'Alex',
+      lastName: user?.name ? user.name.split(' ').slice(1).join(' ') : 'Strategist',
+      email: user?.email || 'digital.marketing.strategist@amplivo.employee',
+      phone: '',
+      avatar: '',
+      role: user?.role || 'Staff',
+      designation: 'Digital Strategist',
+      department: 'Marketing',
+      skills: ['Strategy', 'Analytics', 'Growth'],
+      joinDate: '2023-01-15',
+      workloadPercent: 70,
+      availability: 'Available',
+    };
+  }, [storeEmployee, user?.id, user?.name, user?.email, user?.role]);
 
   const projects = getProjectsByEmployee(currentId);
   const tasks = getTasksByEmployee(currentId);
@@ -45,17 +47,17 @@ export default function EmployeeProfile() {
   });
   const [isSaved, setIsSaved] = useState(false);
 
+  const skillsStr = employee.skills ? employee.skills.join(', ') : '';
+
   useEffect(() => {
-    if (employee) {
-      setFormData({
-        firstName: employee.firstName ?? '',
-        lastName: employee.lastName ?? '',
-        email: employee.email ?? '',
-        phone: employee.phone ?? '',
-        skills: employee.skills ? employee.skills.join(', ') : '',
-      });
-    }
-  }, [employee]);
+    setFormData({
+      firstName: employee.firstName ?? '',
+      lastName: employee.lastName ?? '',
+      email: employee.email ?? '',
+      phone: employee.phone ?? '',
+      skills: skillsStr,
+    });
+  }, [employee.id, employee.firstName, employee.lastName, employee.email, employee.phone, skillsStr]);
 
   const fullName = `${employee.firstName} ${employee.lastName}`.trim() || 'Employee';
 
