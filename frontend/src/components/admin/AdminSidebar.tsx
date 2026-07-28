@@ -226,7 +226,7 @@ export function AdminHeader({ title, subtitle, badge, actions }: AdminHeaderProp
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-900">Notifications</span>
-                <Link href="/admin/settings" className="text-xs text-[#4C1D95] hover:underline" onClick={() => setOpen(false)}>
+                <Link href="/admin/notifications" className="text-xs text-[#4C1D95] hover:underline" onClick={() => setOpen(false)}>
                   View all
                 </Link>
               </div>
