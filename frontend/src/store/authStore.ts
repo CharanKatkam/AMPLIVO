@@ -41,8 +41,17 @@ export const useAuthStore = create<AuthState>()(
       hasHydrated: false,
       login: (user, token, refreshToken = undefined) =>
         set({ user, token, refreshToken, isAuthenticated: true }),
-      logout: () =>
-        set({ user: null, token: null, refreshToken: null, isAuthenticated: false }),
+      logout: () => {
+        set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
+        // Other persisted Zustand stores (crmStore's selected-lead/client/
+        // project ids, hrStore's cached state) must not survive a logout -
+        // otherwise the next person to use this browser/device inherits the
+        // previous user's leftover UI state.
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('amplivo-crm-store');
+          window.localStorage.removeItem('amplivo-hr-storage');
+        }
+      },
       setToken: (token) => set({ token }),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
     }),

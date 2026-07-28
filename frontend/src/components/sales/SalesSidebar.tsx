@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   LayoutDashboard, Users, CalendarDays, BarChart2,
   Settings, LogOut, Zap, Bell, Search, TrendingUp, Receipt, Briefcase, Menu
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { authService } from '@/services/authService';
 import { Avatar } from '@/components/ui/Avatar';
 import { useUiStore } from '@/store/uiStore';
 
@@ -150,7 +151,20 @@ export function SalesHeader({ title, subtitle, badge, actions }: SalesHeaderProp
 
 export function SalesSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isSidebarOpen, setSidebarOpen } = useUiStore();
+  const { logout, refreshToken } = useAuthStore();
+
+  const handleLogout = async () => {
+    try {
+      if (refreshToken) await authService.logout(refreshToken);
+    } catch {
+      // ignore - still clear local state
+    } finally {
+      logout();
+      router.push('/login');
+    }
+  };
 
   return (
     <>
@@ -249,9 +263,9 @@ export function SalesSidebar() {
         <Link href="/sales/settings" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-white text-sm transition-all">
           <Settings size={17} /> <span>Settings</span>
         </Link>
-        <Link href="/login" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-red-400 text-sm transition-all">
+        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-red-400 text-sm transition-all">
           <LogOut size={17} /> <span>Logout</span>
-        </Link>
+        </button>
       </div>
     </aside>
     </>

@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   LayoutDashboard, FolderKanban, CheckSquare, UploadCloud, Bell, User, Settings, LogOut, Zap
@@ -8,6 +8,8 @@ import {
 import { Avatar } from '@/components/ui/Avatar';
 import { useCrmStore } from '@/store/crmStore';
 import { useUiStore } from '@/store/uiStore';
+import { useAuthStore } from '@/store/authStore';
+import { authService } from '@/services/authService';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/employee' },
@@ -20,9 +22,22 @@ const navItems = [
 
 export function EmployeeSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { activeEmployeeId, getEmployeeById } = useCrmStore();
   const employee = getEmployeeById(activeEmployeeId || '');
   const { isSidebarOpen, setSidebarOpen } = useUiStore();
+  const { logout, refreshToken } = useAuthStore();
+
+  const handleLogout = async () => {
+    try {
+      if (refreshToken) await authService.logout(refreshToken);
+    } catch {
+      // ignore - still clear local state
+    } finally {
+      logout();
+      router.push('/login');
+    }
+  };
 
   return (
     <>
@@ -85,9 +100,9 @@ export function EmployeeSidebar() {
 
       <div className="px-4 py-4 border-t border-[#1F2937]">
         <div className="flex gap-2">
-          <Link href="/login" className="flex items-center gap-2 px-3 py-2 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-red-400 transition-all text-xs flex-1">
+          <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-red-400 transition-all text-xs flex-1">
             <LogOut size={14} /> Sign Out
-          </Link>
+          </button>
           <Link href="/employee/settings" className={`flex items-center justify-center w-9 h-9 rounded-[10px] transition-all ${pathname === '/employee/settings' ? 'bg-[#4C1D95] text-white' : 'text-[#9CA3AF] hover:bg-[#1F2937] hover:text-white'}`}>
             <Settings size={15} />
           </Link>

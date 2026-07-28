@@ -293,6 +293,11 @@ export const financeService = {
     return data;
   },
 
+  getAllPayments: async (params?: { page?: number; page_size?: number; status?: string }) => {
+    const { data } = await api.get('/finance/payments', { params });
+    return data;
+  },
+
   addPayment: async (invoiceId: string, payload: Record<string, unknown>) => {
     const { data } = await api.post(`/finance/invoices/${invoiceId}/payments`, payload);
     return data;
