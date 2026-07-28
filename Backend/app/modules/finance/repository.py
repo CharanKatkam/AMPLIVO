@@ -47,6 +47,16 @@ class PaymentRepository(BaseRepository[Payment]):
     async def list_by_invoice(self, invoice_id: uuid.UUID) -> Sequence[Payment]:
         r = await self._db.execute(select(Payment).where(Payment.invoice_id == invoice_id).order_by(Payment.payment_date.desc()))
         return r.scalars().all()
+    async def get_all_filtered(self, *, status=None, sort_by=None, sort_order="desc", offset=0, limit=20) -> Sequence[Payment]:
+        stmt = select(Payment)
+        if status: stmt = stmt.where(Payment.status == status)
+        stmt = apply_sorting(stmt, model=Payment, sort_by=sort_by, sort_order=sort_order)
+        stmt = stmt.offset(offset).limit(limit)
+        return (await self._db.execute(stmt)).scalars().all()
+    async def count_filtered(self, *, status=None) -> int:
+        stmt = select(func.count()).select_from(Payment)
+        if status: stmt = stmt.where(Payment.status == status)
+        return (await self._db.execute(stmt)).scalar_one()
 
 class ExpenseRepository(BaseRepository[Expense]):
     model = Expense

@@ -112,6 +112,19 @@ async def delete_invoice_item(item_id: uuid.UUID, db: AsyncSession = Depends(get
     await svc.delete_item(item_id); await db.commit()
 
 # ── Payments ──
+@router.get("/payments", response_model=PaginatedResponse[PaymentRead], summary="List all payments (across every invoice)")
+async def list_all_payments(
+    params: PaginationParams = Depends(),
+    payment_status: str | None = Query(None, alias="status"),
+    svc: PaymentService = Depends(get_payment_service),
+    _: User = Depends(get_current_user),
+):
+    items, total = await svc.list_all_payments(
+        status=payment_status, sort_by=params.sort_by, sort_order=params.sort_order,
+        offset=params.offset, limit=params.page_size,
+    )
+    return PaginatedResponse[PaymentRead].create(items=[PaymentRead.model_validate(p) for p in items], total=total, page=params.page, page_size=params.page_size)
+
 @router.get("/invoices/{invoice_id}/payments", response_model=list[PaymentRead], summary="List payments for invoice")
 async def list_payments(invoice_id: uuid.UUID, svc: PaymentService = Depends(get_payment_service), invoice_svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
     await invoice_svc.get_invoice(invoice_id, scoped_client_id=scoped_client_id)

@@ -283,6 +283,10 @@ class PaymentService:
         self._repo = repo
     async def list_payments(self, invoice_id: uuid.UUID) -> Sequence[Payment]:
         return await self._repo.list_by_invoice(invoice_id)
+    async def list_all_payments(self, *, status=None, sort_by=None, sort_order="desc", offset=0, limit=20):
+        items = await self._repo.get_all_filtered(status=status, sort_by=sort_by, sort_order=sort_order, offset=offset, limit=limit)
+        total = await self._repo.count_filtered(status=status)
+        return items, total
     async def get_payment(self, payment_id: uuid.UUID) -> Payment:
         payment = await self._repo.get_by_id(payment_id)
         if payment is None: raise NotFoundException("Payment")
