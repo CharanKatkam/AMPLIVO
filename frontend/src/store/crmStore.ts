@@ -630,7 +630,7 @@ export const useCrmStore = create<CrmState>()(
 
       fetchInvoices: async () => {
         try {
-          const res = await financeService.getInvoices({ page_size: 200 });
+          const res = await financeService.getInvoices({ page_size: 100 });
           const raw = res.items || res || [];
           const clients = get().clients;
           const leads = get().leads;
@@ -639,44 +639,39 @@ export const useCrmStore = create<CrmState>()(
       },
 
       fetchPayments: async () => {
-        // No standalone "list all payments" endpoint exists on the backend -
-        // payments are fetched per-invoice, so every invoice's payments are
-        // pulled and merged here. Needs invoices already loaded/mapped.
+        // Used to fan out one HTTP request per invoice (N+1) to build the
+        // Payments Dashboard - now a single GET /finance/payments call,
+        // joined client-side against the already-loaded invoices (no extra
+        // round trips) for clientName/company/invoiceNumber.
         try {
           let invoices = get().invoices;
           if (invoices.length === 0) {
             await get().fetchInvoices();
             invoices = get().invoices;
           }
+          const invoicesById = new Map(invoices.map(inv => [inv.id, inv]));
 
-          const results = await Promise.allSettled(
-            invoices.map(async (inv) => ({
-              inv, pays: await financeService.getPayments(inv.id) as Record<string, any>[],
-            }))
-          );
+          const res = await financeService.getAllPayments({ page_size: 100 });
+          const rawPayments = (res.items || res || []) as Record<string, any>[];
 
-          const merged: CrmPayment[] = [];
-          for (const r of results) {
-            if (r.status !== 'fulfilled') continue;
-            const { inv, pays } = r.value;
-            for (const p of pays) {
-              merged.push({
-                id: p.id,
-                invoiceId: inv.id,
-                invoiceNumber: inv.invoiceNumber,
-                leadId: inv.leadId,
-                clientName: inv.clientName,
-                company: inv.company,
-                amount: p.amount ?? 0,
-                method: (p.payment_method || 'Bank Transfer') as CrmPayment['method'],
-                status: mapBackendPaymentStatus(p.status),
-                transactionId: p.reference_number || '',
-                date: p.payment_date || p.created_at || '',
-                verifiedAt: p.crm_verified_at || undefined,
-                notes: '',
-              });
-            }
-          }
+          const merged: CrmPayment[] = rawPayments.map((p) => {
+            const inv = invoicesById.get(p.invoice_id);
+            return {
+              id: p.id,
+              invoiceId: p.invoice_id,
+              invoiceNumber: inv?.invoiceNumber || '',
+              leadId: inv?.leadId || '',
+              clientName: inv?.clientName || '',
+              company: inv?.company || '',
+              amount: p.amount ?? 0,
+              method: (p.payment_method || 'Bank Transfer') as CrmPayment['method'],
+              status: mapBackendPaymentStatus(p.status),
+              transactionId: p.reference_number || '',
+              date: p.payment_date || p.created_at || '',
+              verifiedAt: p.crm_verified_at || undefined,
+              notes: '',
+            };
+          });
           set({ payments: merged });
         } catch { /* keep existing */ }
       },

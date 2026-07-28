@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import {
   LayoutDashboard, Briefcase, Users, Calendar, Award,
@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useUiStore } from '@/store/uiStore';
 import { useHrStore, useHrStats } from '@/store/hrStore';
+import { useAuthStore } from '@/store/authStore';
+import { authService } from '@/services/authService';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/hr' },
@@ -21,8 +23,21 @@ const navItems = [
 
 export function HRSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const stats = useHrStats();
   const { isSidebarOpen, setSidebarOpen } = useUiStore();
+  const { logout, refreshToken } = useAuthStore();
+
+  const handleLogout = async () => {
+    try {
+      if (refreshToken) await authService.logout(refreshToken);
+    } catch {
+      // ignore - still clear local state
+    } finally {
+      logout();
+      router.push('/login');
+    }
+  };
 
   return (
     <>
@@ -93,9 +108,9 @@ export function HRSidebar() {
         <Link href="/sales" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-white text-sm">
           <TrendingUp size={17} /> <span>Sales Portal</span>
         </Link>
-        <Link href="/login" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-red-400 text-sm">
+        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-red-400 text-sm">
           <LogOut size={17} /> <span>Logout</span>
-        </Link>
+        </button>
       </div>
     </aside>
     </>

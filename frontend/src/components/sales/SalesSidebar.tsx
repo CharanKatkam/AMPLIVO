@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import {
   LayoutDashboard, Users, CalendarDays, BarChart2,
   Settings, LogOut, Zap, Bell, Receipt, Briefcase, Menu, UserCircle, ChevronDown
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { authService } from '@/services/authService';
 import { Avatar } from '@/components/ui/Avatar';
 import { useUiStore } from '@/store/uiStore';
 import { useSalesStore } from '@/store/salesStore';
@@ -193,10 +194,11 @@ export function SalesHeader({ title, subtitle, badge, actions }: SalesHeaderProp
 
 export function SalesSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isSidebarOpen, setSidebarOpen } = useUiStore();
   const { leads, meetings, fetchLeads } = useSalesStore();
   // Bug 2 fixed: use logout from authStore instead of plain /login link
-  const { user, logout } = useAuthStore();
+  const { user, logout, refreshToken } = useAuthStore();
 
   const userName = user?.name ?? 'Shreya Agarwal';
   const userInitials = userName
@@ -347,7 +349,7 @@ export function SalesSidebar() {
         </Link>
         {/* Bug 2 fixed: call logout() then redirect, instead of bare /login link */}
         <button
-          onClick={() => { logout(); window.location.href = '/login'; }}
+          onClick={async () => { try { if (refreshToken) await authService.logout(refreshToken); } catch {} finally { logout(); router.push('/login'); } }}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[#9CA3AF] hover:bg-[#1F2937] hover:text-red-400 text-sm transition-all"
         >
           <LogOut size={17} /> <span>Logout</span>

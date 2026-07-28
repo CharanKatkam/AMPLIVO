@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/Toaster';
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
-    // <ProtectedRoute allowedRoles={['client']}>
+    <ProtectedRoute allowedRoles={['client']}>
       <div className="flex h-screen overflow-hidden bg-[#F1F5F9]">
         <PortalSidebar />
         <main className="flex-1 overflow-y-auto">
@@ -12,6 +12,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </main>
         <Toaster />
       </div>
-    // </ProtectedRoute>
+    </ProtectedRoute>
   );
 }
