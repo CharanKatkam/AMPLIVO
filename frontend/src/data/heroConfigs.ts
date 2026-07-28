@@ -5,7 +5,7 @@ const UNSPLASH = 'https://images.unsplash.com';
 export const servicesHero: HeroConfig = {
   background: {
     type: 'poster',
-    src: `${UNSPLASH}/photo-1551434678-e076c223a692?w=1920&h=800&fit=crop&auto=format`,
+    src: '/images/services/services-hero.jpg',
     decoration: 'none',
   },
   content: {

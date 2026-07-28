@@ -1,17 +1,30 @@
 import { Metadata } from 'next';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Navbar } from '@/components/marketing/Navbar';
 import { Footer } from '@/components/marketing/Footer';
 import { CTASection } from '@/components/marketing/CTASection';
 import { BackButton } from '@/components/ui/BackButton';
-import Image from 'next/image';
 import { services } from '@/data/services';
 import { serviceHeroImages } from '@/data/serviceHeroImages';
 import { ArrowRight, ChevronRight, CheckCircle2, Zap, Share2, Target, Search, Palette, FileText, Users, Globe, Star, Video } from 'lucide-react';
 
 const iconMap: Record<string, React.ElementType> = {
   Share2, Target, Search, Palette, FileText, Users, Globe, Zap, Star, Video,
+};
+
+const heroImageMap: Record<string, string> = {
+  'social-media-marketing': '/images/services/social-media-marketing.jpg',
+  'performance-marketing': '/images/services/performance-marketing.jpg',
+  'search-engine-optimisation': '/images/services/search-engine-optimisation.jpg',
+  'branding-and-creative-design': '/images/services/branding-and-creative-design.jpg',
+  'content-marketing': '/images/services/content-marketing.jpg',
+  'lead-generation': '/images/services/lead-generation.jpg',
+  'website-development': '/images/services/website-development.jpg',
+  'marketing-automation': '/images/services/marketing-automation.jpg',
+  'influencer-marketing': '/images/services/influencer-marketing.jpg',
+  'video-marketing': '/images/services/video-marketing.jpg',
 };
 
 function ServiceHeroBackground({ slug }: { slug: string }) {
