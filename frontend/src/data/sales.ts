@@ -75,6 +75,7 @@ export const allMeetings: Meeting[] = [
 export const salesLeads: SalesLead[] = [
   {
     id: 'sl-01',
+    title: 'New Business Opportunity',
     firstName: 'Arjun', lastName: 'Mehta',
     email: 'arjun.mehta@nexusrealty.in', phone: '+91 98456 12340',
     designation: 'Director – Marketing', company: 'Nexus Realty Group',
@@ -97,6 +98,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-02',
+    title: 'New Business Opportunity',
     firstName: 'Sneha', lastName: 'Iyer',
     email: 'sneha@bloomfresh.in', phone: '+91 87654 99210',
     designation: 'Founder & CEO', company: 'BloomFresh Organics',
@@ -118,6 +120,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-03',
+    title: 'New Business Opportunity',
     firstName: 'Rahul', lastName: 'Singhania',
     email: 'rahul@singhanialegal.com', phone: '+91 77889 34567',
     designation: 'Managing Partner', company: 'Singhania & Associates Legal',
@@ -137,6 +140,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-04',
+    title: 'New Business Opportunity',
     firstName: 'Priya', lastName: 'Kapoor',
     email: 'priya.kapoor@healthfirstdiag.in', phone: '+91 99012 56789',
     designation: 'CMO', company: 'HealthFirst Diagnostics',
@@ -156,6 +160,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-05',
+    title: 'New Business Opportunity',
     firstName: 'Kiran', lastName: 'Reddy',
     email: 'kiran@cloudcoretech.io', phone: '+91 91234 87654',
     designation: 'VP – Growth', company: 'CloudCore Technologies',
@@ -178,6 +183,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-06',
+    title: 'New Business Opportunity',
     firstName: 'Ananya', lastName: 'Sharma',
     email: 'ananya@stylevibe.in', phone: '+91 85432 11223',
     designation: 'Co-Founder', company: 'StyleVibe Fashion',
@@ -197,6 +203,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-07',
+    title: 'New Business Opportunity',
     firstName: 'Suresh', lastName: 'Babu',
     email: 'suresh@eduspark.edu.in', phone: '+91 70123 45678',
     designation: 'Director – Admissions', company: 'EduSpark Academy',
@@ -217,6 +224,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-08',
+    title: 'New Business Opportunity',
     firstName: 'Deepak', lastName: 'Joshi',
     email: 'deepak@luxeparfum.in', phone: '+91 99887 23456',
     designation: 'Brand Manager', company: 'LuxeParfum India',
@@ -239,6 +247,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-09',
+    title: 'New Business Opportunity',
     firstName: 'Meghna', lastName: 'Tiwari',
     email: 'meghna@agrorise.in', phone: '+91 88321 09876',
     designation: 'Director', company: 'AgroRise AgriTech',
@@ -256,6 +265,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-10',
+    title: 'New Business Opportunity',
     firstName: 'Nikhil', lastName: 'Bansal',
     email: 'nikhil@fittrackapp.io', phone: '+91 93456 78012',
     designation: 'CEO', company: 'FitTrack App',
@@ -273,6 +283,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-11',
+    title: 'New Business Opportunity',
     firstName: 'Rohan', lastName: 'Gupta',
     email: 'rohan.gupta@autodrivehyderabad.in', phone: '+91 78901 23456',
     designation: 'GM – Sales & Marketing', company: 'AutoDrive Hyderabad',
@@ -293,6 +304,7 @@ export const salesLeads: SalesLead[] = [
   },
   {
     id: 'sl-12',
+    title: 'New Business Opportunity',
     firstName: 'Pooja', lastName: 'Verma',
     email: 'pooja@greenbuildconstruct.in', phone: '+91 82345 67890',
     designation: 'Marketing Head', company: 'GreenBuild Constructions',

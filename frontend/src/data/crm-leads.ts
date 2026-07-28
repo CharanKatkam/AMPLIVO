@@ -39,6 +39,7 @@ const mockLeadTemplate = (id: string, firstName: string, lastName: string, compa
   id,
   salesLead: {
     id,
+    title: `${company} Engagement`,
     firstName,
     lastName,
     email,
