@@ -80,11 +80,7 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
   const projectId = resolvedParams.projectId as string | undefined;
   const subId = resolvedParams.id as string | undefined;
 
-
-  const { activeEmployeeId, getTasksByEmployee, getProjectById, submissions, submitToCRM, resubmitToCRM, fetchAllData, dataLoaded } = useCrmStore();
-
   const { activeEmployeeId, getTasksByEmployee, submissions, submitToCRM, resubmitToCRM, fetchAllData, dataLoaded } = useCrmStore();
- 9469fa1 (Fix employee submit workflow and file upload integration)
 
   const existingSub = subId ? submissions.find(s => s.id === subId) : undefined;
   const isRevision = !!existingSub;
@@ -94,10 +90,6 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
   const [taskSubmissions, setTaskSubmissions] = useState<TaskSubmissionHistoryItem[]>([]);
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
- 
-  const project = getProjectById(selectedTask?.projectId || '');
-
- 9469fa1 (Fix employee submit workflow and file upload integration)
 
   const [title, setTitle] = useState(existingSub?.title || '');
   const [workSummary, setWorkSummary] = useState(existingSub?.workSummary || '');
