@@ -1,19 +1,23 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Job } from '@/types/hr';
 import { useRouter } from 'next/navigation';
+import { useHrStore } from '@/store/hrStore';
 
 interface JobFormProps {
   initialData?: Job;
-  onSubmit: (data: Partial<Job>) => void;
+  initialDepartmentId?: string;
+  onSubmit: (data: Partial<Job> & { departmentId?: string }) => void;
 }
 
-export function JobForm({ initialData, onSubmit }: JobFormProps) {
+export function JobForm({ initialData, initialDepartmentId, onSubmit }: JobFormProps) {
   const router = useRouter();
+  const departments = useHrStore(state => state.departments);
+  const fetchDepartments = useHrStore(state => state.fetchDepartments);
   const [formData, setFormData] = useState<Partial<Job>>(
     initialData || {
       title: '',
-      department: 'Technology',
+      department: '',
       serviceCategory: 'Website Development',
       employmentType: 'Full-time',
       experienceLevel: '1-3 Years',
@@ -30,20 +34,32 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
       status: 'Draft',
     }
   );
+  const [departmentId, setDepartmentId] = useState(initialDepartmentId || '');
+
+  useEffect(() => {
+    if (departments.length === 0) fetchDepartments();
+  }, [departments.length, fetchDepartments]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    setDepartmentId(id);
+    const name = departments.find(d => d.id === id)?.name || '';
+    setFormData(prev => ({ ...prev, department: name }));
+  };
+
   const handleArrayChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: keyof Job) => {
-    const arr = e.target.value.split('\\n').filter(s => s.trim() !== '');
+    const arr = e.target.value.split('\n').filter(s => s.trim() !== '');
     setFormData(prev => ({ ...prev, [field]: arr }));
   };
 
   const handleSubmit = (e: React.FormEvent, status: 'Published' | 'Draft') => {
     e.preventDefault();
-    onSubmit({ ...formData, status });
+    onSubmit({ ...formData, status, departmentId });
   };
 
   return (
@@ -63,16 +79,14 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Department <span className="text-red-500">*</span></label>
           <select
-            name="department"
-            value={formData.department}
-            onChange={handleChange}
+            name="departmentId"
+            value={departmentId}
+            onChange={handleDepartmentChange}
             className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+            required
           >
-            <option>Technology</option>
-            <option>Design</option>
-            <option>Marketing</option>
-            <option>Sales</option>
-            <option>HR</option>
+            <option value="">Select department...</option>
+            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </div>
         
@@ -147,7 +161,7 @@ export function JobForm({ initialData, onSubmit }: JobFormProps) {
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-2">Skills Required (One per line)</label>
         <textarea
-          value={(formData.skillsRequired || []).join('\\n')}
+          value={(formData.skillsRequired || []).join('\n')}
           onChange={e => handleArrayChange(e, 'skillsRequired')}
           rows={3}
           className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"

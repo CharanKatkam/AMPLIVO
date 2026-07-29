@@ -21,7 +21,7 @@ from app.modules.leads.service import LeadService
 from app.modules.users.models import UserProfile
 from app.modules.users.repository import RoleRepository, UserProfileRepository
 from app.repositories.user_repository import UserRepository
-from app.services.email_service import EmailService
+from app.services.email_service import EmailDeliveryError, EmailService
 from app.utils.password import generate_temp_password, hash_password
 from app.utils.sales_events import log_activity, notify_role
 
@@ -81,10 +81,25 @@ class ClientAccountService:
         )
         await UserProfileRepository(self._db).create(UserProfile(user_id=user.id, full_name=full_name))
 
-        await EmailService().send_client_portal_welcome_email(
-            to_email=lead.email, full_name=full_name, username=user.username,
-            temp_password=temp_password, login_url=f"{settings.FRONTEND_URL}/login",
-        )
+        # Not fatal to account/project creation - if BREVO_API_KEY is
+        # configured and the real send fails, the account (with its temp
+        # password already generated) and onboarding project must still be
+        # created; otherwise this exception would propagate out of
+        # crm_verify and roll back the payment's finance/CRM verification
+        # that already genuinely happened. Matches the try/except pattern
+        # already used for the other two emails in this workflow
+        # (finance/service.py's crm_approve_advance).
+        try:
+            await EmailService().send_client_portal_welcome_email(
+                to_email=lead.email, full_name=full_name, username=user.username,
+                temp_password=temp_password, login_url=f"{settings.FRONTEND_URL}/login",
+            )
+        except EmailDeliveryError:
+            await log_activity(
+                self._db, user_id=actor_id, entity_type="lead", entity_id=lead.id,
+                action="email_failed",
+                description=f"Client portal welcome email failed to send to {lead.email}. Username: {user.username}.",
+            )
 
         lead.status = lead_pipeline.CLIENT_ACCOUNT_CREATED
         await self._db.flush()

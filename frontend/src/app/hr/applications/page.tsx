@@ -1,9 +1,15 @@
 'use client';
+import { useEffect } from 'react';
 import { useHrStore } from '@/store/hrStore';
 import { ApplicationsTable } from '@/components/hr/ApplicationsTable';
 
 export default function ApplicationsPage() {
   const applications = useHrStore(state => state.applications);
+  const fetchAllData = useHrStore(state => state.fetchAllData);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">

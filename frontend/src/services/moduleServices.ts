@@ -118,6 +118,10 @@ export const careersService = {
     const { data } = await api.get(`/careers/${jobId}/applications`, { params });
     return data;
   },
+  getAllApplications: async (params?: Record<string, unknown>) => {
+    const { data } = await api.get('/careers/applications', { params });
+    return data;
+  },
   getApplication: async (appId: string) => {
     const { data } = await api.get(`/careers/applications/${appId}`);
     return data;

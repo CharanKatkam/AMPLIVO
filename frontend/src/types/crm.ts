@@ -197,6 +197,12 @@ export interface CrmPayment {
   verifiedAt?: string;
   verifiedBy?: string;
   notes: string;
+  // Raw backend status ("submitted" | "finance_verified" | "crm_verified" |
+  // "rejected" | "completed" | "pending") - `status` above collapses
+  // "submitted" and "finance_verified" into a single "Processing" bucket,
+  // which isn't enough to know which of the two verification steps is next.
+  financeVerifiedAt?: string;
+  crmVerifiedAt?: string;
 }
 
 // ─── CRM NOTIFICATION ─────────────────────────────────────────────────────────

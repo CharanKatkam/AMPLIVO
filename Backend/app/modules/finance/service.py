@@ -244,9 +244,13 @@ class InvoiceService:
                 invoice.status = finance_constants.INVOICE_STATUS_EMAIL_SENT
                 if lead is not None:
                     lead.status = lead_pipeline.EMAIL_SENT
+                delivery_note = (
+                    "" if email_service.is_live else
+                    " SIMULATED ONLY - BREVO_API_KEY is not configured, so the client did not actually receive this email."
+                )
                 await log_activity(
                     self._db, user_id=actor_id, entity_type="invoice", entity_id=invoice.id,
-                    action="email_sent", description=f"Payment-link email for invoice {invoice.invoice_number} sent to {contact_email}.",
+                    action="email_sent", description=f"Payment-link email for invoice {invoice.invoice_number} sent to {contact_email}.{delivery_note}",
                 )
             except EmailDeliveryError:
                 await log_activity(

@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import sys
 import traceback
+from datetime import datetime, timezone
 from typing import Any
 
 try:
@@ -58,7 +59,7 @@ class _JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         obj: dict[str, Any] = {
-            "timestamp": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S.%fZ"),
+            "timestamp": self._format_timestamp(record),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -87,3 +88,14 @@ class _JSONFormatter(logging.Formatter):
             obj["exception"] = "".join(traceback.format_exception(*record.exc_info))
 
         return _json_serialize(obj)
+
+    @staticmethod
+    def _format_timestamp(record: logging.LogRecord) -> str:
+        # ``logging.Formatter.formatTime`` forwards ``datefmt`` to
+        # ``time.strftime``, which does not support ``%f`` (that directive
+        # only exists on ``datetime.strftime``). On some platforms an
+        # unrecognized directive raises ``ValueError: Invalid format
+        # string`` instead of being ignored, so build the ISO-8601 UTC
+        # timestamp via ``datetime`` directly.
+        dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"

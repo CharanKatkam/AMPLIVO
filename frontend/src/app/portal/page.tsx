@@ -26,6 +26,7 @@ export default function PortalDashboard() {
   const [leads, setLeads] = useState<LeadRead[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [accountManager, setAccountManager] = useState<{ name: string; title: string } | null>(null);
+  const [leadSources, setLeadSources] = useState<Record<string, string>>({});
 
   const [calendarPosts, setCalendarPosts] = useState<any[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
@@ -82,6 +83,14 @@ export default function PortalDashboard() {
         }
       } catch {
         // no account manager assigned
+      }
+
+      try {
+        const res = await leadService.getLeadSources();
+        const items: { id: string; name: string }[] = res?.items ?? [];
+        setLeadSources(Object.fromEntries(items.map((s) => [s.id, s.name])));
+      } catch {
+        // leave source_id unresolved (shown as '-') rather than break the dashboard
       }
     }
     fetchData();
@@ -438,7 +447,7 @@ export default function PortalDashboard() {
                         <div className="text-xs text-slate-400">{lead.email}</div>
                       </td>
                       <td className="py-3 px-3 text-slate-600">{lead.phone || '-'}</td>
-                      <td className="py-3 px-3 text-slate-500">{lead.source_id || '-'}</td>
+                      <td className="py-3 px-3 text-slate-500">{leadSources[lead.source_id || ''] || '-'}</td>
                       <td className="py-3 px-3"><StatusBadge status={lead.status} /></td>
                       <td className="py-3 px-3 font-semibold text-slate-900" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                         {lead.estimated_value != null ? `₹${lead.estimated_value.toLocaleString()}` : '-'}

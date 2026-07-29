@@ -1,22 +1,31 @@
 'use client';
 import { useHrStore } from '@/store/hrStore';
+import { useToastStore } from '@/store/toastStore';
 import { StatusChip } from '@/components/hr/StatusChip';
 import { ConfirmDialog } from '@/components/hr/ConfirmDialog';
 import { JobViewModal } from '@/components/hr/JobViewModal';
 import { Job, JobStatus } from '@/types/hr';
+import { careersService } from '@/services/moduleServices';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Filter, Edit, Copy, XCircle, Trash2, Eye, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const STATUS_OPTIONS: JobStatus[] = ['Published', 'Draft', 'Closed'];
+const STATUS_TO_BACKEND: Record<string, string> = { Published: 'open', Draft: 'draft', Closed: 'closed' };
 
 export default function JobsPage() {
   const router = useRouter();
   const jobs = useHrStore(state => state.jobs);
-  const addJob = useHrStore(state => state.addJob);
-  const updateJob = useHrStore(state => state.updateJob);
-  const deleteJob = useHrStore(state => state.deleteJob);
+  const departmentsRaw = useHrStore(state => state.departments);
+  const fetchJobs = useHrStore(state => state.fetchJobs);
+  const fetchDepartments = useHrStore(state => state.fetchDepartments);
+  const showToast = useToastStore((s) => s.showToast);
+
+  useEffect(() => {
+    fetchDepartments().then(() => fetchJobs());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -46,15 +55,24 @@ export default function JobsPage() {
     setLocationFilter('All');
   };
 
-  const handleDuplicate = (job: Job) => {
-    const duplicate: Job = {
-      ...job,
-      id: `JOB-${Math.floor(Math.random() * 10000)}`,
-      title: `${job.title} (Copy)`,
-      status: 'Draft',
-      postedDate: new Date().toISOString().split('T')[0],
-    };
-    addJob(duplicate);
+  const handleDuplicate = async (job: Job) => {
+    const departmentId = departmentsRaw.find(d => d.name === job.department)?.id;
+    try {
+      await careersService.createJob({
+        title: `${job.title} (Copy)`,
+        department_id: departmentId,
+        location: job.location || undefined,
+        vacancies: job.vacancies,
+        skills_required: job.skillsRequired?.length ? job.skillsRequired : undefined,
+        description: job.description || undefined,
+        salary_range: job.salaryRange || undefined,
+        status: 'draft',
+      });
+      await fetchJobs();
+      showToast(`"${job.title}" duplicated as a draft.`, 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to duplicate job.', 'error');
+    }
   };
 
   return (
@@ -234,7 +252,15 @@ export default function JobsPage() {
           title="Close this job posting?"
           message={`"${confirmDialog.job.title}" will be marked as Closed and hidden from active listings. You can still find it under the Closed status filter.`}
           confirmLabel="Close Job"
-          onConfirm={() => updateJob(confirmDialog.job.id, { status: 'Closed' })}
+          onConfirm={async () => {
+            try {
+              await careersService.updateJob(confirmDialog.job.id, { status: STATUS_TO_BACKEND.Closed });
+              await fetchJobs();
+              showToast(`"${confirmDialog.job.title}" closed.`, 'success');
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : 'Failed to close job.', 'error');
+            }
+          }}
           onClose={() => setConfirmDialog(null)}
         />
       )}
@@ -245,7 +271,15 @@ export default function JobsPage() {
           message={`"${confirmDialog.job.title}" will be permanently deleted. This action cannot be undone.`}
           confirmLabel="Delete"
           danger
-          onConfirm={() => deleteJob(confirmDialog.job.id)}
+          onConfirm={async () => {
+            try {
+              await careersService.deleteJob(confirmDialog.job.id);
+              await fetchJobs();
+              showToast(`"${confirmDialog.job.title}" deleted.`, 'success');
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : 'Failed to delete job.', 'error');
+            }
+          }}
           onClose={() => setConfirmDialog(null)}
         />
       )}

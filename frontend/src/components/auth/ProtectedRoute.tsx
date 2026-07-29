@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ('admin' | 'client' | 'sales' | 'hr' | 'employee' | 'crm')[];
+  allowedRoles?: ('admin' | 'client' | 'sales' | 'hr' | 'employee' | 'crm' | 'finance')[];
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -42,6 +42,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         employee: '/employee',
         crm: '/crm',
         client: '/portal',
+        finance: '/crm/payments',
       };
       router.replace(roleRedirects[user.role] ?? '/portal');
       return;

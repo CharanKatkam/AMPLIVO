@@ -38,6 +38,13 @@ class EmailService:
     SendGrid adapter later requires no changes anywhere else.
     """
 
+    @property
+    def is_live(self) -> bool:
+        """False when BREVO_API_KEY is unset - callers use this to avoid
+        recording a delivery as unconditionally successful (e.g. the
+        invoice/lead activity log) when nothing actually left the process."""
+        return bool(settings.BREVO_API_KEY)
+
     async def send_verification_email(self, *, to_email: str, full_name: str, token: str) -> None:
         subject = "Verify your Amplivo account"
         body = (
@@ -123,7 +130,11 @@ class EmailService:
             if not ok:
                 raise EmailDeliveryError(f"Failed to send email to {to}: {subject}")
         else:
-            logger.info("Sending email to %s: %s", to, subject)
+            logger.warning(
+                "BREVO_API_KEY is not configured - email to %s (%s) was NOT delivered to a real "
+                "inbox, only recorded in the in-memory outbox. Set BREVO_API_KEY in .env to send "
+                "real email.", to, subject,
+            )
             _outbox.append(SentEmail(to=to, subject=subject, body=body, token=token))
 
     async def _send_via_brevo(self, *, to: str, subject: str, body: str) -> bool:

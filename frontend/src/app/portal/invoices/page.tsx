@@ -260,25 +260,20 @@ function PayNowModal({ invoice, onClose, onSuccess }: { invoice: Invoice; onClos
   const handlePay = async () => {
     setSubmitting(true);
     try {
-      await financeService.addPayment(invoice.id, {
+      // Submits proof of payment for Finance/CRM to verify - this is not an
+      // instant "paid" confirmation (there is no real payment gateway wired
+      // in), so the invoice stays pending until staff verify it.
+      await financeService.submitClientPayment(invoice.id, {
         amount: invoice.total_amount,
-        payment_date: new Date().toISOString().slice(0, 10),
         payment_method: method,
         reference_number: `PAY-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-        status: 'completed',
       });
-      try {
-        await financeService.updateInvoice(invoice.id, { status: 'paid' });
-      } catch {
-        // ignore update status error
-      }
-      showToast(`Payment of ₹${(invoice.total_amount || 0).toLocaleString()} completed!`, 'success');
+      showToast('Payment submitted — awaiting verification by our finance team.', 'success');
       onSuccess();
       onClose();
-    } catch {
-      showToast('Payment completed successfully!', 'success');
-      onSuccess();
-      onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to submit payment. Please try again.';
+      showToast(msg, 'error');
     } finally {
       setSubmitting(false);
     }
