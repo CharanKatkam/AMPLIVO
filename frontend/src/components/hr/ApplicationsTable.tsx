@@ -1,22 +1,62 @@
 'use client';
-import { useState } from 'react';
-import { Application } from '@/types/hr';
+import { useMemo, useState } from 'react';
+import { Application, ApplicationStatus } from '@/types/hr';
 import { StatusChip } from './StatusChip';
 import Link from 'next/link';
-import { Search, Filter, Eye, MoreVertical } from 'lucide-react';
+import { Search, Filter, Eye, MoreVertical, X } from 'lucide-react';
 
 interface ApplicationsTableProps {
   applications: Application[];
 }
 
+const STATUS_OPTIONS: ApplicationStatus[] = ['New', 'Screening', 'Shortlisted', 'Interviewing', 'Offered', 'Hired', 'Rejected'];
+
 export function ApplicationsTable({ applications }: ApplicationsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'All' | ApplicationStatus>('All');
+  const [positionFilter, setPositionFilter] = useState('All');
+  const [departmentFilter, setDepartmentFilter] = useState('All');
+  const [locationFilter, setLocationFilter] = useState('All');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
-  const filtered = applications.filter(app => 
-    app.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    app.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const positions = useMemo(() => Array.from(new Set(applications.map(a => a.jobTitle))).sort(), [applications]);
+  const departments = useMemo(() => Array.from(new Set(applications.map(a => a.department))).sort(), [applications]);
+  const locations = useMemo(() => Array.from(new Set(applications.map(a => a.location).filter(Boolean))).sort(), [applications]);
+
+  const activeFilterCount = [
+    statusFilter !== 'All',
+    positionFilter !== 'All',
+    departmentFilter !== 'All',
+    locationFilter !== 'All',
+    Boolean(dateFrom),
+    Boolean(dateTo),
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setStatusFilter('All');
+    setPositionFilter('All');
+    setDepartmentFilter('All');
+    setLocationFilter('All');
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  const filtered = applications.filter(app => {
+    const matchesSearch =
+      app.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.department.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || app.status === statusFilter;
+    const matchesPosition = positionFilter === 'All' || app.jobTitle === positionFilter;
+    const matchesDepartment = departmentFilter === 'All' || app.department === departmentFilter;
+    const matchesLocation = locationFilter === 'All' || app.location === locationFilter;
+    const appliedDate = app.appliedDate ? app.appliedDate.slice(0, 10) : '';
+    const matchesDateFrom = !dateFrom || (appliedDate && appliedDate >= dateFrom);
+    const matchesDateTo = !dateTo || (appliedDate && appliedDate <= dateTo);
+    return matchesSearch && matchesStatus && matchesPosition && matchesDepartment && matchesLocation && matchesDateFrom && matchesDateTo;
+  });
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -32,10 +72,105 @@ export function ApplicationsTable({ applications }: ApplicationsTableProps) {
             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
           />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+        <button
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-medium transition-colors ${
+            filtersOpen || activeFilterCount > 0
+              ? 'bg-[#4C1D95]/5 border-[#4C1D95]/30 text-[#4C1D95]'
+              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+          }`}
+        >
           <Filter size={16} /> Filters
+          {activeFilterCount > 0 && (
+            <span className="bg-[#4C1D95] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+              {activeFilterCount}
+            </span>
+          )}
         </button>
       </div>
+
+      {/* Filter Panel */}
+      {filtersOpen && (
+        <div className="p-4 border-b border-slate-200 bg-white flex flex-wrap items-end gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value as 'All' | ApplicationStatus)}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95] min-w-[140px]"
+            >
+              <option value="All">All Statuses</option>
+              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Applied Position</label>
+            <select
+              value={positionFilter}
+              onChange={e => setPositionFilter(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95] min-w-[160px]"
+            >
+              <option value="All">All Positions</option>
+              {positions.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Department</label>
+            <select
+              value={departmentFilter}
+              onChange={e => setDepartmentFilter(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95] min-w-[140px]"
+            >
+              <option value="All">All Departments</option>
+              {departments.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Location</label>
+            <select
+              value={locationFilter}
+              onChange={e => setLocationFilter(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95] min-w-[140px]"
+            >
+              <option value="All">All Locations</option>
+              {locations.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Applied From</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Applied To</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4C1D95]/20 focus:border-[#4C1D95]"
+            />
+          </div>
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-500 hover:text-rose-600 transition-colors"
+            >
+              <X size={14} /> Clear all
+            </button>
+          )}
+          <button
+            onClick={() => setFiltersOpen(false)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors ml-auto"
+          >
+            Close
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto">

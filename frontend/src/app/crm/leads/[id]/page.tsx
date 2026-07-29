@@ -45,6 +45,14 @@ export default function CrmLeadDetailsPage() {
   const [loadingInvoice, setLoadingInvoice] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [emailLive, setEmailLive] = useState(true);
+  const [pdfLoading, setPdfLoading] = useState<'view' | 'download' | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    financeService.getEmailDeliveryStatus().then((r) => setEmailLive(r.live)).catch(() => setEmailLive(true));
+  }, []);
 
   const loadInvoiceAndPayments = async (leadId: string) => {
     setLoadingInvoice(true);
@@ -105,6 +113,56 @@ export default function CrmLeadDetailsPage() {
       setActionError(err instanceof Error ? err.message : 'Failed to approve. Please try again.');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleViewPdf = async () => {
+    if (!invoice) return;
+    setPdfLoading('view');
+    try {
+      const blob = await financeService.fetchInvoicePdfBlob(invoice.id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to open the invoice PDF.');
+    } finally {
+      setPdfLoading(null);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    setPdfLoading('download');
+    try {
+      const blob = await financeService.fetchInvoicePdfBlob(invoice.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoice.invoice_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to download the invoice PDF.');
+    } finally {
+      setPdfLoading(null);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    if (!invoice) return;
+    setResending(true);
+    setResendMessage(null);
+    try {
+      await financeService.resendInvoiceEmail(invoice.id);
+      await loadInvoiceAndPayments(lead.id);
+      setResendMessage('Payment-link email resent.');
+    } catch (err) {
+      setResendMessage(err instanceof Error ? err.message : 'Failed to resend the email.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -330,19 +388,46 @@ export default function CrmLeadDetailsPage() {
                       </div>
                       <span className="text-sm font-semibold text-white">{invoice.currency} {invoice.total_amount.toLocaleString('en-IN')}</span>
                     </div>
+
+                    {invoice.status === 'EMAIL_SENT' && !emailLive && (
+                      <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-300 flex items-start gap-2">
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                        <span>Email delivery is not configured (BREVO_API_KEY missing) — the client did not actually receive this email.</span>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between px-1">
                       <span className="text-[10px] px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-slate-300 font-medium">
                         {invoice.status}
                       </span>
-                      <a
-                        href={financeService.getInvoicePdfUrl(invoice.id)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1"
-                      >
-                        <Download className="w-3 h-3" /> View PDF
-                      </a>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleResendEmail}
+                          disabled={resending}
+                          className="text-xs text-violet-400 hover:text-violet-300 disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3" /> {resending ? 'Resending…' : 'Resend Email'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleViewPdf}
+                          disabled={pdfLoading !== null}
+                          className="text-xs text-violet-400 hover:text-violet-300 disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <FileText className="w-3 h-3" /> {pdfLoading === 'view' ? 'Opening…' : 'View PDF'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDownloadPdf}
+                          disabled={pdfLoading !== null}
+                          className="text-xs text-violet-400 hover:text-violet-300 disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <Download className="w-3 h-3" /> {pdfLoading === 'download' ? 'Downloading…' : 'Download'}
+                        </button>
+                      </div>
                     </div>
+                    {resendMessage && <p className="text-[11px] text-slate-400 px-1">{resendMessage}</p>}
                   </div>
                 )}
               </div>

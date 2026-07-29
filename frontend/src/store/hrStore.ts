@@ -1,20 +1,104 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Job, Application, Interview, Offer, HRStats, ApplicationStatus, JobStatus, InterviewStatus } from '@/types/hr';
+import { Job, Application, Interview, Offer, HRStats, ApplicationStatus, JobStatus, InterviewStatus, JobType, WorkMode } from '@/types/hr';
 import { careersService } from '@/services/moduleServices';
+import { userManagementService } from '@/services/crmService';
+
+// Backend stores free-text status columns ("open"/"submitted"/"interviewing"/…)
+// with no enum, while the UI (StatusChip, filters) is built around the fixed
+// Capitalized vocabulary below - map one to the other at the fetch boundary
+// rather than changing the DB/API contract.
+function mapJobStatus(status: string): JobStatus {
+  const s = (status || '').toLowerCase();
+  if (s === 'closed') return 'Closed';
+  if (s === 'draft') return 'Draft';
+  return 'Published';
+}
+
+function mapApplicationStatus(status: string): ApplicationStatus {
+  const s = (status || '').toLowerCase();
+  const known: Record<string, ApplicationStatus> = {
+    submitted: 'New',
+    new: 'New',
+    screening: 'Screening',
+    shortlisted: 'Shortlisted',
+    interviewing: 'Interviewing',
+    completed: 'Interviewing',
+    offered: 'Offered',
+    hired: 'Hired',
+    rejected: 'Rejected',
+  };
+  return known[s] ?? 'New';
+}
+
+type ApiRecord = Record<string, unknown>;
+
+function mapJobRead(raw: ApiRecord, departmentNameById: Record<string, string>): Job {
+  const departmentId = raw.department_id as string | null | undefined;
+  const employmentType = raw.employment_type as string | undefined;
+  return {
+    id: raw.id as string,
+    title: raw.title as string,
+    department: (departmentId && departmentNameById[departmentId]) || 'Unassigned',
+    serviceCategory: (raw.service_category as string) || '',
+    employmentType: (employmentType?.replace(/_/g, '-') || 'Full-time') as JobType,
+    experienceLevel: (raw.experience_level as string) || '',
+    location: (raw.location as string) || '',
+    workMode: ((raw.work_mode as string) || 'On-site') as WorkMode,
+    salaryRange: (raw.salary_range as string) || '',
+    vacancies: (raw.vacancies as number) ?? 1,
+    skillsRequired: (raw.skills_required as string[]) || [],
+    responsibilities: (raw.responsibilities as string[]) || [],
+    requirements: raw.requirements ? [raw.requirements as string] : [],
+    benefits: (raw.benefits as string[]) || [],
+    description: (raw.description as string) || '',
+    applicationDeadline: (raw.application_deadline as string) || '',
+    status: mapJobStatus(raw.status as string),
+    postedDate: (raw.posted_at as string) || (raw.created_at as string) || '',
+  };
+}
+
+// `experience` has no backing column anywhere in the Careers module (only
+// education/work_history are captured) - left blank rather than fabricated.
+function mapApplicationRead(raw: ApiRecord, jobsById: Record<string, Job>): Application {
+  const jobOpeningId = raw.job_opening_id as string;
+  const job = jobsById[jobOpeningId];
+  return {
+    id: raw.id as string,
+    jobId: jobOpeningId,
+    jobTitle: job?.title || 'Unknown Position',
+    department: job?.department || 'Unassigned',
+    location: job?.location || '',
+    candidateName: raw.applicant_name as string,
+    email: raw.applicant_email as string,
+    phone: (raw.applicant_phone as string) || '',
+    experience: '',
+    skills: (raw.skills as string[]) || [],
+    resumeUrl: (raw.resume_url as string) || undefined,
+    portfolioUrl: (raw.portfolio_url as string) || undefined,
+    coverLetter: (raw.cover_letter as string) || undefined,
+    education: (raw.education as Application['education']) || [],
+    workHistory: (raw.work_history as Application['workHistory']) || [],
+    appliedDate: raw.created_at as string,
+    status: mapApplicationStatus(raw.status as string),
+    notes: (raw.notes as string) || '',
+  };
+}
 
 interface HrState {
   jobs: Job[];
   applications: Application[];
   interviews: Interview[];
   offers: Offer[];
+  departments: { id: string; name: string }[];
   isLoading: boolean;
   dataLoaded: boolean;
-  
+
   // API Actions
   fetchAllData: () => Promise<void>;
   fetchJobs: () => Promise<void>;
+  fetchDepartments: () => Promise<void>;
   fetchApplications: (jobId?: string) => Promise<void>;
 
   // Actions
@@ -37,37 +121,48 @@ export const useHrStore = create<HrState>()(
       applications: [],
       interviews: [],
       offers: [],
+      departments: [],
       isLoading: false,
       dataLoaded: false,
-      
+
       // ─── API FETCH ACTIONS ────────────────────────────────────────────────
       fetchAllData: async () => {
         set({ isLoading: true });
         try {
-          const [jobsRes] = await Promise.allSettled([
-            careersService.getJobs({ page_size: 100 }),
-          ]);
-          
-          const jobs = jobsRes.status === 'fulfilled' ? (jobsRes.value.items || jobsRes.value || []) : get().jobs;
-          set({ jobs, isLoading: false, dataLoaded: true });
+          await get().fetchDepartments();
+          await get().fetchJobs();
+          await get().fetchApplications();
+          set({ isLoading: false, dataLoaded: true });
         } catch {
           set({ isLoading: false });
         }
       },
 
+      fetchDepartments: async () => {
+        try {
+          const res = await userManagementService.getDepartments({ page_size: 200 });
+          const items: ApiRecord[] = res.items || res || [];
+          set({ departments: items.map((d) => ({ id: d.id as string, name: d.name as string })) });
+        } catch { /* keep existing */ }
+      },
+
       fetchJobs: async () => {
         try {
           const res = await careersService.getJobs({ page_size: 100 });
-          set({ jobs: res.items || res || [] });
+          const items: ApiRecord[] = res.items || res || [];
+          const departmentNameById = Object.fromEntries(get().departments.map((d) => [d.id, d.name]));
+          set({ jobs: items.map((raw) => mapJobRead(raw, departmentNameById)) });
         } catch { /* keep existing */ }
       },
 
       fetchApplications: async (jobId?: string) => {
         try {
-          if (jobId) {
-            const res = await careersService.getApplications(jobId, { page_size: 100 });
-            set({ applications: res.items || res || [] });
-          }
+          const res = jobId
+            ? await careersService.getApplications(jobId, { page_size: 100 })
+            : await careersService.getAllApplications({ page_size: 200 });
+          const items: ApiRecord[] = res.items || res || [];
+          const jobsById = Object.fromEntries(get().jobs.map((j) => [j.id, j]));
+          set({ applications: items.map((raw) => mapApplicationRead(raw, jobsById)) });
         } catch { /* keep existing */ }
       },
 

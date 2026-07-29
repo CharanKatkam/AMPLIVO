@@ -25,7 +25,7 @@ export interface TokenResponse {
   token_type: string;
 }
 
-const VALID_ROLES = ['admin', 'client', 'sales', 'hr', 'employee', 'crm'] as const;
+const VALID_ROLES = ['admin', 'client', 'sales', 'hr', 'employee', 'crm', 'finance'] as const;
 type ValidRole = (typeof VALID_ROLES)[number];
 
 // Map backend role_name (may be capitalized) to frontend lowercase role

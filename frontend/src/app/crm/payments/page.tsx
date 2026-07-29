@@ -2,14 +2,42 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  Search, CreditCard, CheckCircle, AlertCircle, Clock
+  Search, CreditCard, CheckCircle, AlertCircle, Clock, XCircle
 } from 'lucide-react';
 import { useCrmStore } from '@/store/crmStore';
+import { useToastStore } from '@/store/toastStore';
 
 export default function CrmPaymentsPage() {
-  const { payments, verifyPayment } = useCrmStore();
+  const { payments, verifyPayment, rejectPayment } = useCrmStore();
+  const showToast = useToastStore((s) => s.showToast);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const handleVerify = async (paymentId: string) => {
+    setBusyId(paymentId);
+    try {
+      await verifyPayment(paymentId);
+      showToast('Payment verification step completed.', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to verify payment.', 'error');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleReject = async (paymentId: string) => {
+    if (!confirm('Reject this payment? This cannot be undone.')) return;
+    setBusyId(paymentId);
+    try {
+      await rejectPayment(paymentId);
+      showToast('Payment rejected.', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to reject payment.', 'error');
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const filtered = useMemo(() => {
     return payments
@@ -143,12 +171,25 @@ export default function CrmPaymentsPage() {
                     ) : payment.status === 'Pending' ? (
                       <span className="text-xs text-amber-400 flex items-center justify-end gap-1"><Clock className="w-3 h-3" /> Awaiting payment</span>
                     ) : (
-                      <button
-                        onClick={() => verifyPayment(payment.id)}
-                        className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
-                      >
-                        Verify Payment <CheckCircle className="w-3 h-3" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-[10px] text-slate-500">
+                          {payment.financeVerifiedAt ? 'Awaiting CRM sign-off' : 'Awaiting Finance verification'}
+                        </span>
+                        <button
+                          onClick={() => handleVerify(payment.id)}
+                          disabled={busyId === payment.id}
+                          className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white transition-colors"
+                        >
+                          Verify <CheckCircle className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleReject(payment.id)}
+                          disabled={busyId === payment.id}
+                          className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded bg-red-600/80 hover:bg-red-500 disabled:opacity-50 text-white transition-colors"
+                        >
+                          Reject <XCircle className="w-3 h-3" />
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>

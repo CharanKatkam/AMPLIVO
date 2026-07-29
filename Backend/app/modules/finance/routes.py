@@ -4,6 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.exceptions import ForbiddenException
 from app.core.pagination import PaginatedResponse, PaginationParams
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
@@ -13,8 +14,20 @@ from app.models.user import User
 from app.modules.finance.dependencies import *
 from app.modules.finance.schemas import *
 from app.modules.finance.service import *
+from app.modules.public_client_actions.schemas import ClientPaymentSubmitRequest
 
 router = APIRouter(prefix="/finance", tags=["Finance"])
+
+
+@router.get(
+    "/email-delivery-status",
+    summary="Whether outgoing email is actually configured to deliver (vs. the in-memory dev stub)",
+)
+async def get_email_delivery_status(_: User = Depends(get_current_user), _role: str = Depends(require_roles(*STAFF_ROLE_SLUGS))):
+    from app.services.email_service import EmailService
+
+    return {"live": EmailService().is_live}
+
 
 # ── Invoices ──
 @router.get("/invoices", response_model=PaginatedResponse[InvoiceRead], summary="List invoices")
@@ -86,6 +99,37 @@ async def get_invoice_pdf(invoice_id: uuid.UUID, svc: InvoiceService = Depends(g
 @router.get("/invoices/{invoice_id}", response_model=InvoiceRead, summary="Get invoice")
 async def get_invoice(invoice_id: uuid.UUID, svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id)):
     return InvoiceRead.model_validate(await svc.get_invoice(invoice_id, scoped_client_id=scoped_client_id))
+
+@router.post(
+    "/invoices/{invoice_id}/client-payment", response_model=PaymentRead, status_code=status.HTTP_201_CREATED,
+    summary="Client (logged into the portal) submits proof of payment for their own invoice",
+)
+async def submit_client_portal_payment(
+    invoice_id: uuid.UUID,
+    payload: ClientPaymentSubmitRequest,
+    db: AsyncSession = Depends(get_db),
+    invoice_svc: InvoiceService = Depends(get_invoice_service),
+    payment_svc: PaymentService = Depends(get_payment_service),
+    _: User = Depends(get_current_user),
+    scoped_client_id: uuid.UUID | None = Depends(get_current_client_id),
+):
+    """Authenticated equivalent of the magic-link `/public/invoices/{token}/payments`
+    route - same `submit_client_payment` service call (starts the two-step
+    Finance-then-CRM manual verification, never auto-confirmed), just reached
+    from an already-logged-in client-portal session instead of a token link.
+    `get_invoice` 404s/403s if this invoice doesn't belong to the caller's
+    own client - a client can never submit proof against someone else's invoice.
+    """
+    if scoped_client_id is None:
+        raise ForbiddenException("Only client-portal accounts can submit payment proof through this endpoint.")
+    await invoice_svc.get_invoice(invoice_id, scoped_client_id=scoped_client_id)
+    payment = await payment_svc.submit_client_payment(
+        invoice_id,
+        {"amount": payload.amount, "payment_method": payload.payment_method, "reference_number": payload.reference_number},
+        token_id=None,
+    )
+    await db.commit()
+    return PaymentRead.model_validate(payment)
 
 @router.put("/invoices/{invoice_id}", response_model=InvoiceRead, summary="Update invoice")
 async def update_invoice(invoice_id: uuid.UUID, payload: InvoiceUpdate, db: AsyncSession = Depends(get_db), svc: InvoiceService = Depends(get_invoice_service), _: User = Depends(get_current_user), scoped_client_id: uuid.UUID | None = Depends(get_current_client_id), _role: str = Depends(require_roles("finance"))):

@@ -224,7 +224,11 @@ export default function AdminLeads() {
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!form.title.trim()) errors.title = 'Title is required.';
+    if (!form.title.trim()) {
+      errors.title = 'Title is required.';
+    } else if (form.title.trim().length < 2) {
+      errors.title = 'Title must be at least 2 characters.';
+    }
     if (!form.contact_name?.trim()) errors.contact_name = 'Contact name is required.';
     if (!form.email?.trim()) {
       errors.email = 'Email address is required.';
@@ -239,16 +243,32 @@ export default function AdminLeads() {
     return Object.keys(errors).length === 0;
   };
 
+  const buildLeadPayload = (): LeadCreatePayload => {
+    // Optional string fields must be omitted (not sent as "") - the backend
+    // rejects an explicit empty string as "too short" for these fields.
+    const payload: LeadCreatePayload = { ...form, title: form.title.trim() };
+    if (!payload.company_name?.trim()) delete payload.company_name;
+    else payload.company_name = payload.company_name.trim();
+    if (!payload.contact_name?.trim()) delete payload.contact_name;
+    else payload.contact_name = payload.contact_name.trim();
+    if (!payload.email?.trim()) delete payload.email;
+    if (!payload.phone?.trim()) delete payload.phone;
+    if (!payload.notes?.trim()) delete payload.notes;
+    if (!payload.assigned_to) delete payload.assigned_to;
+    return payload;
+  };
+
   const handleSave = async () => {
     if (!validateForm()) return;
     setSaving(true);
     setFormError(null);
     try {
+      const payload = buildLeadPayload();
       if (editingLead) {
-        await leadService.update(editingLead.id, form);
+        await leadService.update(editingLead.id, payload);
         showToast(`Lead "${form.title}" updated successfully!`, 'success');
       } else {
-        await leadService.create(form);
+        await leadService.create(payload);
         showToast(`Lead "${form.title}" created successfully!`, 'success');
       }
       setShowModal(false);
@@ -667,7 +687,7 @@ export default function AdminLeads() {
                     <option value="">Select Team Member...</option>
                     {teamMembers.map((m) => {
                       const name = m.full_name || m.name || m.email || m.id;
-                      return <option key={m.id} value={name}>{name}</option>;
+                      return <option key={m.id} value={m.id}>{name}</option>;
                     })}
                   </select>
                 </div>

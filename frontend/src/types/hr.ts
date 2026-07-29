@@ -31,7 +31,8 @@ export interface Application {
   jobId: string;
   jobTitle: string;
   department: string;
-  
+  location?: string;
+
   // Candidate Info
   candidateName: string;
   email: string;

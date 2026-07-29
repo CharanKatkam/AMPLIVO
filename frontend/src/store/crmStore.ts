@@ -9,6 +9,7 @@ import {
 import { leadService } from '@/services/leadService';
 import { clientService, projectService, taskService, taskSubmissionService, notificationService, financeService } from '@/services/crmService';
 import { userManagementService } from '@/services/crmService';
+import { useAuthStore } from './authStore';
 import { SalesLeadStatus } from '@/types';
 import { MOCK_LEADS, MOCK_CLIENTS, MOCK_PROJECTS, MOCK_TASKS, MOCK_EMPLOYEES } from './mockCrmData';
 
@@ -49,6 +50,7 @@ interface CrmState {
   fetchProjects: () => Promise<void>;
   fetchEmployees: () => Promise<void>;
   fetchTasks: () => Promise<void>;
+  fetchSubmissions: () => Promise<void>;
   fetchInvoices: () => Promise<void>;
   fetchPayments: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
@@ -97,6 +99,7 @@ interface CrmState {
   // ─── PAYMENT ACTIONS ───────────────────────────────────────────────────────
   // BACKEND: POST /finance/payments/:id/verify-finance then /verify-crm
   verifyPayment: (paymentId: string) => Promise<void>;
+  rejectPayment: (paymentId: string, reason?: string) => Promise<void>;
 
   // ─── NOTIFICATION ACTIONS ─────────────────────────────────────────────────
   // BACKEND: PATCH /api/crm/notifications/:id/read
@@ -215,6 +218,47 @@ const mapBackendTask = (raw: Record<string, any>, projects: CrmProject[]): CrmTa
     workingFiles: raw.working_files || [],
     createdAt: raw.created_at || new Date().toISOString(),
     lastUpdated: raw.updated_at || raw.created_at || new Date().toISOString(),
+  };
+};
+
+// Backend TaskSubmission.status: pending_review (default) | approved |
+// changes_requested (see Backend/app/modules/tasks/models.py /service.py) -
+// there's no backend equivalent of "SENT_TO_CLIENT", so an approved
+// submission maps to CRM_APPROVED.
+const mapBackendSubmissionStatus = (status: string | null | undefined): SubmissionStatus => {
+  const s = (status || '').toLowerCase();
+  if (s === 'approved') return 'CRM_APPROVED';
+  if (s === 'changes_requested') return 'CRM_CHANGES_REQUESTED';
+  return 'PENDING_CRM_REVIEW';
+};
+
+const mapBackendSubmission = (raw: Record<string, any>, task: CrmTask | undefined): CrmSubmission => {
+  const status = mapBackendSubmissionStatus(raw.status);
+  return {
+    id: raw.id || '',
+    employeeId: task?.assignedEmployeeId || raw.submitted_by || '',
+    projectId: task?.projectId || '',
+    taskId: raw.task_id || '',
+    clientId: task?.clientId || '',
+    service: task?.service || '',
+    assignmentId: `${task?.projectId || ''}_${raw.task_id || ''}`,
+    assignedRole: task?.assignedRole || '',
+    title: raw.title || '',
+    workSummary: raw.work_summary || '',
+    deliverableType: raw.deliverable_type || 'link',
+    currentStatus: status,
+    versions: [{
+      versionId: raw.id || '',
+      versionNumber: raw.version_number ?? 1,
+      submissionDate: raw.created_at || '',
+      files: [],
+      externalUrl: raw.external_url || undefined,
+      completionPercentage: raw.completion_percentage ?? 100,
+      employeeComment: raw.work_summary || '',
+      status,
+    }],
+    createdAt: raw.created_at || '',
+    lastUpdated: raw.updated_at || raw.created_at || '',
   };
 };
 
@@ -563,6 +607,9 @@ export const useCrmStore = create<CrmState>()(
 
           set({ projects, tasks, notifications, isLoading: false, dataLoaded: true });
 
+          // Needs `tasks` already set above (fans out one request per task).
+          await get().fetchSubmissions();
+
           // Employees were never fetched from the CRM layout at all - the
           // Employee Workload widget, /crm/employees, Account Team panels,
           // and project team avatars ran on MOCK_EMPLOYEES forever.
@@ -628,6 +675,27 @@ export const useCrmStore = create<CrmState>()(
         } catch { /* keep existing */ }
       },
 
+      // There is no "list all submissions" endpoint - only per-task
+      // (GET /tasks/{task_id}/submissions) - so this fans out one request
+      // per already-fetched task. Previously `submissions` was never
+      // populated from the backend at all, so every "My Submissions" /
+      // revision-history view in the Employee portal always showed empty
+      // after a page reload regardless of what was really in the database.
+      fetchSubmissions: async () => {
+        try {
+          const tasks = get().tasks;
+          const results = await Promise.allSettled(tasks.map(t => taskSubmissionService.getAll(t.id)));
+          const submissions: CrmSubmission[] = [];
+          results.forEach((r, i) => {
+            if (r.status === 'fulfilled') {
+              const raw = (r.value.items || r.value || []) as Record<string, any>[];
+              raw.forEach((s) => submissions.push(mapBackendSubmission(s, tasks[i])));
+            }
+          });
+          set({ submissions });
+        } catch { /* keep existing */ }
+      },
+
       fetchInvoices: async () => {
         try {
           const res = await financeService.getInvoices({ page_size: 100 });
@@ -669,6 +737,8 @@ export const useCrmStore = create<CrmState>()(
               transactionId: p.reference_number || '',
               date: p.payment_date || p.created_at || '',
               verifiedAt: p.crm_verified_at || undefined,
+              financeVerifiedAt: p.finance_verified_at || undefined,
+              crmVerifiedAt: p.crm_verified_at || undefined,
               notes: '',
             };
           });
@@ -1013,15 +1083,32 @@ export const useCrmStore = create<CrmState>()(
         const payment = get().payments.find(p => p.id === paymentId);
         if (!payment) return;
 
-        // Real two-step verification (Finance, then CRM) - there is no
-        // separate Finance UI in this app, so CRM's single "Verify Payment"
-        // click drives both backend steps. finance-verify is safe to call
-        // even if a payment was already finance-verified (re-stamps the
-        // same state); crm-verify is the step that actually flips the
-        // invoice to ADVANCE_PAID/FINAL_PAID and triggers client-account
-        // creation once the verified total covers the invoice.
-        await financeService.verifyPaymentFinance(paymentId).catch(() => {});
-        await financeService.verifyPaymentCrm(paymentId);
+        // Real two-step verification (Finance, then CRM), each gated server-
+        // side to its own role (require_roles("finance") / require_roles
+        // ("crm")) - only admin/super_admin can do both. Previously this
+        // always attempted both calls regardless of the caller's actual
+        // role, silently swallowing the first failure - which meant a real
+        // "finance" or "crm" user (not admin) could never successfully
+        // complete verification through this button at all (the second call
+        // always 403'd). Now it only attempts the step(s) the current
+        // user's role is actually allowed to perform.
+        const role = useAuthStore.getState().user?.role;
+        const canFinance = role === 'finance' || role === 'admin';
+        const canCrm = role === 'crm' || role === 'admin';
+
+        if (!payment.financeVerifiedAt) {
+          if (!canFinance) {
+            throw new Error('This payment needs Finance verification first - ask a Finance team member to verify it.');
+          }
+          await financeService.verifyPaymentFinance(paymentId);
+        }
+        if (canCrm) {
+          await financeService.verifyPaymentCrm(paymentId);
+        } else if (!canFinance) {
+          throw new Error('You do not have permission to verify this payment.');
+        }
+        // else: a finance-only user just completed their step; CRM sign-off
+        // is a separate person's job, not a failure.
 
         await get().fetchInvoices();
         await Promise.allSettled([get().fetchPayments(), get().fetchLeads()]);
@@ -1032,6 +1119,11 @@ export const useCrmStore = create<CrmState>()(
             ...s.notifications,
           ],
         }));
+      },
+
+      rejectPayment: async (paymentId, reason) => {
+        await financeService.rejectPayment(paymentId, reason);
+        await Promise.allSettled([get().fetchPayments(), get().fetchInvoices()]);
       },
 
       // ─── NOTIFICATION ACTIONS ─────────────────────────────────────────────

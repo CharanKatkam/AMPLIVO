@@ -303,6 +303,15 @@ export const financeService = {
     return data;
   },
 
+  // For a logged-in client submitting proof of their own payment - staff-only
+  // (addPayment above requires the "finance" role and always 403s for a
+  // client-role caller). Starts the same two-step Finance-then-CRM
+  // verification as the public magic-link flow; never auto-confirmed.
+  submitClientPayment: async (invoiceId: string, payload: { amount: number; payment_method: string; reference_number?: string }) => {
+    const { data } = await api.post(`/finance/invoices/${invoiceId}/client-payment`, payload);
+    return data;
+  },
+
   createAdvanceInvoice: async (payload: {
     lead_id: string; proposal_id?: string; total_deal_amount: number;
     tax_rate?: number; due_date: string; currency?: string; notes?: string;
@@ -324,7 +333,25 @@ export const financeService = {
     return data;
   },
 
+  resendInvoiceEmail: async (invoiceId: string) => {
+    const { data } = await api.post(`/finance/invoices/${invoiceId}/resend-email`);
+    return data;
+  },
+
+  getEmailDeliveryStatus: async (): Promise<{ live: boolean }> => {
+    const { data } = await api.get('/finance/email-delivery-status');
+    return data;
+  },
+
   getInvoicePdfUrl: (invoiceId: string) => `${api.defaults.baseURL}/finance/invoices/${invoiceId}/pdf`,
+
+  // The PDF endpoint requires the same Authorization bearer token as every
+  // other API call - a plain <a href> can't attach that header, so it 401s.
+  // Fetch it as an authenticated blob instead and hand back an object URL.
+  fetchInvoicePdfBlob: async (invoiceId: string): Promise<Blob> => {
+    const { data } = await api.get(`/finance/invoices/${invoiceId}/pdf`, { responseType: 'blob' });
+    return data;
+  },
 
   verifyPaymentFinance: async (paymentId: string) => {
     const { data } = await api.post(`/finance/payments/${paymentId}/verify-finance`);

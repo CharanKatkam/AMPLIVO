@@ -389,7 +389,7 @@ export default function AdminTasks() {
                     <option value="">Select team member...</option>
                     {users.map((u) => {
                       const name = u.full_name || u.name || u.username || u.id;
-                      return <option key={u.id} value={name}>{name}</option>;
+                      return <option key={u.id} value={u.id}>{name}</option>;
                     })}
                   </select>
                 </div>
