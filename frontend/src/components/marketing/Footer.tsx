@@ -16,7 +16,6 @@ const footerLinks = {
     { label: 'Case Studies', href: '/case-studies' },
     { label: 'Insights Blog', href: '/insights' },
     { label: 'Careers', href: '/careers' },
-    { label: 'Press', href: '#' },
   ],
   Industries: [
     { label: 'Real Estate', href: '/industries' },
