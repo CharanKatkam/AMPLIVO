@@ -60,7 +60,7 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
   const projectId = resolvedParams.projectId as string | undefined;
   const subId = resolvedParams.id as string | undefined;
 
-  const { activeEmployeeId, getTasksByEmployee, getProjectsByEmployee, submissions, submitToCRM, resubmitToCRM, fetchAllData, dataLoaded } = useCrmStore();
+  const { activeEmployeeId, getTasksByEmployee, getProjectById, submissions, submitToCRM, resubmitToCRM, fetchAllData, dataLoaded } = useCrmStore();
 
   const existingSub = subId ? submissions.find(s => s.id === subId) : undefined;
   const isRevision = !!existingSub;
@@ -70,7 +70,7 @@ export default function EmployeeSubmitWork({ searchParams }: { searchParams: Pro
   const [taskSubmissions, setTaskSubmissions] = useState<TaskSubmissionHistoryItem[]>([]);
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
-  const project = getProjectsByEmployee(activeEmployeeId || '').find(p => p.id === selectedTask?.projectId);
+  const project = getProjectById(selectedTask?.projectId || '');
 
   const [title, setTitle] = useState(existingSub?.title || '');
   const [workSummary, setWorkSummary] = useState(existingSub?.workSummary || '');

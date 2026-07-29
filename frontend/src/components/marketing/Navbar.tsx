@@ -63,12 +63,12 @@ export function Navbar({ alwaysSolid = false }: NavbarProps) {
           : 'bg-[#1a0540]/60 backdrop-blur-md border-b border-white/10'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[88px] flex items-center justify-between gap-2 lg:gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 lg:py-0 min-h-[88px] flex flex-wrap items-center justify-between gap-2 lg:gap-4">
         {/* Logo */}
         <Logo variant={isSolid ? 'dark' : 'white'} size="md" />
 
-        {/* Desktop Nav for Laptops and Desktops (lg: 1024px+) */}
-        <nav className="hidden lg:flex items-center gap-1 xl:gap-2" aria-label="Primary">
+        {/* Navigation Bar (Always Visible) */}
+        <nav className="flex w-full order-last mt-3 lg:mt-0 lg:w-auto lg:order-none overflow-x-auto scrollbar-hide items-center gap-1 xl:gap-2 pb-2 lg:pb-0" aria-label="Primary">
           {navLinks.map((link) => {
             const linkActive = isActive(link.href);
             const hasActiveChild = link.children?.some((c) => isActive(c.href));
@@ -76,12 +76,18 @@ export function Navbar({ alwaysSolid = false }: NavbarProps) {
             return (
               <div
                 key={link.label}
-                className="relative"
+                className="relative shrink-0"
                 onMouseEnter={() => link.children && setActiveDropdown(link.label)}
                 onMouseLeave={() => setActiveDropdown(null)}
               >
                 <Link
                   href={link.href}
+                  onClick={(e) => {
+                    if (link.href === '/' && pathname === '/') {
+                      e.preventDefault();
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
                   aria-current={linkActive ? 'page' : undefined}
                   aria-haspopup={link.children ? 'true' : undefined}
                   aria-expanded={link.children ? dropdownOpen : undefined}
@@ -128,7 +134,7 @@ export function Navbar({ alwaysSolid = false }: NavbarProps) {
         </nav>
 
         {/* Right CTAs */}
-        <div className="hidden lg:flex items-center gap-2 xl:gap-4 shrink-0">
+        <div className="flex items-center gap-2 xl:gap-4 shrink-0">
           <Link
             href="/login"
             className={`text-xs xl:text-sm font-medium px-3.5 xl:px-5 py-2 xl:py-2.5 rounded-xl border transition-all whitespace-nowrap ${isSolid
@@ -139,17 +145,6 @@ export function Navbar({ alwaysSolid = false }: NavbarProps) {
             Client Login
           </Link>
         </div>
-
-        {/* Mobile Hamburger (Only for mobile/tablet screens < 1024px) */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-nav-menu"
-          className={`lg:hidden p-2 rounded-lg transition-colors ${isSolid ? 'text-slate-700' : 'text-white'}`}
-        >
-          {mobileOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
-        </button>
       </div>
 
       {/* Mobile Menu */}
