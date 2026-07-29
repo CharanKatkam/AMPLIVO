@@ -1,0 +1,58 @@
+import { Testimonial } from '@/types';
+
+export const testimonials: Testimonial[] = [
+  {
+    id: '1',
+    name: 'Rajesh Nair',
+    company: 'Prestige Estates Hyderabad',
+    role: 'Head of Sales',
+    content: 'Amplivo transformed our digital lead pipeline. The quality of leads improved dramatically and our sales team is closing more deals. The transparency in reporting is commendable.',
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop',
+  },
+  {
+    id: '2',
+    name: 'Priya Sharma',
+    company: 'FashionFirst Retail',
+    role: 'Founder & CEO',
+    content: 'Our online revenue tripled in two months. The creative team produces outstanding quality content, and the performance marketing ROI has been exceptional. Amplivo is the best decision we made.',
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=80&h=80&fit=crop',
+  },
+  {
+    id: '3',
+    name: 'Dr. Kiran Reddy',
+    company: 'HealthPlus Clinics',
+    role: 'Medical Director',
+    content: 'All our clinics now appear at the top of local searches. Patient footfall has increased significantly. The dedicated account manager ensures smooth communication and timely delivery.',
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=80&h=80&fit=crop',
+  },
+  {
+    id: '4',
+    name: 'Ananya Mehta',
+    company: 'EduPath Academy',
+    role: 'Marketing Director',
+    content: 'We went from invisible to dominating our category in search. The SEO work by Amplivo has been transformational. Student enrollment through organic channels grew by 380%.',
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop',
+  },
+  {
+    id: '5',
+    name: 'Suresh Agarwal',
+    company: 'TechNova Solutions',
+    role: 'Chief Revenue Officer',
+    content: 'Our B2B pipeline has never been stronger. The LinkedIn strategy directly contributed to closing enterprise deals. The team understands both marketing and technology deeply.',
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop',
+  },
+  {
+    id: '6',
+    name: 'Meena Krishnan',
+    company: 'NutriBlend D2C',
+    role: 'Co-Founder',
+    content: 'Amplivo built our brand from scratch. The community of 100K followers they created in 6 months is actively driving our D2C sales. Outstanding creative and strategic work.',
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=80&h=80&fit=crop',
+  },
+];

@@ -1,0 +1,63 @@
+services:
+  # ── FastAPI Backend ────────────────────────────────────────────────────────
+  - type: web
+    name: amplivo
+    runtime: python
+    rootDir: Backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-server-header
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL_MODE
+        value: require
+      - key: DB_POOL_SIZE
+        value: 3
+      - key: DB_MAX_OVERFLOW
+        value: 5
+      - key: DB_POOL_RECYCLE_SECONDS
+        value: 300
+      - key: DB_POOL_TIMEOUT_SECONDS
+        value: 60
+      - key: DB_STARTUP_TIMEOUT_SECONDS
+        value: 10.0
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      - key: BCRYPT_ROUNDS
+        value: 12
+      - key: CORS_ORIGINS
+        value: https://amplivo.in,https://www.amplivo.in,https://amplivo.vercel.app
+      - key: MAX_FAILED_LOGIN_ATTEMPTS
+        value: 5
+      - key: ACCOUNT_LOCK_MINUTES
+        value: 15
+      - key: RATE_LIMIT_LOGIN_PER_MINUTE
+        value: 20
+      - key: RATE_LIMIT_REGISTER_PER_MINUTE
+        value: 10
+      - key: RATE_LIMIT_REFRESH_PER_MINUTE
+        value: 30
+      - key: RATE_LIMIT_FORM_SUBMISSION_PER_MINUTE
+        value: 5
+      - key: RATE_LIMIT_DEFAULT_PER_MINUTE
+        value: 300
+      - key: ENVIRONMENT
+        value: production
+
+  # ── Next.js Frontend ───────────────────────────────────────────────────────
+  - type: web
+    name: amplivo-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://amplivo.onrender.com/api/v1
