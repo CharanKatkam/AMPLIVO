@@ -5,6 +5,7 @@ import PhoneInputLib from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 
 interface PhoneInputProps {
+  id?: string;
   value: string;
   onChange: (value: string | undefined) => void;
   required?: boolean;
@@ -14,12 +15,13 @@ interface PhoneInputProps {
   disabled?: boolean;
 }
 
-export function PhoneInput({ value, onChange, required, error, className, placeholder, disabled }: PhoneInputProps) {
+export function PhoneInput({ id, value, onChange, required, error, className, placeholder, disabled }: PhoneInputProps) {
   return (
     <div className={`phone-input-wrapper ${className || ''}`}>
       <PhoneInputLib
+        id={id}
         international
-        defaultCountry="US"
+        defaultCountry="IN"
         value={value}
         onChange={onChange}
         required={required}
