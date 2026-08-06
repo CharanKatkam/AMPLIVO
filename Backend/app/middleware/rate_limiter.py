@@ -62,6 +62,12 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             f"{settings.API_V1_PREFIX}/auth/refresh": RateLimitRule(
                 limit=settings.RATE_LIMIT_REFRESH_PER_MINUTE
             ),
+            f"{settings.API_V1_PREFIX}/auth/check-email": RateLimitRule(
+                limit=5
+            ),
+            f"{settings.API_V1_PREFIX}/auth/check-username": RateLimitRule(
+                limit=5
+            ),
             f"{settings.API_V1_PREFIX}/contact-submissions": RateLimitRule(
                 limit=settings.RATE_LIMIT_FORM_SUBMISSION_PER_MINUTE
             ),

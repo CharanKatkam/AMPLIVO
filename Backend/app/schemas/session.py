@@ -9,14 +9,14 @@ class SessionRead(BaseModel):
 
     id: uuid.UUID
     user_id: uuid.UUID
-    device_name: str | None
-    browser: str | None
-    operating_system: str | None
-    ip_address: str | None
-    country: str | None
-    city: str | None
-    is_revoked: bool
-    is_expired: bool
-    expires_at: datetime | None
-    last_activity: datetime | None
+    device_name: str | None = None
+    browser: str | None = None
+    operating_system: str | None = None
+    ip_address: str | None = None
+    country: str | None = None
+    city: str | None = None
+    is_active: bool
+    is_current: bool
+    last_activity: datetime | None = None
     created_at: datetime
+    expires_at: datetime | None = None

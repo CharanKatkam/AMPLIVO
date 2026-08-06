@@ -219,6 +219,7 @@ async def test_verification_status_endpoint(client: AsyncClient) -> None:
     assert before.json() == {"is_verified": False, "verified_at": None}
 
     verify_token = _latest_token()
+    client.cookies.clear()
     await client.post("/api/v1/auth/verify-email", json={"token": verify_token})
 
     after = await client.get("/api/v1/auth/verification-status", headers=headers)
