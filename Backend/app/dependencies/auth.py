@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,12 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
     audit_service: AuditService = Depends(get_audit_service),
 ) -> User:
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     client_context = resolve_client_context(request)
     endpoint = request.url.path
     request_method = request.method
