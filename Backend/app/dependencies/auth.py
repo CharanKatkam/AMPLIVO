@@ -36,14 +36,6 @@ async def get_current_user(
     endpoint = request.url.path
     request_method = request.method
 
-    if credentials is None:
-        from fastapi import HTTPException
-        raise HTTPException(
-            status_code=401,
-            detail="Not authenticated.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
     try:
         payload = decode_token(credentials.credentials, expected_type="access")
     except AppException as exc:
