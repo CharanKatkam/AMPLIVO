@@ -59,20 +59,37 @@ class AuditLog(Base):
 
     @property
     def status(self) -> str | None:
-        return self.new_data.get("status") if self.new_data else None
+        if isinstance(self.new_data, dict):
+            return self.new_data.get("status")
+        return None
 
     @property
     def endpoint(self) -> str | None:
-        return self.new_data.get("endpoint") if self.new_data else None
+        if isinstance(self.new_data, dict):
+            return self.new_data.get("endpoint")
+        return None
 
     @property
     def request_method(self) -> str | None:
-        return self.new_data.get("request_method") if self.new_data else None
+        if isinstance(self.new_data, dict):
+            return self.new_data.get("request_method")
+        return None
 
     @property
     def message(self) -> str | None:
-        return self.new_data.get("message") if self.new_data else None
+        if isinstance(self.new_data, dict):
+            return self.new_data.get("message")
+        return None
 
     @property
     def user_id(self) -> uuid.UUID | None:
-        return self.performed_by
+        if self.performed_by:
+            return self.performed_by
+        if isinstance(self.new_data, dict):
+            uid = self.new_data.get("user_id")
+            if uid:
+                try:
+                    return uuid.UUID(str(uid))
+                except (ValueError, TypeError):
+                    pass
+        return None
