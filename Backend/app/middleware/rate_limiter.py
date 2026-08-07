@@ -91,6 +91,9 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             bucket_name = f"{settings.API_V1_PREFIX}/campaigns"
         elif specific_rule is None and request.url.path.startswith(f"{settings.API_V1_PREFIX}/analytics"):
             specific_rule = RateLimitRule(limit=settings.RATE_LIMIT_DEFAULT_PER_MINUTE, window_seconds=60)
+        elif specific_rule is None and request.url.path.startswith(f"{settings.API_V1_PREFIX}/clients"):
+            specific_rule = RateLimitRule(limit=5, window_seconds=60)
+            bucket_name = f"{settings.API_V1_PREFIX}/clients"
 
         if specific_rule is not None:
             retry_after = await self._check(f"path:{bucket_name}", client_ip, specific_rule)
