@@ -62,12 +62,19 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             f"{settings.API_V1_PREFIX}/auth/refresh": RateLimitRule(
                 limit=settings.RATE_LIMIT_REFRESH_PER_MINUTE
             ),
+            f"{settings.API_V1_PREFIX}/auth/check-email": RateLimitRule(
+                limit=5
+            ),
+            f"{settings.API_V1_PREFIX}/auth/check-username": RateLimitRule(
+                limit=5
+            ),
             f"{settings.API_V1_PREFIX}/contact-submissions": RateLimitRule(
                 limit=settings.RATE_LIMIT_FORM_SUBMISSION_PER_MINUTE
             ),
             f"{settings.API_V1_PREFIX}/consultation-requests": RateLimitRule(
                 limit=settings.RATE_LIMIT_FORM_SUBMISSION_PER_MINUTE
             ),
+            f"{settings.API_V1_PREFIX}/campaigns": RateLimitRule(limit=60),
         }
         self._default_rule = default_rule or RateLimitRule(limit=settings.RATE_LIMIT_DEFAULT_PER_MINUTE)
 
@@ -77,16 +84,19 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
 
         client_ip = get_client_ip(request) or "unknown"
 
-        # Check for dynamic path prefix matches if full path doesn't strictly match a specific rule
-        matched_rule = self._rules.get(request.url.path)
-        if not matched_rule:
-            if request.url.path.startswith(f"{settings.API_V1_PREFIX}/analytics"):
-                matched_rule = RateLimitRule(limit=settings.RATE_LIMIT_DEFAULT_PER_MINUTE, window_seconds=60)
-            elif request.url.path.startswith(f"{settings.API_V1_PREFIX}/clients"):
-                matched_rule = RateLimitRule(limit=5, window_seconds=60)
+        specific_rule = self._rules.get(request.url.path)
+        bucket_name = request.url.path
+        if specific_rule is None and request.url.path.startswith(f"{settings.API_V1_PREFIX}/campaigns"):
+            specific_rule = self._rules.get(f"{settings.API_V1_PREFIX}/campaigns")
+            bucket_name = f"{settings.API_V1_PREFIX}/campaigns"
+        elif specific_rule is None and request.url.path.startswith(f"{settings.API_V1_PREFIX}/analytics"):
+            specific_rule = RateLimitRule(limit=settings.RATE_LIMIT_DEFAULT_PER_MINUTE, window_seconds=60)
+        elif specific_rule is None and request.url.path.startswith(f"{settings.API_V1_PREFIX}/clients"):
+            specific_rule = RateLimitRule(limit=5, window_seconds=60)
+            bucket_name = f"{settings.API_V1_PREFIX}/clients"
 
-        if matched_rule is not None:
-            retry_after = await self._check(f"path:{request.url.path}", client_ip, matched_rule)
+        if specific_rule is not None:
+            retry_after = await self._check(f"path:{bucket_name}", client_ip, specific_rule)
             if retry_after is not None:
                 return error_response(RateLimitException(retry_after=retry_after), request)
 

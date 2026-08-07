@@ -23,6 +23,7 @@ router = APIRouter(prefix="/auth", tags=["Session Management"])
 def _to_session_read(session: UserSession, current_session_id: uuid.UUID | None) -> SessionRead:
     return SessionRead(
         id=session.id,
+        user_id=session.user_id,
         device_name=session.device_name,
         browser=session.browser,
         operating_system=session.operating_system,

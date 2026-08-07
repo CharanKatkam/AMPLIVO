@@ -22,7 +22,7 @@ bearer_scheme = HTTPBearer(
 
 async def get_current_user(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
     audit_service: AuditService = Depends(get_audit_service),
 ) -> User:
@@ -53,6 +53,13 @@ async def get_current_user(
         except Exception:
             await db.rollback()
         raise
+
+    session_id = payload.get("session_id")
+    if session_id:
+        from app.repositories.user_session_repository import UserSessionRepository
+        user_session = await UserSessionRepository(db).get_by_id(uuid.UUID(session_id))
+        if user_session is None or not user_session.is_active:
+            raise InvalidTokenException("The session associated with this token has been terminated.")
 
     user_id = payload.get("sub")
     if not user_id:

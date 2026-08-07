@@ -56,3 +56,23 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), server_default=func.now(), nullable=True
     )
+
+    @property
+    def status(self) -> str | None:
+        return self.new_data.get("status") if self.new_data else None
+
+    @property
+    def endpoint(self) -> str | None:
+        return self.new_data.get("endpoint") if self.new_data else None
+
+    @property
+    def request_method(self) -> str | None:
+        return self.new_data.get("request_method") if self.new_data else None
+
+    @property
+    def message(self) -> str | None:
+        return self.new_data.get("message") if self.new_data else None
+
+    @property
+    def user_id(self) -> uuid.UUID | None:
+        return self.performed_by

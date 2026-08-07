@@ -101,6 +101,8 @@ app = FastAPI(
 # RequestID must run early so every downstream component sees the IDs.
 # CacheHeaders runs after Compression so ETags reflect the compressed body.
 # Everything else follows the existing ordering rationale.
+from app.middleware.body_limit import ContentSizeLimitMiddleware
+
 app.add_middleware(AuthenticationMiddleware)
 app.add_middleware(ActivityMiddleware)
 app.add_middleware(SessionMiddleware)
@@ -123,6 +125,7 @@ app.add_middleware(
     CompressionMiddleware,
     minimum_size=settings.COMPRESSION_MIN_SIZE,
 )
+app.add_middleware(ContentSizeLimitMiddleware)
 
 register_exception_handlers(app)
 
