@@ -82,6 +82,8 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         if not matched_rule:
             if request.url.path.startswith(f"{settings.API_V1_PREFIX}/analytics"):
                 matched_rule = RateLimitRule(limit=settings.RATE_LIMIT_DEFAULT_PER_MINUTE, window_seconds=60)
+            elif request.url.path.startswith(f"{settings.API_V1_PREFIX}/clients"):
+                matched_rule = RateLimitRule(limit=5, window_seconds=60)
 
         if matched_rule is not None:
             retry_after = await self._check(f"path:{request.url.path}", client_ip, matched_rule)
