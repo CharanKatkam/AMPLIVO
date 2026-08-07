@@ -88,7 +88,7 @@ async def test_cm_bug_001_idor_tenant_isolation(client: AsyncClient, db_session:
 
 @pytest.mark.asyncio
 async def test_cm_bug_002_003_fk_validation(client: AsyncClient, db_session: AsyncSession) -> None:
-    _, token = await create_test_user_and_token(db_session, role_slug="staff")
+    _, token = await create_test_user_and_token(db_session, role_slug="marketing")
     headers = {"Authorization": f"Bearer {token}"}
 
     fake_id = str(uuid.uuid4())
@@ -125,7 +125,7 @@ async def test_cm_bug_002_003_fk_validation(client: AsyncClient, db_session: Asy
 @pytest.mark.asyncio
 async def test_cm_bug_005_negative_values(client: AsyncClient, db_session: AsyncSession) -> None:
     c_obj = await create_test_client(db_session)
-    _, token = await create_test_user_and_token(db_session, role_slug="staff")
+    _, token = await create_test_user_and_token(db_session, role_slug="marketing")
     headers = {"Authorization": f"Bearer {token}"}
 
     # Negative budget on create campaign -> 422
@@ -140,7 +140,7 @@ async def test_cm_bug_005_negative_values(client: AsyncClient, db_session: Async
 @pytest.mark.asyncio
 async def test_cm_bug_007_large_numbers_validation(client: AsyncClient, db_session: AsyncSession) -> None:
     c_obj = await create_test_client(db_session)
-    _, token = await create_test_user_and_token(db_session, role_slug="staff")
+    _, token = await create_test_user_and_token(db_session, role_slug="marketing")
     headers = {"Authorization": f"Bearer {token}"}
 
     res_camp = await client.post(
@@ -162,7 +162,7 @@ async def test_cm_bug_007_large_numbers_validation(client: AsyncClient, db_sessi
 @pytest.mark.asyncio
 async def test_cm_bug_008_end_date_before_start_date(client: AsyncClient, db_session: AsyncSession) -> None:
     c_obj = await create_test_client(db_session)
-    _, token = await create_test_user_and_token(db_session, role_slug="staff")
+    _, token = await create_test_user_and_token(db_session, role_slug="marketing")
     headers = {"Authorization": f"Bearer {token}"}
 
     # end_date before start_date -> 422
