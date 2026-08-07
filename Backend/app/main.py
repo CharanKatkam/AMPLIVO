@@ -61,6 +61,9 @@ async def lifespan(app: FastAPI):
 
 async def _seed_demo_background() -> None:
     """Idempotent demo data seeding, run in the background after startup."""
+    if not settings.SEED_DEMO_DATA or settings.ENVIRONMENT.lower() == "production":
+        logger.info("Demo data seeding skipped (disabled or production mode).")
+        return
     try:
         from app.scripts.seed_demo_data import seed_demo_data
 
@@ -72,6 +75,8 @@ async def _seed_demo_background() -> None:
         logger.exception("Demo data seeding failed — continuing without it.")
 
 
+is_production = settings.ENVIRONMENT.lower() == "production"
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="2.0.0",
@@ -81,9 +86,9 @@ app = FastAPI(
         "retrieval, and Phase 2 enterprise security (audit logging, login "
         "history, account lockout, device tracking, rate limiting)."
     ),
-    openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
-    docs_url=f"{settings.API_V1_PREFIX}/docs",
-    redoc_url=f"{settings.API_V1_PREFIX}/redoc",
+    openapi_url=None if is_production else f"{settings.API_V1_PREFIX}/openapi.json",
+    docs_url=None if is_production else f"{settings.API_V1_PREFIX}/docs",
+    redoc_url=None if is_production else f"{settings.API_V1_PREFIX}/redoc",
     lifespan=lifespan,
 )
 

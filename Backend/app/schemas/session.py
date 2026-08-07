@@ -15,8 +15,10 @@ class SessionRead(BaseModel):
     ip_address: str | None = None
     country: str | None = None
     city: str | None = None
-    is_active: bool
-    is_current: bool
+    is_active: bool = True
+    is_revoked: bool = False
+    is_expired: bool = False
+    is_current: bool = False
     last_activity: datetime | None = None
-    created_at: datetime
+    created_at: datetime | None = None
     expires_at: datetime | None = None

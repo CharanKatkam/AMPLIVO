@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -98,6 +98,20 @@ class Settings(BaseSettings):
     # Base URL of the deployed frontend, used to build magic-link URLs
     # embedded in proposal/invoice emails (frontend/src/app/portal-public/...).
     FRONTEND_URL: str = "http://localhost:3000"
+
+    # Flag to control demo data background seeding on startup
+    SEED_DEMO_DATA: bool = Field(default=True)
+
+    @model_validator(mode="after")
+    def validate_production_security(self) -> "Settings":
+        if self.ENVIRONMENT.lower() == "production":
+            if len(self.JWT_SECRET_KEY) < 32 or self.JWT_SECRET_KEY == "CHANGE_ME_IN_PRODUCTION":
+                raise ValueError("In production, JWT_SECRET_KEY must be at least 32 characters long.")
+            if self.FRONTEND_URL.startswith("http://"):
+                raise ValueError("In production, FRONTEND_URL must use HTTPS.")
+            if self.DB_ECHO:
+                raise ValueError("In production, DB_ECHO must be False.")
+        return self
 
     # ── Compression ──────────────────────────────────────────────────────────
     # Minimum response body size in bytes before compression is applied.
