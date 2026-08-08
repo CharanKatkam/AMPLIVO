@@ -11,23 +11,27 @@ from starlette.types import ASGIApp
 from app.core.config import settings
 from app.core.exceptions import RateLimitException
 from app.middleware.exception_handler import error_response
+from app.utils.jwt import decode_token
 from app.utils.request_context import get_client_ip
 
 # Module-level (not instance-level) so tests can import reset_rate_limit_state()
 # and clear state between test cases regardless of how the middleware instance
 # was constructed by Starlette's lazily-built middleware stack.
 _hits: dict[tuple[str, str], list[float]] = {}
+_penalties: dict[tuple[str, str], int] = {}
 _lock = asyncio.Lock()
 
 
 def reset_rate_limit_state() -> None:
     _hits.clear()
+    _penalties.clear()
 
 
 @dataclass(frozen=True)
 class RateLimitRule:
     limit: int
     window_seconds: int = 60
+    exponential_backoff: bool = False
 
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
@@ -94,11 +98,31 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         elif specific_rule is None and request.url.path.startswith(f"{settings.API_V1_PREFIX}/clients"):
             specific_rule = RateLimitRule(limit=5, window_seconds=60)
             bucket_name = f"{settings.API_V1_PREFIX}/clients"
+        elif specific_rule is None and request.url.path.startswith(f"{settings.API_V1_PREFIX}/finance"):
+            specific_rule = RateLimitRule(limit=10, window_seconds=60, exponential_backoff=True)
+            bucket_name = f"{settings.API_V1_PREFIX}/finance"
 
         if specific_rule is not None:
-            retry_after = await self._check(f"path:{bucket_name}", client_ip, specific_rule)
-            if retry_after is not None:
-                return error_response(RateLimitException(retry_after=retry_after), request)
+            user_id: str | None = None
+            auth = request.headers.get("Authorization")
+            if auth and auth.lower().startswith("bearer "):
+                token = auth.split(" ", 1)[1].strip()
+                try:
+                    payload = decode_token(token, expected_type="access")
+                    sub = payload.get("sub")
+                    if sub is not None:
+                        user_id = str(sub)
+                except Exception:
+                    pass
+
+            retry_ip = await self._check(f"path:{bucket_name}", client_ip, specific_rule)
+            retry_acc = None
+            if user_id is not None:
+                retry_acc = await self._check(f"account:{bucket_name}", user_id, specific_rule)
+            
+            if retry_ip is not None or retry_acc is not None:
+                wait_time = max(retry_ip or 0, retry_acc or 0)
+                return error_response(RateLimitException(retry_after=wait_time), request)
 
         if request.url.path.startswith(settings.API_V1_PREFIX):
             retry_after = await self._check("global", client_ip, self._default_rule)
@@ -120,9 +144,14 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         async with _lock:
             timestamps = [t for t in _hits.get(key, []) if now - t < rule.window_seconds]
             if len(timestamps) >= rule.limit:
+                multiplier = 1
+                if rule.exponential_backoff:
+                    penalties = _penalties.get(key, 0)
+                    _penalties[key] = penalties + 1
+                    multiplier = 2 ** penalties
                 _hits[key] = timestamps
                 oldest = timestamps[0]
-                return max(1, math.ceil(rule.window_seconds - (now - oldest)))
+                return max(1, math.ceil(rule.window_seconds - (now - oldest))) * multiplier
             timestamps.append(now)
             _hits[key] = timestamps
             return None
